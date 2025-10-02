@@ -1,0 +1,73 @@
+import {
+  Entity,
+  Column,
+  BeforeInsert,
+  AfterLoad,
+  OneToOne,
+  OneToMany,
+} from 'typeorm';
+import { hash, genSalt } from 'bcrypt';
+import { join } from 'path';
+import { BaseEntity }    from '../../../common/baseEntity/baseEntity';
+import { UsersTypes, UserStatus } from '../../../common/enums/users.enum';
+import { MediaDir } from 'src/common/files/media-dir-.enum';
+import { TechnicalProfileEntity } from './technical_profile.entity';
+import { UserFcmTokenEntity } from './user-fcm-token.entity';
+
+@Entity('users')
+export class UserEntity extends BaseEntity {
+  @Column({ length: 50 })
+  username: string;
+
+  @Column({type: 'varchar', length: 20, nullable: true })
+  phone: string;
+
+  @Column({type: 'varchar', length: 100, unique: true })
+  email: string;
+
+  @Column({ type: 'varchar', enum: UserStatus, default: UserStatus.UNVERIFIED })
+  status: UserStatus;
+  
+  @Column({ type: 'enum', enum: UsersTypes, nullable: true})
+  type: UsersTypes;
+
+  @Column({ type: 'text', nullable: true })
+  image: string;
+
+  @Column({ length: 255, nullable: true })
+  password: string;
+  
+  @Column({
+    type: 'timestamp without time zone',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  lastLoginAt: Date;
+
+  @Column({ type: 'double precision', nullable: true })
+  latitude: number;
+
+  @Column({ type: 'double precision', nullable: true })
+  longitude: number;
+
+  @OneToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.user, { cascade: true })
+  technicalProfile: TechnicalProfileEntity;
+
+  @OneToMany(() => UserFcmTokenEntity, fcmToken => fcmToken.user, { cascade: true })
+  fcmTokens: UserFcmTokenEntity[];
+
+  @BeforeInsert()
+  async hashPassword() {
+    if (this.password) {
+      const salt = await genSalt(10);
+      this.password = await hash(this.password, salt);
+    }
+  }
+
+  @AfterLoad()
+  async MediaUrl() {
+    if (typeof this.image === 'string' && process.env.APP_URL) {
+      const fullPath = join('api', process.env.MEDIA_DIR, MediaDir.PROFILES, this.image);
+      this.image = `${process.env.APP_URL}/${fullPath}`;
+    }
+  }
+}

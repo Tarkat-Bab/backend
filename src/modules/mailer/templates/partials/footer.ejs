@@ -1,0 +1,16 @@
+</div>
+    </main>
+    <footer style="width: 100%; max-width: 490px; margin: 20px auto 0; text-align: center; border-top: 1px solid #e6ebf1;">
+      <% if (locals.lang === 'ar') { %>
+      <p style="margin: 0; margin-top: 16px; color: #434343;" dir="rtl">
+        حقوق النشر © <%= locals.year || new Date().getFullYear() %> <%= 'طرقة باب' %>. جميع الحقوق محفوظة.
+      </p>
+      <% } else { %>
+      <p style="margin: 0; margin-top: 16px; color: #434343;">
+        Copyright © <%= locals.year || new Date().getFullYear() %> <%= 'Tarket Bab' %>. All rights reserved.
+      </p>
+      <% } %>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<%- include('partials/header', { title: locals.title || 'OTP Verification' }) %>
+<table style="width: 100%;">
+  <tbody>
+    <tr style="height: 0;">
+      <td style="text-align: center; padding: 20px 0;">
+        <img
+          alt="Logo"
+          src="<%= locals.logoUrl || 'cid:elearn-logo' %>"
+          style="display: block; margin: 0 auto; max-width: 250px; width: 100%; height: auto;"
+        />
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<% if (locals.lang === 'ar') { %>
+  <!-- Arabic version -->
+  <% if (locals.username) { %>
+    <p style="margin: 0; margin-top: 12px; font-weight: 600; color: #1f1f1f;">
+      مرحباً <%= locals.username %>,
+    </p>
+  <% } %>
+
+  <h1 style="margin: 0; font-size: 24px; font-weight: 500; color: #1f1f1f;">
+    شكراً لتواصلك معنا.
+  </h1>
+
+  <p style="margin: 0; margin-top: 17px; font-weight: 500; letter-spacing: 0.56px;">
+    تم استلام رسالتك وسنقوم بالرد عليك في أقرب وقت ممكن 
+  </p>
+
+  <style>
+    @media only screen and (max-width: 600px) {
+      .otp-code {
+        font-size: 28px !important;
+        letter-spacing: 10px !important;
+      }
+    }
+  </style>
+
+  <p class="otp-code" 
+     style="margin: 0; margin-top: 60px; font-size: 40px; font-weight: 600; 
+            letter-spacing: 25px; color: #F17E07; text-align: center;">
+    <%= locals.code %>
+  </p>
+
+<% } else { %>
+  <!-- English version -->
+  <% if (locals.username) { %>
+    <p style="margin: 0; margin-top: 12px; font-weight: 600; color: #1f1f1f;">
+      Hi <%= locals.username %>,
+    </p>
+  <% } %>
+
+  <h1 style="margin: 0; font-size: 24px; font-weight: 500; color: #1f1f1f;">
+    Thank you for contacting us.
+  </h1>
+
+  <p style="margin: 0; margin-top: 17px; font-weight: 500; letter-spacing: 0.56px;">
+    Your message has been received, and our team will get back to you soon    <br />
+  </p>
+
+  <style>
+    @media only screen and (max-width: 600px) {
+      .otp-code {
+        font-size: 28px !important;
+        letter-spacing: 10px !important;
+      }
+    }
+  </style>
+<% } %>
+
+<%- include('partials/footer') %>
