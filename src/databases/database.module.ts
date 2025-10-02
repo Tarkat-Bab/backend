@@ -15,7 +15,9 @@ import { SnakeNamingStrategy } from '../common/naming-stratigies/snake-naming.st
         username: config.get<string>('DATABASE_USERNAME'),
         password: config.get<string>('DATABASE_PASSWORD'),
         database: config.get<string>('DATABASE_NAME'),
-
+        ssl: {
+          rejectUnauthorized: false,
+        },
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         poolSize: 30,

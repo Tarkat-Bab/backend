@@ -15,6 +15,9 @@ const config: DataSourceOptions = {
   username: process.env.DATABASE_USERNAME,
   password: process.env.DATABASE_PASSWORD,
   database: process.env.DATABASE_NAME,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   entities: files,
   synchronize: false,
   migrationsRun: true,
@@ -23,7 +26,5 @@ const config: DataSourceOptions = {
   migrationsTableName: 'migrations',
   namingStrategy: new SnakeNamingStrategy(),
 };
-
-
 
 export default new DataSource(config);
