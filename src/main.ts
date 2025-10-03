@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import * as expressModule from 'express'; // Changed import style
+import express = require('express'); // Using require syntax for CommonJS modules
 import { ExpressAdapter } from '@nestjs/platform-express';
 
 import helmet from 'helmet';
@@ -12,7 +12,7 @@ import { setupSwagger } from './common/swagger';
 import { SeedsService } from './modules/seeds/seeds.service';
 
 // Create Express instance
-const expressApp = expressModule();
+const expressApp = express();
 const adapter = new ExpressAdapter(expressApp);
 
 let app;
