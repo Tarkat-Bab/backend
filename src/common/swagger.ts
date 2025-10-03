@@ -13,13 +13,14 @@ export function setupSwagger(app: INestApplication): void {
 
   const document = SwaggerModule.createDocument(app, options);
 
-  // if (process.env.NODE_ENV === 'production') {
   document.paths = Object.fromEntries(
     Object.entries(document.paths).map(([path, pathObject]) => [
       `${path}`,
       pathObject,
     ]),
   );
-  //}
+
+  // Set up Swagger documentation at /api/docs
+  // Since we're using global prefix 'api', we need to use just 'docs' here
   SwaggerModule.setup('docs', app, document);
 }

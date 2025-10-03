@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import express from 'express';
+import * as express from 'express'; // Changed to CommonJS import style
 import { ExpressAdapter } from '@nestjs/platform-express';
 
 import helmet        from 'helmet';
@@ -12,7 +12,7 @@ import { setupSwagger } from './common/swagger';
 import { SeedsService } from './modules/seeds/seeds.service';
 
 // Create Express instance
-const expressApp = express();
+const expressApp = express(); // This will now work correctly
 const adapter = new ExpressAdapter(expressApp);
 
 let app;
