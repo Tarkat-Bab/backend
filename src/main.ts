@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import * as express from 'express'; 
+import express from 'express';  // Changed import style
 import { ExpressAdapter } from '@nestjs/platform-express';
 
 import helmet from 'helmet';
@@ -12,8 +12,8 @@ import { setupSwagger } from './common/swagger';
 import { SeedsService } from './modules/seeds/seeds.service';
 
 // Create Express instance
-const expressApp = express(); 
-const adapter = new ExpressAdapter(expressApp);
+const server = express();
+const adapter = new ExpressAdapter(server);
 
 let app;
 
@@ -65,5 +65,5 @@ if (process.env.NODE_ENV !== 'production') {
 // Export handler for serverless
 export default async function handler(req, res) {
   await bootstrap();
-  return expressApp(req, res);
+  return server(req, res);
 }
