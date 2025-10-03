@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import * as express from 'express';
+import express from 'express';  // Updated import statement
 import { ExpressAdapter } from '@nestjs/platform-express';
 
 // Create Express server
