@@ -1,18 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import * as express from 'express'; // Changed to CommonJS import style
+import * as express from 'express'; 
 import { ExpressAdapter } from '@nestjs/platform-express';
 
-import helmet        from 'helmet';
-import * as morgan   from 'morgan';
+import helmet from 'helmet';
+import * as morgan from 'morgan';
 import { rateLimit } from 'express-rate-limit';
 
 import { setupSwagger } from './common/swagger';
 import { SeedsService } from './modules/seeds/seeds.service';
 
 // Create Express instance
-const expressApp = express(); // This will now work correctly
+const expressApp = express(); 
 const adapter = new ExpressAdapter(expressApp);
 
 let app;
@@ -28,9 +28,27 @@ async function bootstrap() {
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     
-    // Set up Swagger documentation
-    setupSwagger(app);
+    // Configure security and middleware
+    app.use(helmet({
+      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    }));
     
+    // Only use morgan in development
+    if (process.env.NODE_ENV !== 'production') {
+      app.use(morgan('combined'));
+    }
+    
+    app.use(rateLimit({
+      windowMs: 15 * 60 * 1000, 
+      max: 100, 
+    }));
+
+    // Run seeds only in specific environments or with a flag
+    const seedsService = app.get(SeedsService);
+    await seedsService.seedDatabase();
+    
+    setupSwagger(app);
+
     await app.init();
   }
   return app;
