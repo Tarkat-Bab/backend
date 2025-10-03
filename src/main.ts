@@ -25,7 +25,7 @@ async function bootstrap() {
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       allowedHeaders: '*',
     });
-    // app.setGlobalPrefix('api');
+    app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     
     // Configure security and middleware
