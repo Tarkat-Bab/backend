@@ -20,7 +20,7 @@ export function setupSwagger(app: INestApplication): void {
     ]),
   );
 
-  // Set up Swagger documentation at /api/docs
-  // Since we're using global prefix 'api', we need to use just 'docs' here
+  // Set up Swagger at both paths to work with and without the global prefix
   SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('api/docs', app, document);
 }

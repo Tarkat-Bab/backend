@@ -28,9 +28,11 @@ async function bootstrap() {
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     
-    // Configure security and middleware
+    // Configure helmet with settings that allow Swagger UI to work
     app.use(helmet({
-      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' }
     }));
     
     // Only use morgan in development
