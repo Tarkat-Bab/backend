@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Injectable } from '@nestjs/common';
 //import { MediaFolders } from '../enums/media-paths.enums';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 
 @Injectable()
 export class FilesService {
