@@ -1,0 +1,213 @@
+{
+	"info": {
+		"_postman_id": "5d6d7825-b845-4bf9-a658-5b8445512839",
+		"name": "Tarket Bab API",
+		"description": "API documentation for Tarket Bab project",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25350743",
+		"_collection_link": "https://rewan-adel-7187.postman.co/workspace/Nest~f7789ee6-b0f5-476a-9d54-fcffff139dac/collection/25350743-5d6d7825-b845-4bf9-a658-5b8445512839?action=share&source=collection_link&creator=25350743"
+	},
+	"item": [
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Authentication",
+					"item": [
+						{
+							"name": "Login",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept-Language",
+										"value": "ar",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/dashboard/auth/login",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"dashboard",
+										"auth",
+										"login"
+									]
+								},
+								"description": "Authenticate user and get access token"
+							},
+							"response": []
+						},
+						{
+							"name": "Forgot Password",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept-Language",
+										"value": "ar",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"user@example.com\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/dashboard/auth/forgot-password",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"dashboard",
+										"auth",
+										"forgot-password"
+									]
+								},
+								"description": "Register a new user"
+							},
+							"response": []
+						},
+						{
+							"name": "Verify Otp",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept-Language",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"email\": \"user@gmail.com\",\r\n  \"purpose\": \"forgetPassword\",\r\n  \"otp\": \"123456\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/dashboard/auth/verify-otp",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"dashboard",
+										"auth",
+										"verify-otp"
+									]
+								},
+								"description": "Logout and invalidate token"
+							},
+							"response": []
+						},
+						{
+							"name": "Verify Otp Copy",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept-Language",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"email\": \"user@gmail.com\",\r\n  \"purpose\": \"forgetPassword\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/dashboard/auth/resend-otp",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"dashboard",
+										"auth",
+										"resend-otp"
+									]
+								},
+								"description": "Logout and invalidate token"
+							},
+							"response": []
+						},
+						{
+							"name": "Reset Password",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept-Language",
+										"value": "",
+										"type": "text"
+									},
+									{
+										"key": "Accept-Language",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"email\": \"john@gmail.com\",\r\n  \"newPassword\": \"123456R@#\",\r\n  \"confirmPassword\": \"123456@#\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/dashboard/auth/reset-password",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"dashboard",
+										"auth",
+										"reset-password"
+									]
+								},
+								"description": "Logout and invalidate token"
+							},
+							"response": []
+						}
+					],
+					"description": "Authentication related endpoints"
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}
