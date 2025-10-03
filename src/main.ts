@@ -27,6 +27,10 @@ async function bootstrap() {
     });
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    
+    // Set up Swagger documentation
+    setupSwagger(app);
+    
     await app.init();
   }
   return app;
