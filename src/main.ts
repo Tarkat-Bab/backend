@@ -1,47 +1,47 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import express from 'express';  // Updated import statement
+import express from 'express';
 import { ExpressAdapter } from '@nestjs/platform-express';
 
-// Create Express server
-const server = express();
+import helmet        from 'helmet';
+import * as morgan   from 'morgan';
+import { rateLimit } from 'express-rate-limit';
 
-// Create async bootstrap function
+import { setupSwagger } from './common/swagger';
+import { SeedsService } from './modules/seeds/seeds.service';
+
+// Create Express instance
+const expressApp = express();
+const adapter = new ExpressAdapter(expressApp);
+
+let app;
+
 async function bootstrap() {
-  const app = await NestFactory.create(
-    AppModule,
-    new ExpressAdapter(server),
-  );
-
-  app.enableCors();
-  app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe());
-
-  // For local development
-  if (process.env.NODE_ENV !== 'production') {
-    await app.listen(3000);
+  if (!app) {
+    app = await NestFactory.create(AppModule, adapter);
+    app.enableCors({
+      origin: '*',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      allowedHeaders: '*',
+    });
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    await app.init();
   }
-
   return app;
 }
 
-// Initialize the NestJS application
-let cachedApp;
-
-async function handler(req, res) {
-  if (!cachedApp) {
-    cachedApp = await bootstrap();
-    await cachedApp.init();
-  }
-
-  server(req, res);
-}
-
-// Export handler for serverless environments
-export default handler;
-
 // For local development
 if (process.env.NODE_ENV !== 'production') {
-  bootstrap();
+  bootstrap().then(app => {
+    app.listen(3000);
+    console.log('Listening on port 3000');
+  });
+}
+
+// Export handler for serverless
+export default async function handler(req, res) {
+  await bootstrap();
+  return expressApp(req, res);
 }
