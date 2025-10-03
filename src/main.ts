@@ -1,40 +1,47 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
+import { ValidationPipe } from '@nestjs/common';
+import * as express from 'express';
+import { ExpressAdapter } from '@nestjs/platform-express';
 
-import helmet        from 'helmet';
-import * as morgan   from 'morgan';
-import { rateLimit } from 'express-rate-limit';
+// Create Express server
+const server = express();
 
-import { setupSwagger } from './common/swagger';
-import { SeedsService } from './modules/seeds/seeds.service';
-
+// Create async bootstrap function
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: '*',
-  });
-
-  setupSwagger(app);
-
-  app.use(helmet());
-  app.use(morgan('combined'));
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 100,
-    }),
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(server),
   );
 
-  // if (process.env.NODE_ENV !== 'production') app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.enableCors();
+  app.setGlobalPrefix('api');
+  app.useGlobalPipes(new ValidationPipe());
 
-  const seedsService = app.get(SeedsService);
-  seedsService.seedDatabase();
+  // For local development
+  if (process.env.NODE_ENV !== 'production') {
+    await app.listen(3000);
+  }
 
-  await app.listen(process.env.PORT ?? 3000);
+  return app;
 }
-bootstrap();
+
+// Initialize the NestJS application
+let cachedApp;
+
+async function handler(req, res) {
+  if (!cachedApp) {
+    cachedApp = await bootstrap();
+    await cachedApp.init();
+  }
+
+  server(req, res);
+}
+
+// Export handler for serverless environments
+export default handler;
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  bootstrap();
+}
