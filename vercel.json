@@ -8,11 +8,23 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "src/main.ts"
+      "src": "/docs/(.*)",
+      "dest": "src/main.ts",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS"
+      }
     },
     {
       "src": "/docs",
+      "dest": "src/main.ts",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS"
+      }
+    },
+    {
+      "src": "/api/(.*)",
       "dest": "src/main.ts"
     },
     {
