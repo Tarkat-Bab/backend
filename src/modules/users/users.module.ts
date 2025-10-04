@@ -8,10 +8,14 @@ import { LocationService } from '../locations/location.service';
 import { LocationsModule } from '../locations/locations.module';
 import { TechnicalProfileEntity } from './entities/technical_profile.entity';
 import { UserFcmTokenEntity } from './entities/user-fcm-token.entity';
+import { NationaltiesModule } from '../nationalties/nationalties.module';
+import { ServicesModule } from '../services/services.module';
 
 @Module({
   imports: [
     LocationsModule,
+    NationaltiesModule,
+    ServicesModule,
     TypeOrmModule.forFeature([ UserEntity, TechnicalProfileEntity, UserFcmTokenEntity ])
   ],
   controllers: [ UsersController],

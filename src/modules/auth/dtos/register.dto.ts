@@ -63,14 +63,14 @@ export class UserRegisterDto {
   username: string;
 
   @ApiProperty({
-    required: true,
+    required: false,
     description: 'User Location (Latitude, Longitude)',
     type: CreateLocationDto
   })
-  @IsNotEmpty()
-  @ValidateNested()
+  @IsOptional()
+  // @ValidateNested()
   @Type(() => CreateLocationDto)
-  location: CreateLocationDto;
+  location?: CreateLocationDto;
 
   @ApiProperty({
     required: true,
@@ -83,17 +83,18 @@ export class UserRegisterDto {
   @IsString()
   @IsEnum([UsersTypes.USER, UsersTypes.TECHNICAL])
   type: UsersTypes;
-}
 
-export class TechnicalRegisterDto extends UserRegisterDto {
-  @ApiPropertyOptional({
+  @ApiProperty({
+    required: false,
     description: 'Profile image',
     type: 'string',
     format: 'binary',
   })
   @IsOptional()
-  image: Express.Multer.File;
+  image?: Express.Multer.File;
+}
 
+export class TechnicalRegisterDto extends UserRegisterDto {
   @ApiProperty({
     required: true,
     description: 'Selected service ID',
@@ -101,6 +102,7 @@ export class TechnicalRegisterDto extends UserRegisterDto {
     example: 1
   })
   @IsNotEmpty()
+  @Type(() => Number)
   @IsNumber()
   serviceId: number;
 
@@ -111,26 +113,25 @@ export class TechnicalRegisterDto extends UserRegisterDto {
     example: 1
   })
   @IsNotEmpty()
+  @Type(() => Number)
   @IsNumber()
   nationalityId: number;
 
   @ApiProperty({
-    required: true,
+    required: false,
     description: 'Work license image',
     type: 'string',
     format: 'binary'
   })
-  @IsNotEmpty()
   @IsOptional()
   workLicenseImage?: Express.Multer.File;
 
   @ApiProperty({
-    required: true,
+    required: false,
     description: 'Identity/ID card image',
     type: 'string',
     format: 'binary'
   })
-  @IsNotEmpty()
   @IsOptional()
   identityImage?: Express.Multer.File;
 }

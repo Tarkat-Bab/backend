@@ -25,15 +25,15 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async completeUser(registerDto: UserRegisterDto, lang?: LanguagesEnum) {
-    return await this.usersService.updateUser(registerDto, lang);
+  async completeUser(registerDto: UserRegisterDto, lang?: LanguagesEnum, image?: Express.Multer.File){ 
+    return await this.usersService.updateUser(registerDto, lang, image);
   }
 
-  async technicalCompleteRegister(registerDto: TechnicalRegisterDto, lang?: LanguagesEnum){
-    return await this.usersService.updateTechnical(registerDto, lang);
-  } 
-  
-  
+  async technicalCompleteRegister(registerDto: TechnicalRegisterDto, lang?: LanguagesEnum,image?: Express.Multer.File, workLicenseImage ?: Express.Multer.File, identityImage ?: Express.Multer.File){
+    return await this.usersService.updateTechnical(registerDto, lang, image, workLicenseImage, identityImage);
+  }
+
+
   async login(loginDto: LoginDto, lang?: LanguagesEnum) {
     const user = await this.usersService.publicLogin(loginDto, lang);
     return await this.sendPhoneOtp({

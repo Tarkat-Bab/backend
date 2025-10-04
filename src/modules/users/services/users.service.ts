@@ -14,6 +14,8 @@ import { ResetPasswordDto } from 'src/modules/auth/dtos/reset-password.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { LocationService } from 'src/modules/locations/location.service';
 import { MediaDir } from 'src/common/files/media-dir-.enum';
+import { NationaltiesService } from 'src/modules/nationalties/nationalties.service';
+import { ServicesService } from 'src/modules/services/services.service';
 
 @Injectable()
 export class UsersService {
@@ -22,7 +24,9 @@ export class UsersService {
     private readonly usersRepo: Repository<UserEntity>,
     private readonly paginatorService: PaginatorService,
     private readonly fileService: FilesService,
-    private readonly locationService: LocationService
+    private readonly locationService: LocationService,
+    private readonly nationalityService: NationaltiesService,
+    private readonly serviceService: ServicesService,
   ) {}
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
     const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: UsersTypes.USER });
@@ -139,14 +143,14 @@ export class UsersService {
     return existUser;
   }
 
-  async updateUser(registerDto: UserRegisterDto, lang?: LanguagesEnum) {
+  async updateUser(registerDto: UserRegisterDto, lang: LanguagesEnum, image?: Express.Multer.File) {
     const { phone, location } = registerDto;
     const existUser = await this.usersRepo.findOne({ where: { phone } });
    
     if (!existUser) {
-      if(lang === LanguagesEnum.ENGLISH){
+      if (lang === LanguagesEnum.ENGLISH) {
         throw new NotFoundException('User not found.');
-      } else if(lang === LanguagesEnum.ARABIC){
+      } else if (lang === LanguagesEnum.ARABIC) {
         throw new NotFoundException('المستخدم غير موجود.');
       }
     }
@@ -162,7 +166,11 @@ export class UsersService {
       dataToUpdate.latitude = coordinates.latitude;
       dataToUpdate.longitude = coordinates.longitude;
     }
-    
+
+    if (image) {
+      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
+      dataToUpdate.image = savedImage.path;
+    }
     await this.usersRepo.update({ id: existUser.id }, dataToUpdate);
     return await this.findById(existUser.id);
   }
@@ -505,7 +513,10 @@ export class UsersService {
   }
 
   async updateTechnical( registerDto: TechnicalRegisterDto,
-    lang: LanguagesEnum = LanguagesEnum.ENGLISH
+    lang: LanguagesEnum = LanguagesEnum.ENGLISH,
+    image?: Express.Multer.File,
+    workLicenseImage?: Express.Multer.File,
+    identityImage?: Express.Multer.File
   ) {
     // Verify the user exists and is a technical user
     const { phone } = registerDto;
@@ -527,40 +538,45 @@ export class UsersService {
     }
 
     // Process the profile image if provided
-
     let imagePath: string | undefined;
     let workLicensePath: string | undefined;
     let identityPath: string | undefined;
 
-    if(registerDto.image){
-      const savedImage = await this.fileService.saveFile(registerDto.image, MediaDir.PROFILES);
+    if(image){
+      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
       imagePath = savedImage.path;
     }
 
-    if (registerDto.identityImage) {
-      const savedImage = await this.fileService.saveFile(registerDto.identityImage, MediaDir.IDENTITY);
-      imagePath = savedImage.path;
+    if (identityImage) {
+      const savedImage = await this.fileService.saveFile(identityImage, MediaDir.IDENTITY);
+      identityPath = savedImage.path;
     }
 
-    if (registerDto.workLicenseImage) {
-      const savedWorkLicense = await this.fileService.saveFile(registerDto.workLicenseImage, MediaDir.WORKLICENSE);
+    if (workLicenseImage) {
+      const savedWorkLicense = await this.fileService.saveFile(workLicenseImage, MediaDir.WORKLICENSE);
       workLicensePath = savedWorkLicense.path;
     }
-    // Create technical profile if it doesn't exist
-    if (!user.technicalProfile) {
-      const technicalProfile = new TechnicalProfileEntity();
-      technicalProfile.user = user;
-      user.technicalProfile = technicalProfile;
-    }
+    // // Create technical profile if it doesn't exist
+    // if (!user.technicalProfile) {
+    //   const technicalProfile = new TechnicalProfileEntity();
+    //   technicalProfile.user = user;
+    //   user.technicalProfile = technicalProfile;
+    // }
 
     // Update basic user data
     if (user.username) user.username = user.username;
     if (user.phone) user.phone = user.phone;
     if (imagePath) user.image = imagePath;
 
-    // Update technical profile data
-    // user.technicalProfile.nationality = registerDto.nationalityId;
-    // user.technicalProfile.service_provided = user.service_provided;
+    const nationality = await this.nationalityService.findOne(registerDto.nationalityId, lang);
+    user.technicalProfile.nationality = nationality;
+
+    const service = await this.serviceService.findOne(registerDto.serviceId, lang);
+    if (!user.technicalProfile.services) {
+      user.technicalProfile.services = [];
+    }
+    user.technicalProfile.services.push(service);
+
     user.technicalProfile.workLicenseImage = workLicensePath;
     user.technicalProfile.identityImage = identityPath;
 
@@ -575,8 +591,13 @@ export class UsersService {
 
     // Save changes
     const updatedUser = await this.usersRepo.save(user);
-    
-    // Return updated user without sensitive information
+
+    // Remove circular references before returning
+    if (updatedUser.technicalProfile) {
+      // Remove the user property from technicalProfile to avoid circular JSON
+      updatedUser.technicalProfile.user = undefined;
+    }
+
     const { password, ...result } = updatedUser;
     return result;
   }
