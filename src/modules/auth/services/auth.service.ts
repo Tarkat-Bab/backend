@@ -26,11 +26,14 @@ export class AuthService {
   ) {}
 
   async completeUser(registerDto: UserRegisterDto, lang?: LanguagesEnum, image?: Express.Multer.File){ 
-    return await this.usersService.updateUser(registerDto, lang, image);
+    const user = await this.usersService.updateUser(registerDto, lang, image);
+    return { token: await this.createToken(user as UserEntity) };
+  
   }
 
   async technicalCompleteRegister(registerDto: TechnicalRegisterDto, lang?: LanguagesEnum,image?: Express.Multer.File, workLicenseImage ?: Express.Multer.File, identityImage ?: Express.Multer.File){
-    return await this.usersService.updateTechnical(registerDto, lang, image, workLicenseImage, identityImage);
+    const user =  await this.usersService.updateTechnical(registerDto, lang, image, workLicenseImage, identityImage);
+    return { token: await this.createToken(user as UserEntity) };
   }
 
 
@@ -46,11 +49,6 @@ export class AuthService {
 
     await this.otpService.verifyPhoneOtp(verifyPhoneOtpDto, lang);
     await this.usersService.changeUserStatus(user.id, UserStatus.ACTIVE);
-
-    if(verifyPhoneOtpDto.purpose === OtpPurpose.Register) { // Changed from OtpPurpose.Login to OtpPurpose.Login
-      return { token: await this.createToken(user as UserEntity) };
-    }
-
     return { msg: 'Valid OTP' };
   }
 
