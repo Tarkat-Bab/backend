@@ -75,7 +75,7 @@ export class AuthService {
   }
 
   async verifyEmailOtp(verifyEmailOtpDto: verifyEmailOtpDto, lang?: LanguagesEnum) {
-    const user = await this.usersService.findByEmail(verifyEmailOtpDto.email, lang, UserStatus.UNVERIFIED);
+    const user = await this.usersService.findByEmail(verifyEmailOtpDto.email, lang);
 
     await this.otpService.verifyEmailOtp(verifyEmailOtpDto, lang);
     await this.usersService.changeUserStatus(user.id, UserStatus.ACTIVE);
