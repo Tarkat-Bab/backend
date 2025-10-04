@@ -20,7 +20,12 @@ export function setupSwagger(app: INestApplication): void {
     ]),
   );
 
-  // Set up Swagger at both paths to work with and without the global prefix
-  SwaggerModule.setup('docs', app, document);
-  SwaggerModule.setup('api/docs', app, document);
+  // Serve Swagger UI at /api/docs and ensure asset paths are correct for Vercel
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'Tarket Bab Api Docs',
+    swaggerOptions: {
+      // Ensures the UI loads assets from the correct path
+      url: '/api/docs-json',
+    },
+  });
 }
