@@ -340,7 +340,6 @@ export class UsersService {
       where: {
         email: email,
         deleted: false,
-        status: status ? status : In([UserStatus.UNVERIFIED, UserStatus.ACTIVE])
       },
       select:{ id: true, email: true, password: true, type: true, status: true, username: true }
     });
@@ -351,6 +350,15 @@ export class UsersService {
       } else if(lang === LanguagesEnum.ARABIC){
          throw new NotFoundException('البريد الإلكتروني غير صحيح.');
       }
+      }
+
+      if( user && status && user.status === UserStatus.BLOCKED ){
+        if(lang === LanguagesEnum.ENGLISH){
+          throw new UnauthorizedException('Your account has been blocked, please contact support.');
+        }
+        else if(lang === LanguagesEnum.ARABIC){
+          throw new UnauthorizedException('تم حظر حسابك، يرجى الاتصال بالدعم.');
+        }
       }
     return user;
   }
