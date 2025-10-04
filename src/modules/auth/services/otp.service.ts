@@ -105,7 +105,7 @@ export class OtpService {
     const templates = {
       [OtpPurpose.Register]: {
         template: 'registration',
-        subject: 'Sigun up',
+        subject: 'Registration Verification',
         context: { email, code, name, lang },
       },
 
@@ -114,6 +114,7 @@ export class OtpService {
         subject:  'Reset Password',
         context: { email, code, name, lang },
       },
+
 
     };
 

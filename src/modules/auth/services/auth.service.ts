@@ -45,8 +45,12 @@ export class AuthService {
 
   async adminLogin(loginDto: AdminLoginDto, lang?: LanguagesEnum) {
     const user = await this.usersService.adminLogin(loginDto, lang);
-    return { token: await this.createToken(user as UserEntity) };
+    return await this.sendOtp({
+      email: user.email,
+      purpose: OtpPurpose.Register,
+    },  user.username, lang);
   }
+    // return { token: await this.createToken(user as UserEntity) };
 
   async forgetAdminPassword(forgetPasswordDto: ForgetAdminPasswordDto, lang?: LanguagesEnum) {
     const user = await this.usersService.findByEmail(forgetPasswordDto.email, lang, UserStatus.ACTIVE);
@@ -64,6 +68,10 @@ export class AuthService {
 
     await this.otpService.verifyEmailOtp(verifyEmailOtpDto, lang);
     await this.usersService.changeUserStatus(user.id, UserStatus.ACTIVE);
+
+    if(verifyEmailOtpDto.purpose === OtpPurpose.Register) { // Changed from OtpPurpose.Login to OtpPurpose.Login
+      return { token: await this.createToken(user as UserEntity) };
+    }
 
     return { msg: 'Valid OTP' };
   }

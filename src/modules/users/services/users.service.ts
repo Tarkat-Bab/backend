@@ -57,6 +57,8 @@ export class UsersService {
 
   async adminLogin(loginDto: AdminLoginDto, lang: LanguagesEnum) {
     const { email, password } = loginDto;
+    const hashPassword = await hash(password, 10);
+    console.log('Hashed Password:', hashPassword); // Debugging line to check hashed password
     const existUser = await this.usersRepo.findOne({
       where: {
         email,
