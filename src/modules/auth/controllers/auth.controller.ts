@@ -28,6 +28,7 @@ export class AuthController {
     required: false,
   })
   async registerUser(@Body() registerDto: UserRegisterDto, @Language() lang: LanguagesEnum) {
+   
     return await this.authService.register(registerDto, lang);
   }
   
