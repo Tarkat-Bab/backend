@@ -20,12 +20,15 @@ export function setupSwagger(app: INestApplication): void {
     ]),
   );
 
-  // Serve Swagger UI at /api/docs and ensure asset paths are correct for Vercel
-  SwaggerModule.setup('api/docs', app, document, {
-    customSiteTitle: 'Tarket Bab Api Docs',
-    swaggerOptions: {
-      // Ensures the UI loads assets from the correct path
-      url: '/api/docs-json',
-    },
-  });
+ SwaggerModule.setup('api/docs', app, document, {
+  customSiteTitle: 'Tarket Bab Api Docs',
+  swaggerOptions: {
+    url: '/api/docs-json',
+  },
+  customCssUrl: 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css',
+  customJs: [
+    'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js',
+    'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js',
+  ],
+});
 }
