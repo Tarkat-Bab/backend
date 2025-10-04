@@ -6,14 +6,15 @@ import { UsersService } from '../../users/services/users.service';
 import { OtpService   } from './otp.service';
 
 import { OtpPurpose        } from '../enums/otp.purpose.enum';
-import { verifyEmailOtpDto      } from '../dtos/verify-otp.dto';
+import { verifyEmailOtpDto, verifyPhoneOtpDto      } from '../dtos/verify-otp.dto';
 import { RegisterDto, TechnicalRegisterDto, UserRegisterDto       } from '../dtos/register.dto';
 import { AdminLoginDto, LoginDto          } from '../dtos/login.dto';
 import { SendEmailOtpDto        } from '../dtos/send-otp-dto';
 import { ForgetAdminPasswordDto, ForgetPasswordDto } from '../dtos/forgot-password-dto';
 import { ResetPasswordDto  } from '../dtos/reset-password.dto';
-import { UserStatus } from 'src/common/enums/users.enum';
+import { UserStatus, UsersTypes } from 'src/common/enums/users.enum';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
+import { SendPhoneOtpDto } from '../dtos/send-phone-otp-dto';
 
 
 @Injectable()
@@ -24,13 +25,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(registerDto: UserRegisterDto, lang?: LanguagesEnum) {
-    const user = await this.usersService.createUser(registerDto, lang);
-
-    return await this.sendOtp({
-      email: user.email,
-      purpose: OtpPurpose.Register,
-    },  user.username, lang);
+  async completeUser(registerDto: UserRegisterDto, lang?: LanguagesEnum) {
+    return await this.usersService.updateUser(registerDto, lang);
   }
 
   async technicalCompleteRegister(registerDto: TechnicalRegisterDto, lang?: LanguagesEnum){
@@ -40,7 +36,22 @@ export class AuthService {
   
   async login(loginDto: LoginDto, lang?: LanguagesEnum) {
     const user = await this.usersService.publicLogin(loginDto, lang);
-    return { token: await this.createToken(user as UserEntity) };
+    return await this.sendPhoneOtp({
+      phone: user.phone,
+    },  lang);
+  }
+
+    async verifyPhoneOtp(verifyPhoneOtpDto: verifyPhoneOtpDto, lang?: LanguagesEnum) {
+    const user = await this.usersService.checkUserExist({email:null,  phone: verifyPhoneOtpDto.phone });
+
+    await this.otpService.verifyPhoneOtp(verifyPhoneOtpDto, lang);
+    await this.usersService.changeUserStatus(user.id, UserStatus.ACTIVE);
+
+    if(verifyPhoneOtpDto.purpose === OtpPurpose.Register) { // Changed from OtpPurpose.Login to OtpPurpose.Login
+      return { token: await this.createToken(user as UserEntity) };
+    }
+
+    return { msg: 'Valid OTP' };
   }
 
   async adminLogin(loginDto: AdminLoginDto, lang?: LanguagesEnum) {
@@ -109,6 +120,17 @@ export class AuthService {
     return { msg: 'Verification code is sent.'};
   }
 
+  public async sendPhoneOtp(SendPhoneOtpDto: SendPhoneOtpDto, lang?: LanguagesEnum) {
+    await this.otpService.sendPhoneOtp(
+      { phone: SendPhoneOtpDto.phone },
+      lang,
+    );
+    if (lang === LanguagesEnum.ARABIC) {
+      return { msg: 'تم إرسال رمز التحقق.' };
+    }
+    return { msg: 'Verification code is sent.' };
+  }
+
   public async resendOtp(resendOtp: SendEmailOtpDto, lang?: LanguagesEnum) {
     await this.otpService.clearCache(resendOtp.email, resendOtp.purpose);
     const user = await this.usersService.findByEmail(resendOtp.email, lang, UserStatus.UNVERIFIED);
@@ -116,16 +138,19 @@ export class AuthService {
   }
 
   public async createToken(user: UserEntity): Promise<any> {
-    const { id, email, type } = user;
+    const { id, email, type, phone } = user;
+    if(type === UsersTypes.ADMIN){
+      return this.jwtService.signAsync({
+        id,
+        email,
+        type
+      });
+    }
+
     return this.jwtService.signAsync({
-      id,
-      email,
-      type
-    });
+        id,
+        phone,
+        type
+      });
   }
-
-  async oAuthRegister(user){
-    return await this.usersService.oAuthRegister(user);
-  }
-
 }

@@ -11,7 +11,6 @@ import { AuthService } from './services/auth.service';
 import { AuthGuard }   from './guards/auth.guards';
 import { OtpService }  from './services/otp.service';
 import { EmailModule } from '../mailer/mailer.module';
-import { OauthService } from './services/oAuth.service';
 
 @Module({
   imports: [
@@ -34,7 +33,6 @@ import { OauthService } from './services/oAuth.service';
   providers: [
     AuthService,
     OtpService,
-    OauthService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,

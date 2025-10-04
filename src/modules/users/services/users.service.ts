@@ -24,24 +24,25 @@ export class UsersService {
     private readonly fileService: FilesService,
     private readonly locationService: LocationService
   ) {}
-  async createUser(registerDto: UserRegisterDto, lang: LanguagesEnum) {
-    const { phone, location } = registerDto;
-    
-    await this.checkUserExist({ email: null, phone, type: UsersTypes.USER }, lang);
-    
+  async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
+    const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: UsersTypes.USER });
+    if(existingUser){
+      return;
+    }
+
     // Prepare user data
     const userData: any = {
-      ...registerDto,
+      ...loginDto,
       lastLoginAt: new Date(),
       status: UserStatus.UNVERIFIED
     };
     
     // Add location data if provided
-    if (location) {
-      const { latitude, longitude } = location;
-      userData.latitude = latitude;
-      userData.longitude = longitude;
-    }
+    // if (location) {
+    //   const { latitude, longitude } = location;
+    //   userData.latitude = latitude;
+    //   userData.longitude = longitude;
+    // }
 
     const newUser = this.usersRepo.create(userData);
     
@@ -119,11 +120,7 @@ export class UsersService {
     })
 
     if (!existUser){
-      if(lang === LanguagesEnum.ENGLISH){
-         throw new BadRequestException('Invalid phone number.');
-      } else if(lang === LanguagesEnum.ARABIC){
-         throw new BadRequestException('رقم الهاتف غير صحيح.');
-      }
+      return await this.createUser({ phone, type: UsersTypes.USER }, lang);
     }
 
     if(existUser.status === UserStatus.BLOCKED){
@@ -133,13 +130,6 @@ export class UsersService {
         throw new UnauthorizedException('تم حظر حسابك، يرجى الاتصال بالدعم.');
       }
 
-    } else if(existUser.status === UserStatus.UNVERIFIED){
-      if(lang === LanguagesEnum.ENGLISH){
-        throw new UnauthorizedException('Your account is not verified, please verify your account.');
-      }
-      else if(lang === LanguagesEnum.ARABIC){
-        throw new UnauthorizedException('حسابك غير مفعل، يرجى تفعيل حسابك.');
-      } 
     }
     await this.usersRepo.update(
       { id: existUser.id },
@@ -149,6 +139,34 @@ export class UsersService {
     return existUser;
   }
 
+  async updateUser(registerDto: UserRegisterDto, lang?: LanguagesEnum) {
+    const { phone, location } = registerDto;
+    const existUser = await this.usersRepo.findOne({ where: { phone } });
+   
+    if (!existUser) {
+      if(lang === LanguagesEnum.ENGLISH){
+        throw new NotFoundException('User not found.');
+      } else if(lang === LanguagesEnum.ARABIC){
+        throw new NotFoundException('المستخدم غير موجود.');
+      }
+    }
+
+    // Create a new object without the location property
+    const { location: _, ...rest } = registerDto;
+    const dataToUpdate: any = { ...rest };
+    
+    // Add coordinates if location is provided
+    if (location) {
+      const { latitude, longitude } = location;
+      const coordinates = await this.locationService.createPoint(latitude, longitude);
+      dataToUpdate.latitude = coordinates.latitude;
+      dataToUpdate.longitude = coordinates.longitude;
+    }
+    
+    await this.usersRepo.update({ id: existUser.id }, dataToUpdate);
+    return await this.findById(existUser.id);
+  }
+  
   async list(filter: any, userId: number ) {
     const {
       page ,
@@ -255,22 +273,19 @@ export class UsersService {
     return true;
   }
 
-
-
   async checkUserExist(
     dto: {
       email?: string | null;
       phone: string | null;
-      type: UsersTypes;
+      type?: UsersTypes;
     },
-    lang: LanguagesEnum ,
-  ): Promise<void> {
+  ) {
 
-    const { email, phone, type } = dto;
+    let { email, phone, type } = dto;
     
     // Build where conditions based on available data
     const whereConditions = [];
-    
+    type? type : In([UsersTypes.USER, UsersTypes.TECHNICAL]);
     if (email) {
       whereConditions.push({ email, type });
     }
@@ -280,7 +295,7 @@ export class UsersService {
     }
     
     if (whereConditions.length === 0) {
-      return; // Nothing to check
+      return;
     }
     
     const existingUser = await this.usersRepo.findOne({
@@ -289,11 +304,7 @@ export class UsersService {
     });
     
     if (existingUser) {
-      if (lang === LanguagesEnum.ENGLISH) {
-        throw new BadRequestException('User already exists with this email or phone');
-      } else {
-        throw new BadRequestException('المستخدم موجود بالفعل بواسطة البريد الإلكتروني أو الهاتف');
-      }
+      return existingUser;
     }
 
     return;
@@ -363,6 +374,8 @@ export class UsersService {
           email: true,
           lastLoginAt: true,
           image: true,
+          latitude: true,
+          longitude :true
         },
       });
     }catch(error){

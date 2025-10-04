@@ -24,3 +24,35 @@ export class verifyEmailOtpDto extends SendEmailOtpDto{
   @IsString()
   purpose: OtpPurpose;
 }
+
+export class verifyPhoneOtpDto {
+  @ApiProperty({
+    required: true,
+    description: 'phone number',
+    example: '+966501234567',
+    type: String,
+  })
+  @IsNotEmpty()
+  @IsString()
+  phone: string;
+
+  @ApiProperty({
+    required: true,
+    description: 'otp code',
+    example: '123456',
+    type: String,
+  })
+  @IsNotEmpty()
+  @IsString()
+  otp: string;
+
+  @ApiProperty({
+    required: true,
+    description: 'otp purpose', 
+    example: OtpPurpose.Register,
+    type: String,
+  })
+  @IsNotEmpty()
+  @IsString()
+  purpose: OtpPurpose;
+}

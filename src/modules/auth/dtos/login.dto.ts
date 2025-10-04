@@ -1,18 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString } from 'class-validator';
 import { UsersTypes } from 'src/common/enums/users.enum';
 
 export class LoginDto {
   @ApiProperty({
     required: true,
-    description: 'Email',
+    description: 'Phone number',
     type: String,
-    example: 'user@gmail.comn',
+    example: '0123456789',
   })
   @IsNotEmpty()
-  @IsEmail()
+  @IsString()
   @Transform(({ value }) => value.toLowerCase())
+  @IsPhoneNumber(null, { message: 'Please provide a valid phone number in international format' })
   phone: string;
 
   @ApiProperty({

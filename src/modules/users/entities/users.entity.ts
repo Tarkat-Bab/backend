@@ -16,19 +16,19 @@ import { UserFcmTokenEntity } from './user-fcm-token.entity';
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
-  @Column({ length: 50 })
+  @Column({ length: 50, nullable: true })
   username: string;
 
   @Column({type: 'varchar', length: 20, nullable: true })
   phone: string;
 
-  @Column({type: 'varchar', length: 100, unique: true })
+  @Column({type: 'varchar', length: 100, unique: true, nullable: true  })
   email: string;
 
   @Column({ type: 'varchar', enum: UserStatus, default: UserStatus.UNVERIFIED })
   status: UserStatus;
-  
-  @Column({ type: 'enum', enum: UsersTypes, nullable: true})
+
+  @Column({ type: 'enum', enum: UsersTypes, nullable: true })
   type: UsersTypes;
 
   @Column({ type: 'text', nullable: true })

@@ -1,4 +1,4 @@
-import { AfterLoad, Column, Entity, OneToMany, OneToOne } from "typeorm";
+import { AfterLoad, Column, Entity, JoinColumn, OneToMany, OneToOne } from "typeorm";
 import { UserEntity } from "./users.entity";
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
 import { MediaDir } from "src/common/files/media-dir-.enum";
@@ -8,6 +8,7 @@ import { join } from "path";
 @Entity('technical_profiles')
 export class TechnicalProfileEntity extends BaseEntity {
     @OneToOne(() => UserEntity, user => user.technicalProfile, {  onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'user_id' })
     user: UserEntity;
 
     @Column({ type: 'text', nullable: true })

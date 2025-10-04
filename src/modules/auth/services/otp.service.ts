@@ -5,7 +5,7 @@ import * as crypto from 'crypto';
 import { OtpPurpose     } from '../enums/otp.purpose.enum';
 import { EmailService   } from '../../../modules/mailer/mailer.service';
 import { CachedOtpType  } from '../types/cached-otp.interface';
-import { verifyEmailOtpDto   } from '../dtos/verify-otp.dto';
+import { verifyEmailOtpDto, verifyPhoneOtpDto   } from '../dtos/verify-otp.dto';
 import { userDetailsDto } from '../dtos/user-details-dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
@@ -43,6 +43,24 @@ export class OtpService {
     return code;
   }
 
+  async sendPhoneOtp(userDetails: { phone: string }, lang?: LanguagesEnum): Promise<string> {
+    const code =
+      process.env.NODE_ENV === 'development'
+        ? this.DEV_OTP_CODE
+        : this.generateCode();
+
+      const key = this.buildCacheKey(
+      userDetails.phone, OtpPurpose.Register);
+      await this.cacheManager.set<CachedOtpType>(
+      key,
+      { userDetails, otp: code },
+      this.OTP_EXPIRATION_MS,
+    );
+    // Here you would typically integrate with an SMS service to send the OTP to the user's phone.
+    console.log(`Sending OTP ${code} to phone number ${userDetails.phone}`);
+    return code;
+  }
+
   /**
    * Verify OTP entered by the user
    */
@@ -61,6 +79,29 @@ export class OtpService {
     }
   
     if (payload.otp !== verifyEmailOtpDto.otp) {
+      if (lang === LanguagesEnum.ARABIC) {
+        throw new BadRequestException('رمز التحقق OTP غير صالح.');
+      }
+      throw new BadRequestException('Invalid OTP.');
+    }
+    return true;
+  }
+
+   async verifyPhoneOtp(verifyPhoneOtpDto: verifyPhoneOtpDto, lang?: LanguagesEnum): Promise<boolean> {
+    const key = this.buildCacheKey(verifyPhoneOtpDto.phone, verifyPhoneOtpDto.purpose);
+    console.log(`OTP cache key: ${key}, Verify OTP Function`);
+
+    const payload = await this.cacheManager.get<CachedOtpType>(key);
+    
+    if (!payload) {
+      if (lang === LanguagesEnum.ARABIC) {
+        throw new BadRequestException('انتهت صلاحية رمز التحقق OTP.');
+      }
+
+      throw new BadRequestException('OTP is expired.');
+    }
+  
+    if (payload.otp !== verifyPhoneOtpDto.otp) {
       if (lang === LanguagesEnum.ARABIC) {
         throw new BadRequestException('رمز التحقق OTP غير صالح.');
       }
