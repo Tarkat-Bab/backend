@@ -12,8 +12,15 @@ export class NationaltiesService {
     ) { }
 
 
-    async findAll(): Promise<NationalityEntity[]> {
-        return await this.nationalityRepo.find();
+    async findAll(lang: LanguagesEnum): Promise<NationalityEntity[]> {
+        return await this.nationalityRepo.find( {
+                select: {
+                    id: true,
+                    enName: lang === LanguagesEnum.ENGLISH ? true : false,
+                    arName: lang === LanguagesEnum.ARABIC ? true : false
+                },
+                order: { id: 'ASC' }
+            });
     }
 
     async findOne(id: number, lang: LanguagesEnum){
