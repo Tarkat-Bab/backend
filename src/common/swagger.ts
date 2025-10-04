@@ -1,15 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { join } from 'path';
-import * as express from 'express';
 
 export function setupSwagger(app: INestApplication): void {
-  // Serve Swagger UI static files
-  app.use(
-    '/api/docs',
-    express.static(join(process.cwd(), 'node_modules/swagger-ui-dist')),
-  );
-
   const options = new DocumentBuilder()
     .setTitle('Tarket Bab Api')
     .setDescription(
@@ -21,15 +13,19 @@ export function setupSwagger(app: INestApplication): void {
 
   const document = SwaggerModule.createDocument(app, options);
 
+  document.paths = Object.fromEntries(
+    Object.entries(document.paths).map(([path, pathObject]) => [
+      `${path}`,
+      pathObject,
+    ]),
+  );
+
+  // Serve Swagger UI at /api/docs and ensure asset paths are correct for Vercel
   SwaggerModule.setup('api/docs', app, document, {
     customSiteTitle: 'Tarket Bab Api Docs',
-    customJs: [
-      '/api/docs/swagger-ui-bundle.js',
-      '/api/docs/swagger-ui-standalone-preset.js',
-    ],
-    customCssUrl: '/api/docs/swagger-ui.css',
     swaggerOptions: {
-      persistAuthorization: true,
+      // Ensures the UI loads assets from the correct path
+      url: '/api/docs-json',
     },
   });
 }
