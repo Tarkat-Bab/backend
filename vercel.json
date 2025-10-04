@@ -8,7 +8,7 @@
   ],
   "routes": [
     {
-      "src": "/docs/(.*)",
+      "src": "/api/(.*)",
       "dest": "src/main.ts"
     },
     {
@@ -22,22 +22,6 @@
     {
       "src": "/(.*)",
       "dest": "src/main.ts"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/docs/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,POST,PUT,DELETE" }
-      ]
-    },
-    {
-      "source": "/api/docs/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,POST,PUT,DELETE" }
-      ]
     }
   ]
 }
