@@ -11,9 +11,9 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
 @Injectable()
 export class OtpService {
-  private readonly OTP_DIGITS = 6;
+  private readonly OTP_DIGITS = 5;
   private readonly OTP_EXPIRATION_MS = 2 * 60 * 1000; // 2 minutes
-  private readonly DEV_OTP_CODE = '123456';
+  private readonly DEV_OTP_CODE = '12345';
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,

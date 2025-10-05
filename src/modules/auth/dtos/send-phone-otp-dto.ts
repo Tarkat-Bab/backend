@@ -6,7 +6,7 @@ export class SendPhoneOtpDto{
     @ApiProperty({
         description: 'user phone',
         type: String,
-        example: '1234567890',
+        example: '+966501234567',
     })
     @IsNotEmpty()
     @IsString()
