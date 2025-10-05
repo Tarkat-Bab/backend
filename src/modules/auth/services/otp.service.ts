@@ -44,11 +44,11 @@ export class OtpService {
   }
 
   async sendPhoneOtp(userDetails: { phone: string }, lang?: LanguagesEnum): Promise<string> {
-    const code =
-      process.env.NODE_ENV === 'development'
-        ? this.DEV_OTP_CODE
-        : this.generateCode();
-
+    // const code =
+    //   process.env.NODE_ENV === 'development'
+    //     ? this.DEV_OTP_CODE
+    //     : this.generateCode();
+      const code = this.DEV_OTP_CODE;
       const key = this.buildCacheKey(
       userDetails.phone, OtpPurpose.Register);
       await this.cacheManager.set<CachedOtpType>(
