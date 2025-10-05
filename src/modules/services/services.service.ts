@@ -17,7 +17,8 @@ export class ServicesService {
                 select: {
                     id: true,
                     enName: lang === LanguagesEnum.ENGLISH ? true : false,
-                    arName: lang === LanguagesEnum.ARABIC ? true : false
+                    arName: lang === LanguagesEnum.ARABIC ? true : false,
+                    icone: true,
                 },
                 order: { id: 'ASC' }
             }
