@@ -57,10 +57,11 @@ export class AuthService {
     await this.usersService.changeUserStatus(user.id, UserStatus.ACTIVE);
 
     let token = null;
-    if(verifyPhoneOtpDto.newUser){
+    if(!verifyPhoneOtpDto.newUser){
       token = await this.createToken(user as UserEntity);
     }
-    return { msg: 'Valid OTP', token };
+    const message = lang === LanguagesEnum.ARABIC ? 'رمز التحقق صالح' : 'Valid OTP';
+    return { msg: message, token };
   }
 
   async adminLogin(loginDto: AdminLoginDto, lang?: LanguagesEnum) {
@@ -92,8 +93,8 @@ export class AuthService {
     if(verifyEmailOtpDto.purpose === OtpPurpose.Register) { // Changed from OtpPurpose.Login to OtpPurpose.Login
       return { token: await this.createToken(user as UserEntity) };
     }
-
-    return { msg: 'Valid OTP' };
+    const message = lang === LanguagesEnum.ARABIC ? 'رمز التحقق صالح' : 'Valid OTP';
+    return { msg: message };
   }
 
   public async resetPassword(resetPasswordDto: ResetPasswordDto, lang?: LanguagesEnum) {
