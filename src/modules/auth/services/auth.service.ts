@@ -38,10 +38,16 @@ export class AuthService {
 
 
   async login(loginDto: LoginDto, lang?: LanguagesEnum) {
-    const user = await this.usersService.publicLogin(loginDto, lang);
-    return await this.sendPhoneOtp({
+    const {user, newUser} = await this.usersService.publicLogin(loginDto, lang);
+    const otpResponse = await this.sendPhoneOtp({
       phone: user.phone,
     },  lang);
+
+    return {
+      newUser,
+      otpResponse: otpResponse.msg
+    };
+
   }
 
     async verifyPhoneOtp(verifyPhoneOtpDto: verifyPhoneOtpDto, lang?: LanguagesEnum) {
@@ -49,7 +55,12 @@ export class AuthService {
 
     await this.otpService.verifyPhoneOtp(verifyPhoneOtpDto, lang);
     await this.usersService.changeUserStatus(user.id, UserStatus.ACTIVE);
-    return { msg: 'Valid OTP' };
+
+    let token = null;
+    if(verifyPhoneOtpDto.newUser){
+      token = await this.createToken(user as UserEntity);
+    }
+    return { msg: 'Valid OTP', token };
   }
 
   async adminLogin(loginDto: AdminLoginDto, lang?: LanguagesEnum) {

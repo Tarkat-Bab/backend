@@ -124,7 +124,10 @@ export class UsersService {
     })
 
     if (!existUser){
-      return await this.createUser({ phone, type: UsersTypes.USER }, lang);
+      return {
+        user: await this.createUser({ phone, type: UsersTypes.USER }, lang),
+        newUser: true
+      }
     }
 
     if(existUser.status === UserStatus.BLOCKED){
@@ -140,7 +143,10 @@ export class UsersService {
       { lastLoginAt: new Date() },
     );
 
-    return existUser;
+    return {
+      user: existUser,
+      newUser: false
+    }
   }
 
   async updateUser(registerDto: UserRegisterDto, lang: LanguagesEnum, image?: Express.Multer.File) {

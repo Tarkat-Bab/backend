@@ -8,7 +8,7 @@ export class LoginDto {
     required: true,
     description: 'Phone number',
     type: String,
-    example: '0123456789',
+    example: '+966501234567',
   })
   @IsNotEmpty()
   @IsString()

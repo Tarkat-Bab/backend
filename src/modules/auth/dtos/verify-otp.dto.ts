@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {  IsNotEmpty, IsString } from 'class-validator';
+import {  IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 import { SendEmailOtpDto } from './send-otp-dto';
 import { OtpPurpose } from '../enums/otp.purpose.enum';
+import { Transform } from 'class-transformer';
 
 export class verifyEmailOtpDto extends SendEmailOtpDto{
   @ApiProperty({
@@ -55,4 +56,16 @@ export class verifyPhoneOtpDto {
   @IsNotEmpty()
   @IsString()
   purpose: OtpPurpose;
+
+  
+  @ApiProperty({
+    required: false,
+    description: 'Indicates if the user is new or existing',
+    type: Boolean,
+    example: true,
+  })
+  @IsNotEmpty()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  newUser?: boolean; 
 }
