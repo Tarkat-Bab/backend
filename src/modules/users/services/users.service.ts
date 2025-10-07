@@ -16,6 +16,7 @@ import { LocationService } from 'src/modules/locations/location.service';
 import { MediaDir } from 'src/common/files/media-dir-.enum';
 import { NationaltiesService } from 'src/modules/nationalties/nationalties.service';
 import { ServicesService } from 'src/modules/services/services.service';
+import { FilterUsersDto } from '../dtos/filter-user-dto';
 
 @Injectable()
 export class UsersService {
@@ -181,78 +182,44 @@ export class UsersService {
     return await this.findById(existUser.id);
   }
   
-  async list(filter: any, userId: number ) {
+  async list(filter: FilterUsersDto, lang: LanguagesEnum) {
     const {
-      page ,
+      page,
       limit,
-      email,
-      phone,
-      active,
-      type,
-      createdAt,
-      lastLoginAt,
-      sortBy,
-      sortOrder,
+      username,
+      type
     } = filter;
     const take = limit ?? 20;
     const skip = ((page ?? 1) - 1) * take;
 
     const query = this.usersRepo
       .createQueryBuilder('u')
-      .leftJoinAndSelect('u.parent', 'p')
-      .leftJoinAndSelect('u.governorate', 'g')
+      .where('u.deleted = :deleted', { deleted: false })
+      .andWhere('u.type = :type', { type })
       .select([
         'u.id',
-        'u.firstName',
-        'u.middleName',
-        'u.lastName',
-        'u.',
-        'u.parent',
-        'p.name',
-        'p.job',
-        'g.arName',
-        'u.type',
-        'u.email',
-        'u.phone',
-        'u.active',
+        'u.username',
+        'u.image',
         'u.createdAt',
-        'u.lastLoginAt',
-      ])
-      .where('u.deleted=false');
+      ]);
 
-    if (email) query.andWhere('u.email ILIKE :email', { email: `%${email}%` });
-    if (phone) query.andWhere('u.phone ILIKE :phone', { phone: `%${phone}%` });
-
-    if (active !== undefined)
-      query.andWhere('u.active = :active', { active });
-
-    if( type !== undefined  ){
-      query.andWhere('u.type = :type', { type });
+    if (type === UsersTypes.TECHNICAL) {
+      query
+        .leftJoinAndSelect('u.technicalProfile', 'tech')
+        .addSelect(['tech.id', 'tech.avgRating', ]);
     }
 
-    if (createdAt) {
-      const [year, month, day] = createdAt.split('-').map(Number);
-      const createdFrom = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 00:00:00`;
-      const createdTo = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 23:59:59`;
-      query.andWhere(
-        'u.createdAt >= :createdFrom And u.createdAt < :createdTo',
-        { createdFrom, createdTo },
-      );
+    if (username) {
+      query.andWhere('u.username ILIKE :username', { username: `%${username}%` });
     }
 
-    if (lastLoginAt) {
-      const [year, month, day] = lastLoginAt.split('-').map(Number);
-      const lastLoginFrom = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 00:00:00`;
-      const lastLoginTo = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 23:59:59`;
-      query.andWhere(
-        'u.lastLoginAt >= :lastLoginFrom And u.lastLoginAt < :lastLoginTo',
-        { lastLoginFrom, lastLoginTo },
-      );
-    }
 
-    query.limit(take).offset(skip).orderBy(`u.${sortBy}`, sortOrder);
+    query
+      .take(take)
+      .skip(skip)
+      .orderBy('u.createdAt', 'ASC');
 
-    const [result, total] = await query.andWhere('u.id != :id', { id: userId }).getManyAndCount();
+    const [result, total] = await query.getManyAndCount();
     return this.paginatorService.makePaginate(result, total, take, page);
   }  
 

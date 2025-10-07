@@ -10,12 +10,14 @@ import { TechnicalProfileEntity } from './entities/technical_profile.entity';
 import { UserFcmTokenEntity } from './entities/user-fcm-token.entity';
 import { NationaltiesModule } from '../nationalties/nationalties.module';
 import { ServicesModule } from '../services/services.module';
+import { PaginatorModule } from 'src/common/paginator/paginator.module';
 
 @Module({
   imports: [
     LocationsModule,
     NationaltiesModule,
     ServicesModule,
+    PaginatorModule,
     TypeOrmModule.forFeature([ UserEntity, TechnicalProfileEntity, UserFcmTokenEntity ])
   ],
   controllers: [ UsersController],

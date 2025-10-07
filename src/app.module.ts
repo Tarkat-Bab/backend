@@ -26,7 +26,6 @@ import { ServicesModule } from './modules/services/services.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -65,7 +64,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     LocationsModule,
     ServicesModule,
     NationaltiesModule,
-    DashboardModule
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [
