@@ -23,6 +23,10 @@ export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly usersRepo: Repository<UserEntity>,
+
+    @InjectRepository(TechnicalProfileEntity)
+    private readonly technicalProfileRepo: Repository<TechnicalProfileEntity>,
+
     private readonly paginatorService: PaginatorService,
     private readonly fileService: FilesService,
     private readonly locationService: LocationService,
@@ -320,6 +324,7 @@ export class UsersService {
     let existUser = null;
     existUser =  await this.usersRepo.findOne({
       where: { id, deleted: false },
+      relations: ['technicalProfile'],
       select: {
         id: true,
         username: true,
@@ -436,23 +441,21 @@ export class UsersService {
     userId: number,
     updateDto: UpdateProfileDto,
     image?: Express.Multer.File,
-  ): Promise<UserEntity> {
-    const existUser = await this.findById(userId);
-    
-    let imagePath: string = null;
-    if(image){
-        const savedImage = await this.fileService.saveFile(image, 'units');
-        imagePath = savedImage.path;
-    }
+    lang: LanguagesEnum = LanguagesEnum.ENGLISH
+  ){
+    const updatedUser = await this.updateUser({ phone: null, ...updateDto } as UserRegisterDto, lang, image);
+    if(updateDto.description ){
+      const technicalProfile = await this.technicalProfileRepo.findOne({
+        where: { user: { id: userId } }
+      });
+      if(technicalProfile){
+        await this.technicalProfileRepo.update(
+          { id: technicalProfile.id },
+          { description: updateDto.description }
+        );
+      }
 
-    await this.usersRepo.update(
-      { id: userId },
-      {
-        ...updateDto,
-        image: imagePath,
-      },
-    );
-    return existUser;
+    }
   }
 
   async deleteAccount(user: { id: number }): Promise<void> {
@@ -550,7 +553,9 @@ export class UsersService {
     identityImage?: Express.Multer.File
   ) {
     // Verify the user exists and is a technical user
-    const { phone } = registerDto;
+    const { phone, location, ...rest } = registerDto;
+    const dataToUpdate: any = { ...rest };
+
     const user = await this.usersRepo.findOne({
       where: { 
         phone,
@@ -566,6 +571,30 @@ export class UsersService {
           ? 'Technical user not found' 
           : 'المستخدم الفني غير موجود'
       );
+    }
+
+    if (location) {
+      let parsedLocation = location as any;
+      if (typeof location === 'string') {
+        try {
+        parsedLocation = JSON.parse(location);
+      } catch {
+        throw new BadRequestException('Invalid location format');
+      }
+      }
+      const { latitude, longitude, address } = parsedLocation;
+      
+      let saveLocation = null;
+      if(address){
+          saveLocation = await this.locationService.getLatLongFromText(address, lang);
+        }else{
+          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
+      }
+
+      dataToUpdate.latitude  = saveLocation.latitude;
+      dataToUpdate.longitude = saveLocation.longitude;
+      dataToUpdate.arAddress = saveLocation.ar_address;
+      dataToUpdate.enAddress = saveLocation.en_address;
     }
 
     // Process the profile image if provided
@@ -587,12 +616,6 @@ export class UsersService {
       const savedWorkLicense = await this.fileService.saveFile(workLicenseImage, MediaDir.WORKLICENSE);
       workLicensePath = savedWorkLicense.path;
     }
-    // // Create technical profile if it doesn't exist
-    // if (!user.technicalProfile) {
-    //   const technicalProfile = new TechnicalProfileEntity();
-    //   technicalProfile.user = user;
-    //   user.technicalProfile = technicalProfile;
-    // }
 
     // Update basic user data
     if (user.username) user.username = user.username;

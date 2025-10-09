@@ -26,13 +26,19 @@ export class UsersController {
         return this.usersService.userProfile(user.id, lang);
     }
 
+    @ApiHeader({
+      name: 'Accept-Language',
+      description: 'Language for the response (e.g., ar, en)',
+      required: false,
+    }) 
     @ApiConsumes('multipart/form-data')
     @Patch('profile')
     @UseInterceptors(FileInterceptor('image', { fileFilter: imageFilter }))
     async updateProfile(
         @CurrentUser() user: any,
         @Body() updateDto: UpdateProfileDto,
-        @UploadedFile() image?: Express.Multer.File
+        @UploadedFile() image?: Express.Multer.File,
+        
     ) {
         return this.usersService.updateProfile(user.id, updateDto, image);
     }
