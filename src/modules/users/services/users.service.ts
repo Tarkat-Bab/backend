@@ -212,45 +212,68 @@ export class UsersService {
   }
   
   async list(filter: FilterUsersDto, lang: LanguagesEnum) {
-    const {
-      page,
-      limit,
-      username,
-      type
-    } = filter;
+    const { page, limit, username, type } = filter;
     const take = limit ?? 20;
     const skip = ((page ?? 1) - 1) * take;
+
+    const addressColumn =
+      lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
 
     const query = this.usersRepo
       .createQueryBuilder('u')
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere('u.type = :type', { type })
       .select([
-        'u.id',
-        'u.username',
-        'u.image',
-        'u.createdAt',
+        'u.id AS id',
+        'u.type AS type',
+        'u.username AS username',
+        'u.image AS image',
+        'u.createdAt AS createdAt',
+        `${addressColumn} AS address`, 
       ]);
 
     if (type === UsersTypes.TECHNICAL) {
       query
-        .leftJoinAndSelect('u.technicalProfile', 'tech')
-        .addSelect(['tech.id', 'tech.avgRating', ]);
+        .leftJoin('u.technicalProfile', 'tech')
+        .addSelect(['tech.id AS techId', 'tech.avgRating AS avgRating']);
     }
 
     if (username) {
-      query.andWhere('u.username ILIKE :username', { username: `%${username}%` });
+      query.andWhere('u.username ILIKE :username', {
+        username: `%${username}%`,
+      });
     }
-
 
     query
       .take(take)
       .skip(skip)
       .orderBy('u.createdAt', 'ASC');
 
-    const [result, total] = await query.getManyAndCount();
+    // ✅ Instead of getRawAndCount()
+    const [rows, total] = await Promise.all([
+      query.getRawMany(),
+      query.getCount(),
+    ]);
+
+
+    const result = rows.map((u) => {
+      const isTechnical = !!u.techid;
+      const isUser = u.type === UsersTypes.USER;
+
+      return {
+        id: u.id,
+        username: u.username,
+        image: u.image,
+        createdAt: u.createdat,
+        address: u.address,
+        totalOrders: isUser ? Number(u.orderscount ?? 0) : undefined,
+        avgRating: isTechnical ? Number(u.avgrating ?? 0) : undefined,
+        completedOrders: isTechnical ? Number(u.completedorders ?? 0) : undefined,
+      }
+    });
+
     return this.paginatorService.makePaginate(result, total, take, page);
-  }  
+  } 
 
   async removeUsers(ids: number[], user: { id: number }, type: UsersTypes) {
     const { id } = user;
