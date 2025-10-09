@@ -1,15 +1,73 @@
+import axios, { AxiosError } from 'axios';
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-
 @Injectable()
 export class LocationService {
   constructor(private dataSource: DataSource) {}
 
+  private readonly baseUrl = 'https://maps.googleapis.com/maps/api/geocode/json';
+  private readonly apiKey = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyDoO2pGRP3Fd0uzgb0i0MyhM0TRJhpWdTY';
+
   /**
-   * Method to store longitude and latitude - replaces PostGIS Point
+   * Fetch address details in both Arabic and English for given coordinates
    */
-  createPoint(longitude: number, latitude: number): { longitude: number, latitude: number } {
-    return { longitude, latitude };
+  async geolocationAddress(latitude: number, longitude: number): Promise<{
+    latitude: number;
+    longitude: number;
+    ar_address: string;
+    en_address: string;
+  }> {
+    const params = `latlng=${latitude},${longitude}&key=${this.apiKey}`;
+
+    try {
+      const [arResponse, enResponse] = await Promise.all([
+        axios.get(`${this.baseUrl}?${params}&language=ar`),
+        axios.get(`${this.baseUrl}?${params}&language=en`)
+      ]);
+
+      const arResult = arResponse.data.results?.[0];
+      const enResult = enResponse.data.results?.[0];
+
+      return {
+        latitude,
+        longitude,
+        ar_address: arResult?.formatted_address || 'العنوان غير متاح',
+        en_address: enResult?.formatted_address || 'Address not available'
+      };
+    } catch (error) {
+      this.handleAxiosError(error, 'Error fetching geolocation');
+    }
+  }
+
+  /**
+   * Get latitude and longitude for a given address text
+   */
+  async getLatLongFromText(address: string, lang: string = 'en'): Promise<{
+    latitude: number;
+    longitude: number;
+    ar_address: string;
+    en_address: string;
+  }> {
+    const requestUrl = `${this.baseUrl}?address=${encodeURIComponent(address)}&key=${this.apiKey}&language=${lang}`;
+
+    try {
+      const { data } = await axios.get(requestUrl);
+      const result = data.results?.[0];
+
+      if (!result) throw new Error('No geocoding results found.');
+
+      const { lat: latitude, lng: longitude } = result.geometry.location;
+
+      // Reuse geolocationAddress for consistent structure
+      const addressDetails = await this.geolocationAddress(latitude, longitude);
+
+      console.log('🌍 Geocoding URL:', requestUrl);
+      console.log('📍 Coordinates:', { latitude, longitude });
+
+      return addressDetails;
+    } catch (error) {
+      this.handleAxiosError(error, 'Error fetching coordinates from text');
+    }
   }
 
   /**
@@ -80,18 +138,16 @@ export class LocationService {
     return entitiesWithDistance.slice(0, limit);
   }
 
+
   /**
-   * Save entity location (example for users/technicals/requests)
-   * Pass the repository + entity to update
-   */
-  async saveLocation(
-    repository: any,
-    entity: any,
-    longitude: number,
-    latitude: number,
-  ): Promise<any> {
-    entity.longitude = longitude;
-    entity.latitude = latitude;
-    return repository.save(entity);
+  * Centralized Axios error handler
+  */
+  private handleAxiosError(error: unknown, context: string): never {
+    if (error instanceof AxiosError) {
+      console.error(`${context}:`, error.response?.data || error.message);
+      throw new Error(error.response?.data?.error_message || 'Geocoding request failed');
+    }
+    console.error(`${context}:`, error);
+    throw error;
   }
 }

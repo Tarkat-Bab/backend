@@ -19,7 +19,7 @@ export class UserEntity extends BaseEntity {
   @Column({ length: 50, nullable: true })
   username: string;
 
-  @Column({type: 'varchar', length: 20, nullable: true })
+  @Column({type: 'varchar', length: 20, unique: true, nullable: true })
   phone: string;
 
   @Column({type: 'varchar', length: 100, unique: true, nullable: true  })
@@ -49,6 +49,12 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'double precision', nullable: true })
   longitude: number;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  arAddress: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  enAddress: string;
+  
   @OneToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.user, { cascade: true })
   technicalProfile: TechnicalProfileEntity;
 

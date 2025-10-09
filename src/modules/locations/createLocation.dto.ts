@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsNumber } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, Max, Min } from "class-validator";
 
 export class CreateLocationDto {
   @ApiProperty({
@@ -9,6 +9,9 @@ export class CreateLocationDto {
   })
   @IsNotEmpty()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
+  @IsOptional()
   latitude: number;
 
   @ApiProperty({
@@ -18,5 +21,17 @@ export class CreateLocationDto {
   })
   @IsNotEmpty()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
+  @IsOptional()
   longitude: number;
+
+  @ApiProperty({
+    description: "Address without latitude and longitude",
+    type: String,
+    example: "القاهرة، مصر", 
+  })
+  @IsOptional()
+  @IsNotEmpty()
+  address?: string;
 }

@@ -46,16 +46,20 @@ async function seedNationalities(manager: EntityManager) {
 
 async function seedServices(manager: EntityManager) {
     const services = [
-        { arName: 'الكهرباء', enName: 'Electricity' },
-        { arName: 'السباكة', enName: 'Plumbing' },
-        { arName: 'التكييف', enName: 'Air Conditioning' },
-        { arName: 'تنظيف خزانات', enName: 'Water Tank Cleaning' },
-        { arName: 'كاميرات أمنية', enName: 'Security Cameras' },
-        { arName: 'حدادة', enName: 'Blacksmithing' },
-        { arName: 'دهان', enName: 'Painting' },
-        { arName: 'نجارة', enName: 'Carpentry' },
-        { arName: 'نظافة المنزل', enName: 'House Cleaning' },
-        { arName: 'خدمات الأثاث', enName: 'Furniture Services' }
+        { 
+            arName: 'الكهرباء',
+            enName: 'Electricity',
+            icone: 'electricity.png'
+         },
+        { arName: 'السباكة', enName: 'Plumbing', icone: 'plumbing.png' },
+        { arName: 'التكييف', enName: 'Air Conditioning', icone: 'ac.png' },
+        { arName: 'تنظيف خزانات', enName: 'Water Tank Cleaning', icone: 'tank_cleaning.png' },
+        { arName: 'كاميرات أمنية', enName: 'Security Cameras', icone: 'security_cameras.png' },
+        { arName: 'حدادة', enName: 'Blacksmithing', icone: 'blacksmithing.png' },
+        { arName: 'دهان', enName: 'Painting', icone: 'painting.png' },
+        { arName: 'نجارة', enName: 'Carpentry', icone: 'carpentry.png' },
+        { arName: 'نظافة المنزل', enName: 'House Cleaning', icone: 'house_cleaning.png' },
+        { arName: 'خدمات الأثاث', enName: 'Furniture Services', icone: 'furniture_services.png' }
     ];
 
     // Check if services already exist

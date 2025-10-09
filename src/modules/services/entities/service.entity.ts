@@ -15,7 +15,7 @@ export class ServiceEntity extends BaseEntity {
     @Column({ type: 'text', nullable: true })
     icone: string;
 
-    @ManyToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.services, { onDelete: 'CASCADE' })
+    @ManyToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.services, { onDelete: 'RESTRICT' })
     technicalProfile: TechnicalProfileEntity;
     
     @AfterLoad()

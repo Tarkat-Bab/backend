@@ -162,16 +162,41 @@ export class UsersService {
       }
     }
 
+    if(existUser.status === UserStatus.UNVERIFIED){
+      if(lang === LanguagesEnum.ENGLISH){
+        throw new UnauthorizedException('Your account is unverified, please verify your email.');
+      } else if(lang === LanguagesEnum.ARABIC){
+        throw new UnauthorizedException('حسابك غير مفعل، يرجى التحقق من رقم الهاتف.');
+      }
+    }
+
     // Create a new object without the location property
     const { location: _, ...rest } = registerDto;
     const dataToUpdate: any = { ...rest };
     
-    // Add coordinates if location is provided
+    
     if (location) {
-      const { latitude, longitude } = location;
-      const coordinates = await this.locationService.createPoint(latitude, longitude);
-      dataToUpdate.latitude = coordinates.latitude;
-      dataToUpdate.longitude = coordinates.longitude;
+      let parsedLocation = location as any;
+      if (typeof location === 'string') {
+        try {
+        parsedLocation = JSON.parse(location);
+      } catch {
+        throw new BadRequestException('Invalid location format');
+      }
+      }
+      const { latitude, longitude, address } = parsedLocation;
+      
+      let saveLocation = null;
+      if(address){
+          saveLocation = await this.locationService.getLatLongFromText(address, lang);
+        }else{
+          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
+      }
+
+      dataToUpdate.latitude  = saveLocation.latitude;
+      dataToUpdate.longitude = saveLocation.longitude;
+      dataToUpdate.arAddress = saveLocation.ar_address;
+      dataToUpdate.enAddress = saveLocation.en_address;
     }
 
     if (image) {
