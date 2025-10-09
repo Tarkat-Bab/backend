@@ -1,0 +1,75 @@
+<%- include('partials/header', { title: locals.title || 'OTP Verification' }) %>
+<table style="width: 100%;">
+  <tbody>
+    <tr style="height: 0;">
+      <td style="text-align: center; padding: 20px 0;">
+        <img
+          alt="Logo"
+          src="<%= locals.logoUrl || 'cid:elearn-logo' %>"
+          style="display: block; margin: 0 auto; max-width: 250px; width: 100%; height: auto;"
+        />
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<% if (locals.lang === 'ar') { %>
+  <!-- Arabic version -->
+  <% if (locals.name) { %>
+    <p style="margin: 0; margin-top: 12px; font-weight: 600; color: #1f1f1f;">
+      مرحباً <%= locals.name %>,
+    </p>
+  <% } %>
+
+  <p style="margin: 0; margin-top: 17px; font-weight: 500; letter-spacing: 0.56px;">
+    لاعادة تعيين كلمة المرور، يرجى التحقق من بريدك الإلكتروني عن طريق إدخال رمز التحقق (OTP) التالي:
+    <br />
+    <span style="font-weight: 800; color: #000000;">الرمز صالح لمدة دقيقتين</span> فقط. يرجى عدم مشاركته مع أي شخص.
+  </p>
+
+  <style>
+    @media only screen and (max-width: 600px) {
+      .otp-code {
+        font-size: 28px !important;
+        letter-spacing: 10px !important;
+      }
+    }
+  </style>
+
+  <p class="otp-code" 
+     style="margin: 0; margin-top: 60px; font-size: 40px; font-weight: 600; 
+            letter-spacing: 25px; color: #F17E07; text-align: center;">
+    <%= locals.code %>
+  </p>
+
+<% } else { %>
+  <!-- English version -->
+  <% if (locals.name) { %>
+    <p style="margin: 0; margin-top: 12px; font-weight: 600; color: #1f1f1f;">
+      Hi <%= locals.name %>,
+    </p>
+  <% } %>
+  
+  <p style="margin: 0; margin-top: 17px; font-weight: 500; letter-spacing: 0.56px;">
+    To reset your password, please verify your email address by entering the One-Time Password (OTP) below:
+    <br />
+    This code is valid for <span style="font-weight: 800; color: #000000;">2 minutes</span>. Do not share it with anyone.
+  </p>
+
+  <style>
+    @media only screen and (max-width: 600px) {
+      .otp-code {
+        font-size: 28px !important;
+        letter-spacing: 10px !important;
+      }
+    }
+  </style>
+
+  <p class="otp-code" 
+     style="margin: 0; margin-top: 60px; font-size: 40px; font-weight: 600; 
+            letter-spacing: 25px; color: #F17E07; text-align: center;">
+    <%= locals.code %>
+  </p>
+<% } %>
+
+<%- include('partials/footer') %>
