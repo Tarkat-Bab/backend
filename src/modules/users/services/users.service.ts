@@ -340,7 +340,6 @@ export class UsersService {
     return existUser;
   }
 
-
   async findByEmail(email: string, lang: LanguagesEnum, status?: UserStatus) {
     const user = await this.usersRepo.findOne({
       where: {
@@ -374,28 +373,62 @@ export class UsersService {
     await this.usersRepo.update(user.id, { status })
   }
 
-  async userProfile(userID: number ){
+  async userProfile(userID: number, lang: LanguagesEnum) {
     let user: any;
     try{
-      user = await this.usersRepo.findOne({
+      let user = await this.usersRepo.findOne({
         where: { id: userID, deleted: false, status: UserStatus.ACTIVE },
+        relations: ['technicalProfile'],
         select: {
           id: true,
-          createdAt: true,
-          updatedAt: true,
           username: true,
           phone: true,
           email: true,
-          lastLoginAt: true,
           image: true,
-          latitude: true,
-          longitude :true
+          arAddress: true,
+          enAddress: true,
+          type: true,
+          technicalProfile: { id: true, description: true }
         },
       });
+
+      if (!user) {
+        if(lang === LanguagesEnum.ENGLISH){
+           throw new NotFoundException('User not found.');
+        } else if(lang === LanguagesEnum.ARABIC){
+           throw new NotFoundException('المستخدم غير موجود.');
+        }
+      }
+
+      if(user.type !== UsersTypes.ADMIN){
+        delete user.email;
+        // delete user.type;
+      }
+
+      let userdata = {
+        ...user,
+        address: lang === LanguagesEnum.ARABIC ? user.arAddress : user.enAddress,
+      };
+      delete userdata.arAddress;
+      delete userdata.enAddress;
+
+     if(user.type === UsersTypes.TECHNICAL){
+        return {
+          id: userdata.id,
+          username: userdata.username,
+          phone: userdata.phone,
+          description: userdata.technicalProfile?.description,
+          image: userdata.image,
+          address: userdata.address,
+        }
+     }
+     else if(user.type === UsersTypes.USER){
+        delete userdata.technicalProfile;
+     }
+      return userdata;
     }catch(error){
       console.error('Query Failed: ', error)
     }
-    
     return user;
   } 
 

@@ -11,8 +11,8 @@ export class ServicesService {
         private readonly serviceRepo: Repository<ServiceEntity>,
     ){}
 
-    async findAll(lang: LanguagesEnum): Promise<ServiceEntity[]> {
-        return await this.serviceRepo.find(
+    async findAll(lang: LanguagesEnum) {
+        const services = await this.serviceRepo.find(
             {
                 select: {
                     id: true,
@@ -23,6 +23,12 @@ export class ServicesService {
                 order: { id: 'ASC' }
             }
         );
+
+        return services.map(service => ({
+            id: service.id,
+            name: lang === LanguagesEnum.ENGLISH ? service.enName : service.arName,
+            icone: service.icone,
+        }));
     }
 
     async findOne(id: number, lang: LanguagesEnum): Promise<ServiceEntity> {
