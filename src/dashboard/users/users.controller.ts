@@ -7,7 +7,6 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { isPublic } from 'src/common/decorators/public.decorator';
 
 @ApiBearerAuth()
-@isPublic()
 @ApiTags('Dashboard')
 @Controller('dashboard/users')
 export class DashboardUsersController {
