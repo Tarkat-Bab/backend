@@ -229,6 +229,7 @@ export class UsersService {
         'u.username AS username',
         'u.image AS image',
         'u.createdAt AS createdAt',
+        'u.status AS status',
         `${addressColumn} AS address`, 
       ]);
 
@@ -266,6 +267,7 @@ export class UsersService {
         image: u.image,
         createdAt: u.createdat,
         address: u.address,
+        status: u.status,
         totalOrders: isUser ? Number(u.orderscount ?? 0) : undefined,
         avgRating: isTechnical ? Number(u.avgrating ?? 0) : undefined,
         completedOrders: isTechnical ? Number(u.completedorders ?? 0) : undefined,
@@ -343,29 +345,74 @@ export class UsersService {
     return;
   }
 
-  async findById(id: number) {
-    let existUser = null;
-    existUser =  await this.usersRepo.findOne({
-      where: { id, deleted: false },
-      relations: ['technicalProfile'],
-      select: {
-        id: true,
-        username: true,
-        type: true,
-        email: true,
-        phone: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        lastLoginAt: true,
-        image: true,
-      },
+  async findById(id: number, lang?: LanguagesEnum): Promise<UserEntity> {
+      const addressColumn =
+        lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
+
+      let query = this.usersRepo
+        .createQueryBuilder('u')
+        .where('u.deleted = :deleted', { deleted: false })
+        .andWhere('u.id = :id', { id })
+        .select([
+          'u.id AS id',
+          'u.type AS type',
+          'u.username AS username',
+          'u.image AS image',
+          'u.createdAt AS createdAt',
+          'u.status AS status',
+          `${addressColumn} AS address`,
+        ]);
       
-    });
-    if (!existUser) {
-       throw new BadRequestException()
-    }
-    return existUser;
+      let existUser = await query.getRawOne();
+      
+      if (!existUser) {
+        throw new NotFoundException(
+          lang === LanguagesEnum.ARABIC
+            ? 'المستخدم غير موجود.'
+            : 'User not found.'
+        );
+      }
+    
+      if (existUser.type === UsersTypes.TECHNICAL) {
+        query = this.usersRepo
+          .createQueryBuilder('u')
+          .leftJoin('u.technicalProfile', 'tech')
+          .where('u.deleted = :deleted', { deleted: false })
+          .andWhere('u.id = :id', { id })
+          .select([
+            'u.id AS id',
+            'u.username AS username',
+            'u.phone AS phone',
+            'u.type AS type',
+            'u.image AS image',
+            'u.createdAt AS createdAt',
+            'u.status AS status',
+            `${addressColumn} AS address`,
+            'tech.id AS techId',
+            'tech.avgRating AS avgRating',
+          ]);
+        
+        existUser = await query.getRawOne();
+      }
+    
+      const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
+      const isUser = existUser?.type === UsersTypes.USER;
+    
+      return {
+        id: existUser.id,
+        username: existUser.username,
+        createdAt: existUser.createdAt,
+        phone: existUser.phone,
+        address: existUser.address,
+        image: existUser.image,
+        status: existUser.status,
+        totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
+        reports:  Number(existUser.reportssubmitted ?? 0),
+        avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
+        completedOrders: isTechnical
+          ? Number(existUser.completedorders ?? 0)
+          : undefined,
+      } as unknown as UserEntity;
   }
 
   async findByEmail(email: string, lang: LanguagesEnum, status?: UserStatus) {

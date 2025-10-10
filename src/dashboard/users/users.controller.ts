@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DashboardUsersService } from './users.service';
 import { FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
@@ -27,5 +27,18 @@ export class DashboardUsersController {
         @Language() lang: LanguagesEnum,
     ) {
         return this.usersService.getAllUsers(filterUserDto, lang);
+    }
+
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Language for the response (e.g., ar, en)',
+        required: false,
+    })   
+    @Get(':id')
+    getUserById(
+        @Param('id') id: number,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.usersService.getUserById(id, lang);
     }
 }
