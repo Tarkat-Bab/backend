@@ -33,6 +33,7 @@ export class UsersService {
     private readonly nationalityService: NationaltiesService,
     private readonly serviceService: ServicesService,
   ) {}
+  
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
     const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: UsersTypes.USER });
     if(existingUser){
@@ -602,18 +603,6 @@ export class UsersService {
     user.status = UserStatus.ACTIVE;
     
     return await this.usersRepo.save(user);
-  }
-
-  async oAuthRegister(user): Promise<any> {
-    const { email, phone, username } = user;
-    const existUser = await this.usersRepo.findOne({
-      where: { email: user?.email, phone: user?.phone, deleted: false },
-    });
-
-    const userData = existUser
-      ? existUser
-      : await this.usersRepo.save({ email, phone, username, type: UsersTypes.USER, status: UserStatus.ACTIVE });
-    return userData;
   }
 
   async updateTechnical( registerDto: TechnicalRegisterDto,

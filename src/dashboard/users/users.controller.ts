@@ -14,7 +14,6 @@ export class DashboardUsersController {
         private readonly usersService: DashboardUsersService,
     ) {}
     
-
     @ApiHeader({
         name: 'Accept-Language',
         description: 'Language for the response (e.g., ar, en)',

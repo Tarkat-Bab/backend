@@ -3,5 +3,6 @@ export enum MediaDir {
     WORKLICENSE = 'worklicenses',
     IDENTITY = 'identity',
     REQUESTS = 'requests',
+    REPORTS  = 'reports',
     SERVICES = 'services',
 }
