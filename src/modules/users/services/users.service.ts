@@ -67,8 +67,8 @@ export class UsersService {
 
   async adminLogin(loginDto: AdminLoginDto, lang: LanguagesEnum) {
     const { email, password } = loginDto;
-    const hashPassword = await hash(password, 10);
-    console.log('Hashed Password:', hashPassword); // Debugging line to check hashed password
+    // const hashPassword = await hash(password, 10);
+    // console.log('Hashed Password:', hashPassword); // Debugging line to check hashed password
     const existUser = await this.usersRepo.findOne({
       where: {
         email,
@@ -94,6 +94,7 @@ export class UsersService {
     } 
 
     const correctPassword = await compare(password, existUser.password);
+    // console.log('Password Match:', correctPassword); // Debugging line to check password match result
     if (!correctPassword){
       if(lang === LanguagesEnum.ENGLISH){
         throw new BadRequestException('Invalid email or password.');
@@ -345,74 +346,82 @@ export class UsersService {
     return;
   }
 
-  async findById(id: number, lang?: LanguagesEnum): Promise<UserEntity> {
-      const addressColumn =
-        lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
+async findById(id: number, lang?: LanguagesEnum): Promise<UserEntity> {
+  const addressColumn =
+    lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
 
-      let query = this.usersRepo
-        .createQueryBuilder('u')
-        .where('u.deleted = :deleted', { deleted: false })
-        .andWhere('u.id = :id', { id })
-        .select([
-          'u.id AS id',
-          'u.type AS type',
-          'u.username AS username',
-          'u.image AS image',
-          'u.createdAt AS createdAt',
-          'u.status AS status',
-          `${addressColumn} AS address`,
-        ]);
-      
-      let existUser = await query.getRawOne();
-      
-      if (!existUser) {
-        throw new NotFoundException(
-          lang === LanguagesEnum.ARABIC
-            ? 'المستخدم غير موجود.'
-            : 'User not found.'
-        );
-      }
-    
-      if (existUser.type === UsersTypes.TECHNICAL) {
-        query = this.usersRepo
-          .createQueryBuilder('u')
-          .leftJoin('u.technicalProfile', 'tech')
-          .where('u.deleted = :deleted', { deleted: false })
-          .andWhere('u.id = :id', { id })
-          .select([
-            'u.id AS id',
-            'u.username AS username',
-            'u.phone AS phone',
-            'u.type AS type',
-            'u.image AS image',
-            'u.createdAt AS createdAt',
-            'u.status AS status',
-            `${addressColumn} AS address`,
-            'tech.id AS techId',
-            'tech.avgRating AS avgRating',
-          ]);
-        
-        existUser = await query.getRawOne();
-      }
-    
-      const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
-      const isUser = existUser?.type === UsersTypes.USER;
-    
-      return {
-        id: existUser.id,
-        username: existUser.username,
-        createdAt: existUser.createdAt,
-        phone: existUser.phone,
-        address: existUser.address,
-        image: existUser.image,
-        status: existUser.status,
-        totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
-        reports:  Number(existUser.reportssubmitted ?? 0),
-        avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
-        completedOrders: isTechnical
-          ? Number(existUser.completedorders ?? 0)
-          : undefined,
-      } as unknown as UserEntity;
+  let query = this.usersRepo
+    .createQueryBuilder('u')
+    .where('u.deleted = :deleted', { deleted: false })
+    .andWhere('u.id = :id', { id })
+    .select([
+      'u.id AS id',
+      'u.type AS type',
+      'u.username AS username',
+      'u.image AS image',
+      'u.createdAt AS createdAt',
+      'u.phone AS phone',
+      'u.status AS status',
+      `${addressColumn} AS address`,
+    ]);
+
+  let existUser = await query.getRawOne();
+
+  if (!existUser) {
+    throw new NotFoundException(
+      lang === LanguagesEnum.ARABIC
+        ? 'المستخدم غير موجود.'
+        : 'User not found.'
+    );
+  }
+
+  if (existUser.type === UsersTypes.TECHNICAL) {
+    query = this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.technicalProfile', 'tech')
+      .where('u.deleted = :deleted', { deleted: false })
+      .andWhere('u.id = :id', { id })
+      .select([
+        'u.id AS id',
+        'u.username AS username',
+        'u.phone AS phone',
+        'u.type AS type',
+        'u.image AS image',
+        'u.createdAt AS createdAt',
+        'u.status AS status',
+        `${addressColumn} AS address`,
+        'tech.id AS techId',
+        'tech.avgRating AS avgRating',
+      ]);
+
+    existUser = await query.getRawOne();
+  }
+
+  const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
+  const isUser = existUser?.type === UsersTypes.USER;
+
+  return {
+    id: existUser.id,
+    username: existUser.username,
+    createdAt: existUser.createdat,
+    phone: existUser.phone,
+    address: existUser.address,
+    image: existUser.image,
+    status: existUser.status,
+    totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
+    reports: Number(existUser.reportssubmitted ?? 0),
+    avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
+    completedOrders: isTechnical
+      ? Number(existUser.completedorders ?? 0)
+      : undefined,
+  } as unknown as UserEntity;
+}
+
+  async findUserForGuard(id:number){
+    return await this.usersRepo.findOne({
+      where: { id, deleted: false },
+      select: { id: true, email: true, phone: true, type: true, status: true }
+    })
   }
 
   async findByEmail(email: string, lang: LanguagesEnum, status?: UserStatus) {
@@ -513,19 +522,57 @@ export class UsersService {
     image?: Express.Multer.File,
     lang: LanguagesEnum = LanguagesEnum.ENGLISH
   ){
-    const updatedUser = await this.updateUser({ phone: null, ...updateDto } as UserRegisterDto, lang, image);
-    if(updateDto.description ){
+    const {location, description, username} = updateDto;
+    
+    const user = await this.findById(userId, lang);
+    if(description){
       const technicalProfile = await this.technicalProfileRepo.findOne({
         where: { user: { id: userId } }
       });
       if(technicalProfile){
         await this.technicalProfileRepo.update(
           { id: technicalProfile.id },
-          { description: updateDto.description }
+          { description: description }
         );
       }
 
     }
+
+    if (location) {
+      let parsedLocation = location as any;
+      if (typeof location === 'string') {
+        try {
+        parsedLocation = JSON.parse(location);
+      } catch {
+        throw new BadRequestException('Invalid location format');
+      }
+      }
+      const { latitude, longitude, address } = parsedLocation;
+      
+      let saveLocation = null;
+      if(address){
+          saveLocation = await this.locationService.getLatLongFromText(address, lang);
+        }else{
+          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
+      }
+
+      user.latitude  = saveLocation.latitude;
+      user.longitude = saveLocation.longitude;
+      user.arAddress = saveLocation.ar_address;
+      user.enAddress = saveLocation.en_address;
+    }
+    
+    if (image) {
+      if(user.image){
+        await this.fileService.deleteFiles([user.image], MediaDir.PROFILES, true);
+      }
+      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
+      user.image = savedImage.path;
+    }
+    if(username) user.username = username;
+
+    await this.usersRepo.save(user);
+    return this.userProfile(userId, lang);
   }
 
   async deleteAccount(user: { id: number }): Promise<void> {

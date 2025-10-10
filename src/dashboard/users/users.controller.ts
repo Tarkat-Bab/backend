@@ -5,6 +5,8 @@ import { FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { isPublic } from 'src/common/decorators/public.decorator';
+import { Permissions } from 'src/common/decorators/permissions.decorator';
+import { AdminPermissions } from 'src/common/permissions/admin.permissions';
 
 @ApiBearerAuth()
 @ApiTags('Dashboard')
@@ -19,7 +21,8 @@ export class DashboardUsersController {
         name: 'Accept-Language',
         description: 'Language for the response (e.g., ar, en)',
         required: false,
-    })      
+    })     
+    @Permissions(AdminPermissions.VIEW_USERS) 
     @Get()
     getUsers(
         @Query() filterUserDto: FilterUsersDto,
@@ -34,6 +37,7 @@ export class DashboardUsersController {
         required: false,
     })   
     @Get(':id')
+    @Permissions(AdminPermissions.VIEW_USERS) 
     getUserById(
         @Param('id') id: number,
         @Language() lang: LanguagesEnum,
