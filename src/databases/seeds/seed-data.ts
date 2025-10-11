@@ -1,10 +1,14 @@
 import { EntityManager } from "typeorm";
 import { NationalityEntity } from "../../modules/nationalties/entities/nationality.entity";
 import { ServiceEntity } from "../../modules/services/entities/service.entity";
+import { UserStatus, UsersTypes } from "src/common/enums/users.enum";
+import { UserEntity } from "src/modules/users/entities/users.entity";
+import { TechnicalProfileEntity } from "src/modules/users/entities/technical_profile.entity";
 
 export const seedData = async (manager: EntityManager) => {
     await seedNationalities(manager);
     await seedServices(manager);
+    await seedUsers(manager);
 }
 
 async function seedNationalities(manager: EntityManager) {
@@ -74,5 +78,101 @@ async function seedServices(manager: EntityManager) {
         }
         
         console.log('Services seeded successfully');
+    }
+}
+
+
+async function  seedUsers(manager: EntityManager) {
+    const users = [
+        {
+            username: 'user1',
+            phone: '01223113123',
+            email: null,
+            status: UserStatus.ACTIVE,
+            type: UsersTypes.USER,
+            arAddress: 'القاهرة مصر',
+            enAddress:'Cairo, Egypt',
+            technicalProfile: null
+       },{
+            username: 'user2',
+            phone: '01003113123',
+            email: null,
+            status: UserStatus.BLOCKED,
+            type: UsersTypes.USER,
+            arAddress: 'القاهرة مصر',
+            enAddress:'Cairo, Egypt',
+            technicalProfile: null
+       },{
+            username: 'user3',
+            phone: '01110113123',
+            email: null,
+            status: UserStatus.ACTIVE,
+            type: UsersTypes.USER,
+            arAddress: 'القاهرة مصر',
+            enAddress:'Cairo, Egypt',
+            technicalProfile: null
+       },{
+            username: 'user4',
+            phone: '01121209831',
+            email: null,
+            status: UserStatus.UNVERIFIED,
+            type: UsersTypes.USER,
+            arAddress: 'بنها مصر',
+            enAddress:'Banha, Egypt',
+            technicalProfile: null
+       },{
+            username: 'user5',
+            phone: '01023111800',
+            email: null,
+            status: UserStatus.ACTIVE,
+            type: UsersTypes.USER,
+            arAddress: 'الاسكندرية مصر',
+            enAddress:'ِAlex, Egypt',
+            technicalProfile: null
+       },
+        {
+            username: 'فني 1',
+            phone: '01029991800',
+            email: null,
+            status: UserStatus.ACTIVE,
+            type: UsersTypes.TECHNICAL,
+            arAddress: 'الاسكندرية مصر',
+            enAddress:'ِAlex, Egypt',
+       },
+        {
+            username: 'فني 2',
+            phone: '01023111890',
+            email: null,
+            status: UserStatus.ACTIVE,
+            type: UsersTypes.TECHNICAL,
+            arAddress: 'القاهرة مصر',
+            enAddress:'Cairo, Egypt',
+            technicalProfile: null
+       },
+    ]
+
+    const existingUsers = await manager.find(UserEntity);
+    
+    if (existingUsers.length === 0) {
+        console.log('Seeding users...');
+        
+        for (const user of users) {
+            const newUser = manager.create(UserEntity, user);
+            if(newUser.type == UsersTypes.TECHNICAL){
+                const techincian = await manager.create(TechnicalProfileEntity, {
+                    user: newUser,
+                    description: 'فني  خبره 4 سنين',
+                    nationality: {id: 2},
+                    avgRating: 4,
+                    services: [{id:2}]
+                    
+                })
+              await manager.save(techincian);
+
+            }
+            await manager.save(newUser);
+        }
+        
+        console.log('Users seeded successfully');
     }
 }

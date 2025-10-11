@@ -26,14 +26,8 @@ import { ServicesModule } from './modules/services/services.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { RequestsModule } from './modules/requests/requests.module';
-import { RequestsController } from './modules/requests/controllers/requests.controller';
-import { RequestsService } from './modules/requests/services/requests.service';
 import { ReportsModule } from './modules/reports/reports.module';
-import { ReportsController } from './modules/reports/reports.controller';
-import { ReportsService } from './modules/reports/reports.service';
 import { ReviewsModule } from './modules/reviews/reviews.module';
-import { ReviewsController } from './modules/reviews/reviews.controller';
-import { ReviewsService } from './modules/reviews/reviews.service';
 
 @Module({
   imports: [
@@ -74,9 +68,9 @@ import { ReviewsService } from './modules/reviews/reviews.service';
     ServicesModule,
     NationaltiesModule,
     DashboardModule,
-    RequestsModule, ReportsModule, ReviewsModule, ReviewsModule,
+    RequestsModule, ReportsModule, ReviewsModule,
   ],
-  controllers: [AppController, RequestsController, ReportsController, ReviewsController],
+  controllers: [AppController],
   providers: [
     AppService,
     {
@@ -88,8 +82,6 @@ import { ReviewsService } from './modules/reviews/reviews.service';
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
-
-    RequestsService, ReportsService, ReviewsService,
   ],
 })
 export class AppModule {}
