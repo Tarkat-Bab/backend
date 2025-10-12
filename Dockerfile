@@ -2,9 +2,16 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Copy package files and install deps
 COPY package*.json ./
-RUN npm install          # keep devDependencies for build
+RUN npm install
+
+# Copy the rest of the source code
 COPY . .
+
+# ✅ explicitly copy tsconfig
+COPY tsconfig*.json ./
+
 RUN npm run build
 
 # Production stage
