@@ -58,12 +58,7 @@ export class LocationService {
 
       const { lat: latitude, lng: longitude } = result.geometry.location;
 
-      // Reuse geolocationAddress for consistent structure
       const addressDetails = await this.geolocationAddress(latitude, longitude);
-
-      console.log('🌍 Geocoding URL:', requestUrl);
-      console.log('📍 Coordinates:', { latitude, longitude });
-
       return addressDetails;
     } catch (error) {
       this.handleAxiosError(error, 'Error fetching coordinates from text');

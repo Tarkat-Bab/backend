@@ -8,7 +8,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { RequestStatus } from '../enums/requestStatus.enum';
 import { UsersService } from '../../users/services/users.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { RequestsMedia } from '../entities/request_media.entity';
+import { FilesService } from 'src/common/files/files.services';
+import { MediaDir } from 'src/common/files/media-dir-.enum';
+import { LocationService } from 'src/modules/locations/location.service';
+import { FilterRequestDto } from '../dto/filter-request.dto';
+import { PaginatorService } from 'src/common/paginator/paginator.service';
 
 @Injectable()
 export class RequestsService {
@@ -16,25 +20,91 @@ export class RequestsService {
     @InjectRepository(ServiceRequestsEntity)
     private serviceRequestsRepository: Repository<ServiceRequestsEntity>,
     private usersService: UsersService,
+    private readonly filesService: FilesService,
+    private readonly locationService: LocationService,
+    private readonly paginatorService: PaginatorService,
   ) {}
 
-  async createServiceRequest(createServiceRequestDto: CreateServiceRequestDto, userId: number, images: Express.Multer.File[]): Promise<ServiceRequestsEntity> {
+  async createServiceRequest(createServiceRequestDto: CreateServiceRequestDto, userId: number, media: Express.Multer.File[], lang: LanguagesEnum): Promise<ServiceRequestsEntity> {
     const user = await this.usersService.findById(userId);
     const requestNumber = `REQ-${uuidv4().split('-')[0]}`;
+    
+    const {images, location, ...dtoWithoutImages} = createServiceRequestDto;
+    let imagesPath = [];
+    if (media && media.length > 0) {
+      await Promise.all(
+        media.map(async (file) => {
+          const filePath = await this.filesService.saveFile(file, MediaDir.REQUESTS);
+          imagesPath.push(filePath);
+        })
+      );
+    }
 
+    
     const serviceRequest = this.serviceRequestsRepository.create({
-      ...createServiceRequestDto,
+      ...dtoWithoutImages,
       requestNumber,
       user,
+      media: imagesPath,
     });
+
+    if (location) {
+      let parsedLocation = location as any;
+      if (typeof location === 'string') {
+        try {
+        parsedLocation = JSON.parse(location);
+      } catch {
+        throw new BadRequestException('Invalid location format');
+      }
+      }
+      const { latitude, longitude, address } = parsedLocation;
+      
+      let saveLocation = null;
+      if(address){
+          saveLocation = await this.locationService.getLatLongFromText(address, lang);
+        }else{
+          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
+      }
+
+      serviceRequest.latitude  = saveLocation.latitude;
+      serviceRequest.longitude = saveLocation.longitude;
+      serviceRequest.arAddress = saveLocation.ar_address;
+      serviceRequest.enAddress = saveLocation.en_address;
+    }
 
     return this.serviceRequestsRepository.save(serviceRequest);
   }
 
-  async findAllServiceRequests(): Promise<ServiceRequestsEntity[]> {
-    return this.serviceRequestsRepository.find({
-      relations: ['user', 'technician', 'offers', 'offers.technician', 'media'],
-    });
+  async findAllServiceRequests(filter: FilterRequestDto){
+    const page = filter.page || 1;
+    const take = filter.limit || 10;
+
+    const query = this.serviceRequestsRepository.createQueryBuilder('serviceRequest')
+      .leftJoinAndSelect('serviceRequest.user', 'user')
+      .leftJoinAndSelect('serviceRequest.technician', 'technician')
+      .leftJoinAndSelect('serviceRequest.offers', 'offers')
+      .leftJoinAndSelect('offers.technician', 'offerTechnician')
+      .leftJoinAndSelect('serviceRequest.media', 'media')
+      .orderBy('serviceRequest.createdAt', 'DESC')
+
+    if (filter.status) {
+      query.andWhere('serviceRequest.status = :status', { status: filter.status });
+    }
+
+    if (filter.serviceId) {
+      query.andWhere('serviceRequest.serviceId = :serviceId', { serviceId: filter.serviceId });
+    }
+
+    if (filter.search) {
+      query.andWhere(
+        '(user.username ILIKE :search OR serviceRequest.arAddress ILIKE :search OR serviceRequest.enAddress ILIKE :search)',
+        { search: `%${filter.search}%` }
+      );
+    }
+    query.skip((filter.page - 1) * filter.limit).take(filter.limit);
+    const [result, total] = await query.getManyAndCount();
+
+    return this.paginatorService.makePaginate(result, total, take, page);
   }
 
   async findServiceRequestById(id: number, lang: LanguagesEnum): Promise<ServiceRequestsEntity> {

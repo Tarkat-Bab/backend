@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min } from 'class-validator';
+import { CreateLocationDto } from 'src/modules/locations/createLocation.dto';
 
 export class CreateServiceRequestDto {
   @ApiProperty({ description: 'Title of the service request' })
@@ -12,28 +14,23 @@ export class CreateServiceRequestDto {
   @IsString()
   description: string;
 
-  @ApiProperty({ description: 'Latitude of the request location' })
+  @ApiProperty({
+    required: true,
+    description: 'User Location (Latitude, Longitude)',
+    type: CreateLocationDto
+  })
   @IsNotEmpty()
-  @IsString()
-  latitude: string;
-
-  @ApiProperty({ description: 'Longitude of the request location' })
-  @IsNotEmpty()
-  @IsString()
-  longitude: string;
-
-  @ApiProperty({ description: 'Address in Arabic' })
-  @IsNotEmpty()
-  @IsString()
-  arAddress: string;
-
-  @ApiProperty({ description: 'Address in English' })
-  @IsNotEmpty()
-  @IsString()
-  enAddress: string;
+  location: CreateLocationDto;
 
   @ApiProperty({ description: 'Price for the service request' })
   @IsNotEmpty()
   @IsNumber()
-  price: number;
+  @IsPositive()
+  @Type(() => Number)
+  price: number;  
+
+  @ApiProperty({ type: 'array', items: { type: 'string', format: 'binary' }, description: 'Images for the service request', required: false })
+  @IsNotEmpty()
+  @IsOptional()
+  images?: Express.Multer.File[];
 }

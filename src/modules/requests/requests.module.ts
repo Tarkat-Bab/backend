@@ -8,10 +8,16 @@ import { UsersModule } from '../users/users.module';
 import { RequestsMedia } from './entities/request_media.entity';
 import { RequestOffersService } from './services/requests-offers.service';
 import { RequestOffersController } from './controllers/requests-offers.controller';
+import { FilesModule } from 'src/common/files/files.module';
+import { LocationsModule } from '../locations/locations.module';
+import { PaginatorModule } from 'src/common/paginator/paginator.module';
 
 @Module({
     imports: [
         UsersModule,
+        FilesModule,
+        LocationsModule,
+        PaginatorModule,
         TypeOrmModule.forFeature([ServiceRequestsEntity, RequestOffersEntity, RequestsMedia])
     ],
     controllers: [RequestsController, RequestOffersController],
