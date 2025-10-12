@@ -3,13 +3,14 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 @Injectable()
 export class LocationService {
-  constructor(private dataSource: DataSource) {}
+  constructor() {}
 
   private readonly baseUrl = 'https://maps.googleapis.com/maps/api/geocode/json';
   private readonly apiKey = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyDoO2pGRP3Fd0uzgb0i0MyhM0TRJhpWdTY';
 
-  /**
-   * Fetch address details in both Arabic and English for given coordinates
+   /**
+   * Fetch address details in both Arabic and English for given coordinates.
+   * Uses the same "street + neighborhood" logic from Dart.
    */
   async geolocationAddress(latitude: number, longitude: number): Promise<{
     latitude: number;
@@ -22,25 +23,25 @@ export class LocationService {
     try {
       const [arResponse, enResponse] = await Promise.all([
         axios.get(`${this.baseUrl}?${params}&language=ar`),
-        axios.get(`${this.baseUrl}?${params}&language=en`)
+        axios.get(`${this.baseUrl}?${params}&language=en`),
       ]);
 
-      const arResult = arResponse.data.results?.[0];
-      const enResult = enResponse.data.results?.[0];
+      const arResults = arResponse.data.results || [];
+      const enResults = enResponse.data.results || [];
 
-      return {
-        latitude,
-        longitude,
-        ar_address: arResult?.formatted_address || 'العنوان غير متاح',
-        en_address: enResult?.formatted_address || 'Address not available'
-      };
+      const arAddress = this.buildReadableAddressFromAll(arResults) || 'العنوان غير متاح';
+      const enAddress = this.buildReadableAddressFromAll(enResults) || 'Address not available';
+
+      return { latitude, longitude, ar_address: arAddress, en_address: enAddress };
     } catch (error) {
       this.handleAxiosError(error, 'Error fetching geolocation');
+      throw error;
     }
   }
 
   /**
-   * Get latitude and longitude for a given address text
+   * Get latitude and longitude for a given address text.
+   * Reuses geolocationAddress for consistent structure.
    */
   async getLatLongFromText(address: string, lang: string = 'en'): Promise<{
     latitude: number;
@@ -53,22 +54,111 @@ export class LocationService {
     try {
       const { data } = await axios.get(requestUrl);
       const result = data.results?.[0];
-
       if (!result) throw new Error('No geocoding results found.');
 
       const { lat: latitude, lng: longitude } = result.geometry.location;
 
-      // Reuse geolocationAddress for consistent structure
-      const addressDetails = await this.geolocationAddress(latitude, longitude);
-
       console.log('🌍 Geocoding URL:', requestUrl);
       console.log('📍 Coordinates:', { latitude, longitude });
 
-      return addressDetails;
+      return await this.geolocationAddress(latitude, longitude);
     } catch (error) {
       this.handleAxiosError(error, 'Error fetching coordinates from text');
+      throw error;
     }
   }
+
+  /**
+   * Rebuild readable address from all results (street + neighborhood)
+   * Same logic as Dart _buildReadableAddressFromAll
+   */
+  private buildReadableAddressFromAll(results: any[]): string {
+    let street: string | null = null;
+    let neighborhood: string | null = null;
+
+    for (const result of results) {
+      const components = result.address_components || [];
+      for (const comp of components) {
+        const types: string[] = comp.types || [];
+        if (types.includes('route') && !street) {
+          street = comp.long_name.replace(/،/g, '').trim();
+        }
+        if (types.includes('neighborhood') && !neighborhood) {
+          neighborhood = comp.long_name.replace(/،/g, '').trim();
+        }
+      }
+    }
+
+    if (street && neighborhood) return `${street}، ${neighborhood}`;
+    if (street) return street;
+    if (neighborhood) return neighborhood;
+
+    return results[0]?.formatted_address || '';
+  }
+
+
+
+  // /**
+  //  * Fetch address details in both Arabic and English for given coordinates
+  //  */
+  // async geolocationAddress(latitude: number, longitude: number): Promise<{
+  //   latitude: number;
+  //   longitude: number;
+  //   ar_address: string;
+  //   en_address: string;
+  // }> {
+  //   const params = `latlng=${latitude},${longitude}&key=${this.apiKey}`;
+
+  //   try {
+  //     const [arResponse, enResponse] = await Promise.all([
+  //       axios.get(`${this.baseUrl}?${params}&language=ar`),
+  //       axios.get(`${this.baseUrl}?${params}&language=en`)
+  //     ]);
+
+  //     const arResult = arResponse.data.results?.[0];
+  //     const enResult = enResponse.data.results?.[0];
+
+  //     return {
+  //       latitude,
+  //       longitude,
+  //       ar_address: arResult?.formatted_address || 'العنوان غير متاح',
+  //       en_address: enResult?.formatted_address || 'Address not available'
+  //     };
+  //   } catch (error) {
+  //     this.handleAxiosError(error, 'Error fetching geolocation');
+  //   }
+  // }
+
+  // /**
+  //  * Get latitude and longitude for a given address text
+  //  */
+  // async getLatLongFromText(address: string, lang: string = 'en'): Promise<{
+  //   latitude: number;
+  //   longitude: number;
+  //   ar_address: string;
+  //   en_address: string;
+  // }> {
+  //   const requestUrl = `${this.baseUrl}?address=${encodeURIComponent(address)}&key=${this.apiKey}&language=${lang}`;
+
+  //   try {
+  //     const { data } = await axios.get(requestUrl);
+  //     const result = data.results?.[0];
+
+  //     if (!result) throw new Error('No geocoding results found.');
+
+  //     const { lat: latitude, lng: longitude } = result.geometry.location;
+
+  //     // Reuse geolocationAddress for consistent structure
+  //     const addressDetails = await this.geolocationAddress(latitude, longitude);
+
+  //     console.log('🌍 Geocoding URL:', requestUrl);
+  //     console.log('📍 Coordinates:', { latitude, longitude });
+
+  //     return addressDetails;
+  //   } catch (error) {
+  //     this.handleAxiosError(error, 'Error fetching coordinates from text');
+  //   }
+  // }
 
   /**
    * Calculate distance between two points (using Haversine formula)

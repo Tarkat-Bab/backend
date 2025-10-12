@@ -52,7 +52,7 @@ export class AuthGuard implements CanActivate {
 
     let user;
     if (payload && payload.id) {
-      user = await this.usersService.findById(payload.id);
+      user = await this.usersService.findUserForGuard(payload.id);
       if (!user) {
         throw new UnauthorizedException(t('المستخدم غير موجود', 'Unauthorized'));
       }
@@ -87,7 +87,6 @@ export class AuthGuard implements CanActivate {
     }>('permissions', context.getHandler());
 
     if (!requiredPermission) return true;
-
     if (!requiredPermission.type?.includes(user?.type)) {
       throw new ForbiddenException(t('غير مسموح لك بالدخول', 'Forbidden'));
     }

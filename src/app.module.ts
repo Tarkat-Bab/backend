@@ -25,6 +25,9 @@ import { LocationsModule } from './modules/locations/locations.module';
 import { ServicesModule } from './modules/services/services.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { RequestsModule } from './modules/requests/requests.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -53,18 +56,20 @@ import { DashboardModule } from './dashboard/dashboard.module';
       ],
       inject: [ConfigService],
     }),
+    DashboardModule,
     DatabaseModule,
     PaginatorModule,
     FilesModule,
     EmailModule,
-
     AuthModule,
     UsersModule,
     SeedsModule,
     LocationsModule,
     ServicesModule,
     NationaltiesModule,
-    DashboardModule,
+    RequestsModule,
+    ReportsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [

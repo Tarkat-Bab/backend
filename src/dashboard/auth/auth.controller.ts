@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, HttpCode } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { isPublic } from 'src/common/decorators/public.decorator';
@@ -9,7 +9,6 @@ import { DashboardAuthService } from './auth.service';
 import { ResetPasswordDto } from 'src/modules/auth/dtos/reset-password.dto';
 import { verifyEmailOtpDto } from 'src/modules/auth/dtos/verify-otp.dto';
 import { SendEmailOtpDto } from 'src/modules/auth/dtos/send-otp-dto';
-import { HttpStatusCode } from 'axios';
 @isPublic()
 @ApiTags('Dashboard')
 @Controller('dashboard/auth')
@@ -32,7 +31,6 @@ export class DashboardAuthController {
     }
 
     @Post('forgot-password')
-    @HttpCode(HttpStatus.OK)
     @ApiHeader({
        name: 'Accept-Language',
          description: 'Language for the response (e.g., ar, en)',

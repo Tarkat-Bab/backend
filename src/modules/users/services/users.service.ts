@@ -33,6 +33,7 @@ export class UsersService {
     private readonly nationalityService: NationaltiesService,
     private readonly serviceService: ServicesService,
   ) {}
+  
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
     const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: UsersTypes.USER });
     if(existingUser){
@@ -67,8 +68,8 @@ export class UsersService {
 
   async adminLogin(loginDto: AdminLoginDto, lang: LanguagesEnum) {
     const { email, password } = loginDto;
-    const hashPassword = await hash(password, 10);
-    console.log('Hashed Password:', hashPassword); // Debugging line to check hashed password
+    // const hashPassword = await hash(password, 10);
+    // console.log('Hashed Password:', hashPassword); // Debugging line to check hashed password
     const existUser = await this.usersRepo.findOne({
       where: {
         email,
@@ -94,6 +95,7 @@ export class UsersService {
     } 
 
     const correctPassword = await compare(password, existUser.password);
+    // console.log('Password Match:', correctPassword); // Debugging line to check password match result
     if (!correctPassword){
       if(lang === LanguagesEnum.ENGLISH){
         throw new BadRequestException('Invalid email or password.');
@@ -211,70 +213,71 @@ export class UsersService {
     return await this.findById(existUser.id);
   }
   
-async list(filter: FilterUsersDto, lang: LanguagesEnum) {
-  const { page, limit, username, type } = filter;
-  const take = limit ?? 20;
-  const skip = ((page ?? 1) - 1) * take;
+  async list(filter: FilterUsersDto, lang: LanguagesEnum) {
+    const { page, limit, username, type } = filter;
+    const take = limit ?? 20;
+    const skip = ((page ?? 1) - 1) * take;
 
-  const addressColumn =
-    lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
+    const addressColumn =
+      lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
 
-  const query = this.usersRepo
-    .createQueryBuilder('u')
-    .where('u.deleted = :deleted', { deleted: false })
-    .andWhere('u.type = :type', { type })
-    .select([
-      'u.id AS id',
-      'u.type AS type',
-      'u.username AS username',
-      'u.image AS image',
-      'u.createdAt AS createdAt',
-      `${addressColumn} AS address`, 
+    const query = this.usersRepo
+      .createQueryBuilder('u')
+      .where('u.deleted = :deleted', { deleted: false })
+      .andWhere('u.type = :type', { type })
+      .select([
+        'u.id AS id',
+        'u.type AS type',
+        'u.username AS username',
+        'u.image AS image',
+        'u.createdAt AS createdAt',
+        'u.status AS status',
+        `${addressColumn} AS address`, 
+      ]);
+
+    if (type === UsersTypes.TECHNICAL) {
+      query
+        .leftJoin('u.technicalProfile', 'tech')
+        .addSelect(['tech.id AS techId', 'tech.avgRating AS avgRating']);
+    }
+
+    if (username) {
+      query.andWhere('u.username ILIKE :username', {
+        username: `%${username}%`,
+      });
+    }
+
+    query
+      .take(take)
+      .skip(skip)
+      .orderBy('u.createdAt', 'ASC');
+
+    // ✅ Instead of getRawAndCount()
+    const [rows, total] = await Promise.all([
+      query.getRawMany(),
+      query.getCount(),
     ]);
 
-  if (type === UsersTypes.TECHNICAL) {
-    query
-      .leftJoin('u.technicalProfile', 'tech')
-      .addSelect(['tech.id AS techId', 'tech.avgRating AS avgRating']);
-  }
 
-  if (username) {
-    query.andWhere('u.username ILIKE :username', {
-      username: `%${username}%`,
+    const result = rows.map((u) => {
+      const isTechnical = !!u.techid;
+      const isUser = u.type === UsersTypes.USER;
+
+      return {
+        id: u.id,
+        username: u.username,
+        image: u.image,
+        createdAt: u.createdat,
+        address: u.address,
+        status: u.status,
+        totalOrders: isUser ? Number(u.orderscount ?? 0) : undefined,
+        avgRating: isTechnical ? Number(u.avgrating ?? 0) : undefined,
+        completedOrders: isTechnical ? Number(u.completedorders ?? 0) : undefined,
+      }
     });
-  }
 
-  query
-    .take(take)
-    .skip(skip)
-    .orderBy('u.createdAt', 'ASC');
-
-  // ✅ Instead of getRawAndCount()
-  const [rows, total] = await Promise.all([
-    query.getRawMany(),
-    query.getCount(),
-  ]);
-
-  
-  const result = rows.map((u) => {
-    const isTechnical = !!u.techid;
-    const isUser = u.type === UsersTypes.USER;
-    
-    return {
-      id: u.id,
-      username: u.username,
-      image: u.image,
-      createdAt: u.createdat,
-      address: u.address,
-      totalOrders: isUser ? Number(u.orderscount ?? 0) : undefined,
-      avgRating: isTechnical ? Number(u.avgrating ?? 0) : undefined,
-      completedOrders: isTechnical ? Number(u.completedorders ?? 0) : undefined,
-    }
-  });
-
-  return this.paginatorService.makePaginate(result, total, take, page);
-}
-
+    return this.paginatorService.makePaginate(result, total, take, page);
+  } 
 
   async removeUsers(ids: number[], user: { id: number }, type: UsersTypes) {
     const { id } = user;
@@ -344,29 +347,82 @@ async list(filter: FilterUsersDto, lang: LanguagesEnum) {
     return;
   }
 
-  async findById(id: number) {
-    let existUser = null;
-    existUser =  await this.usersRepo.findOne({
+async findById(id: number, lang?: LanguagesEnum): Promise<UserEntity> {
+  const addressColumn =
+    lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
+
+  let query = this.usersRepo
+    .createQueryBuilder('u')
+    .where('u.deleted = :deleted', { deleted: false })
+    .andWhere('u.id = :id', { id })
+    .select([
+      'u.id AS id',
+      'u.type AS type',
+      'u.username AS username',
+      'u.image AS image',
+      'u.createdAt AS createdAt',
+      'u.phone AS phone',
+      'u.status AS status',
+      `${addressColumn} AS address`,
+    ]);
+
+  let existUser = await query.getRawOne();
+
+  if (!existUser) {
+    throw new NotFoundException(
+      lang === LanguagesEnum.ARABIC
+        ? 'المستخدم غير موجود.'
+        : 'User not found.'
+    );
+  }
+
+  if (existUser.type === UsersTypes.TECHNICAL) {
+    query = this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.technicalProfile', 'tech')
+      .where('u.deleted = :deleted', { deleted: false })
+      .andWhere('u.id = :id', { id })
+      .select([
+        'u.id AS id',
+        'u.username AS username',
+        'u.phone AS phone',
+        'u.type AS type',
+        'u.image AS image',
+        'u.createdAt AS createdAt',
+        'u.status AS status',
+        `${addressColumn} AS address`,
+        'tech.id AS techId',
+        'tech.avgRating AS avgRating',
+      ]);
+
+    existUser = await query.getRawOne();
+  }
+
+  const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
+  const isUser = existUser?.type === UsersTypes.USER;
+
+  return {
+    id: existUser.id,
+    username: existUser.username,
+    createdAt: existUser.createdat,
+    phone: existUser.phone,
+    address: existUser.address,
+    image: existUser.image,
+    status: existUser.status,
+    totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
+    reports: Number(existUser.reportssubmitted ?? 0),
+    avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
+    completedOrders: isTechnical
+      ? Number(existUser.completedorders ?? 0)
+      : undefined,
+  } as unknown as UserEntity;
+}
+
+  async findUserForGuard(id:number){
+    return await this.usersRepo.findOne({
       where: { id, deleted: false },
-      relations: ['technicalProfile'],
-      select: {
-        id: true,
-        username: true,
-        type: true,
-        email: true,
-        phone: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        lastLoginAt: true,
-        image: true,
-      },
-      
-    });
-    if (!existUser) {
-       throw new BadRequestException()
-    }
-    return existUser;
+      select: { id: true, email: true, phone: true, type: true, status: true }
+    })
   }
 
   async findByEmail(email: string, lang: LanguagesEnum, status?: UserStatus) {
@@ -467,19 +523,57 @@ async list(filter: FilterUsersDto, lang: LanguagesEnum) {
     image?: Express.Multer.File,
     lang: LanguagesEnum = LanguagesEnum.ENGLISH
   ){
-    const updatedUser = await this.updateUser({ phone: null, ...updateDto } as UserRegisterDto, lang, image);
-    if(updateDto.description ){
+    const {location, description, username} = updateDto;
+    
+    const user = await this.findById(userId, lang);
+    if(description){
       const technicalProfile = await this.technicalProfileRepo.findOne({
         where: { user: { id: userId } }
       });
       if(technicalProfile){
         await this.technicalProfileRepo.update(
           { id: technicalProfile.id },
-          { description: updateDto.description }
+          { description: description }
         );
       }
 
     }
+
+    if (location) {
+      let parsedLocation = location as any;
+      if (typeof location === 'string') {
+        try {
+        parsedLocation = JSON.parse(location);
+      } catch {
+        throw new BadRequestException('Invalid location format');
+      }
+      }
+      const { latitude, longitude, address } = parsedLocation;
+      
+      let saveLocation = null;
+      if(address){
+          saveLocation = await this.locationService.getLatLongFromText(address, lang);
+        }else{
+          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
+      }
+
+      user.latitude  = saveLocation.latitude;
+      user.longitude = saveLocation.longitude;
+      user.arAddress = saveLocation.ar_address;
+      user.enAddress = saveLocation.en_address;
+    }
+    
+    if (image) {
+      if(user.image){
+        await this.fileService.deleteFiles([user.image], MediaDir.PROFILES, true);
+      }
+      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
+      user.image = savedImage.path;
+    }
+    if(username) user.username = username;
+
+    await this.usersRepo.save(user);
+    return this.userProfile(userId, lang);
   }
 
   async deleteAccount(user: { id: number }): Promise<void> {
@@ -556,18 +650,6 @@ async list(filter: FilterUsersDto, lang: LanguagesEnum) {
     user.status = UserStatus.ACTIVE;
     
     return await this.usersRepo.save(user);
-  }
-
-  async oAuthRegister(user): Promise<any> {
-    const { email, phone, username } = user;
-    const existUser = await this.usersRepo.findOne({
-      where: { email: user?.email, phone: user?.phone, deleted: false },
-    });
-
-    const userData = existUser
-      ? existUser
-      : await this.usersRepo.save({ email, phone, username, type: UsersTypes.USER, status: UserStatus.ACTIVE });
-    return userData;
   }
 
   async updateTechnical( registerDto: TechnicalRegisterDto,

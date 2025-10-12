@@ -13,6 +13,7 @@ import { UsersTypes, UserStatus } from '../../../common/enums/users.enum';
 import { MediaDir } from 'src/common/files/media-dir-.enum';
 import { TechnicalProfileEntity } from './technical_profile.entity';
 import { UserFcmTokenEntity } from './user-fcm-token.entity';
+import { ServiceRequestsEntity } from 'src/modules/requests/entities/service_requests.entity';
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
@@ -61,6 +62,12 @@ export class UserEntity extends BaseEntity {
   @OneToMany(() => UserFcmTokenEntity, fcmToken => fcmToken.user, { cascade: true })
   fcmTokens: UserFcmTokenEntity[];
 
+  @OneToMany(() => ServiceRequestsEntity, serviceRequests => serviceRequests.user)
+  serviceRequests: ServiceRequestsEntity[];
+
+  @OneToMany(() => ServiceRequestsEntity, serviceRequests => serviceRequests.technician)
+  implementedRequests: ServiceRequestsEntity[];
+  
   @BeforeInsert()
   async hashPassword() {
     if (this.password) {
