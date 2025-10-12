@@ -59,7 +59,7 @@ async function bootstrap() {
 // For local development
 if (process.env.NODE_ENV !== 'production') {
   bootstrap().then(app => {
-    app.listen(3000);
+    app.listen(5000);
     console.log('Listening on port 3000');
   });
 }
