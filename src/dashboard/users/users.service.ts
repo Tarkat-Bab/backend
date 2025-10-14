@@ -12,4 +12,8 @@ export class DashboardUsersService {
     async getAllUsers(filterUserDto: FilterUsersDto, lang: LanguagesEnum) {
         return this.usersService.list(filterUserDto, lang);
     }
+
+    async getUserById(id: number, lang: LanguagesEnum) {
+        return this.usersService.findById(id, lang);
+    }
 }

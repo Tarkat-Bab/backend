@@ -28,7 +28,7 @@ export class OtpService {
       process.env.NODE_ENV === 'development'
         ? this.DEV_OTP_CODE
         : this.generateCode();
-
+    console.log('Generated OTP Code:', code); // Debugging line to check generated OTP
     const key = this.buildCacheKey(
       userDetails.email, purpose);
     await this.cacheManager.set<CachedOtpType>(
