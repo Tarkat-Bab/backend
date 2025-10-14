@@ -1,26 +1,23 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Use official Node.js image
+FROM node:18-alpine
+
+# Set working directory
 WORKDIR /app
 
-# Copy package files and install deps
+# Copy package files
 COPY package*.json ./
+
+# Install all dependencies
 RUN npm install
 
-# Copy the rest of the source code
+# Copy source code
 COPY . .
 
-# ✅ explicitly copy tsconfig
-COPY tsconfig*.json ./
-
+# Build the app
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine AS runner
-WORKDIR /app
-
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY package*.json ./
-
+# Expose the port
 EXPOSE 3000
-CMD ["npm", "run", "start:prod"]
+
+# Run the compiled code
+CMD ["node", "dist/main.js"]
