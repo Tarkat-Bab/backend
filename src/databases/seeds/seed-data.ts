@@ -4,11 +4,14 @@ import { ServiceEntity } from "../../modules/services/entities/service.entity";
 import { UserStatus, UsersTypes } from "src/common/enums/users.enum";
 import { UserEntity } from "src/modules/users/entities/users.entity";
 import { TechnicalProfileEntity } from "src/modules/users/entities/technical_profile.entity";
+import { ServiceRequestsEntity } from "src/modules/requests/entities/service_requests.entity";
+import { RequestStatus } from "src/modules/requests/enums/requestStatus.enum";
 
 export const seedData = async (manager: EntityManager) => {
     await seedNationalities(manager);
     await seedServices(manager);
     await seedUsers(manager);
+    await seedServiceRequests(manager);
 }
 
 async function seedNationalities(manager: EntityManager) {
@@ -175,4 +178,155 @@ async function  seedUsers(manager: EntityManager) {
         
         console.log('Users seeded successfully');
     }
+}
+
+async function seedServiceRequests(manager: EntityManager) {
+    // Check if requests already exist
+    const existingRequests = await manager.find(ServiceRequestsEntity);
+    if (existingRequests.length > 0) {
+        return;
+    }
+
+    console.log('Seeding service requests...');
+
+    // Find sample user and technician created above
+    const user1 = await manager.findOne(UserEntity, { where: { username: 'user1' }});
+    const tech1 = await manager.findOne(UserEntity, { where: { username: 'فني 1' }});
+    const tech2 = await manager.findOne(UserEntity, { where: { username: 'فني 2' }});
+    const service1 = await manager.findOne(ServiceEntity, { where: { enName: 'Electricity' }});
+    const service2 = await manager.findOne(ServiceEntity, { where: { enName: 'Plumbing' }});
+
+    const requestsToCreate = [];
+
+    if (user1 && service1) {
+        requestsToCreate.push({
+            title: 'Fix living room lights',
+            description: 'Lights in the living room flicker and sometimes go off.',
+            latitude: '30.0444',
+            longitude: '31.2357',
+            arAddress: 'القاهرة، منطقة وسط البلد',
+            enAddress: 'Cairo, Downtown',
+            status: RequestStatus.IN_PROGRESS,
+            price: 120.00,
+            requestNumber: 'REQ-SEED-1',
+            user: user1,
+            services: [service1],
+            technician: tech1,
+        });
+
+        requestsToCreate.push({
+            title: "تصليح كهرباء غرفة المعيشة",
+            description: 'الأضواء في غرفة المعيشة تومض وأحيانًا تنطفئ.',
+            latitude: '30.0444',
+            longitude: '31.2357',
+            arAddress: 'القاهرة، منطقة وسط البلد',
+            enAddress: 'Cairo, Downtown',
+            status: RequestStatus.COMPLETED,
+            price: 120.00,
+            requestNumber: 'REQ-SEED-152',
+            user: user1,
+            services: [service1],
+            technician: tech2,
+        });
+        
+        requestsToCreate.push({
+            title: "تصليح كهرباء غرفة المعيشة",
+            description: 'الأضواء في غرفة المعيشة تومض وأحيانًا تنطفئ.',
+            latitude: '30.0444',
+            longitude: '31.2357',
+            arAddress: 'القاهرة، منطقة وسط البلد',
+            enAddress: 'Cairo, Downtown',
+            status: RequestStatus.COMPLETED,
+            price: 120.00,
+            requestNumber: 'REQ-SEED-11152',
+            user: user1,
+            services: [service1],
+            technician: tech1,
+        });
+    }
+
+    if (user1 && tech1 && service2) {
+        requestsToCreate.push({
+            title: 'Bathroom leak repair',
+            description: 'Leak under the sink, needs plumbing fix.',
+            latitude: '30.1234',
+            longitude: '31.4321',
+            arAddress: 'بنها، مصر',
+            enAddress: 'Banha, Egypt',
+            status: RequestStatus.PENDING,
+            price: 250.00,
+            requestNumber: 'REQ-SEED-2',
+            user: user1,
+            technician: tech1,
+            services: [service2],
+        });
+
+        requestsToCreate.push({
+            title: 'Bathroom leak repair',
+            description: 'Leak under the sink, needs plumbing fix.',
+            latitude: '30.1234',
+            longitude: '31.4321',
+            arAddress: 'بنها، مصر',
+            enAddress: 'Banha, Egypt',
+            status: RequestStatus.COMPLETED,
+            price: 250.00,
+            requestNumber: 'REQ-SEED-322',
+            user: user1,
+            technician: tech1,
+            services: [service2],
+        });
+
+
+        requestsToCreate.push({
+            title: 'تسريب في المطبخ',
+            description: 'تسريب تحت الحوض، يحتاج إلى تصليح سباكة.',
+            latitude: '30.1234',
+            longitude: '31.4321',
+            arAddress: 'الرياض، السعودية',
+            enAddress: 'Riyadh, Saudi',
+            status: RequestStatus.IN_PROGRESS,
+            price: 250.00,
+            requestNumber: 'REQ-SEED-112',
+            user: user1,
+            technician: tech1,
+            services: [service2],
+        });
+
+        requestsToCreate.push({
+            title: 'تصليح تسريب في الحمام',
+            description: 'تسريب تحت الحوض، يحتاج إلى تصليح سباكة.',
+            latitude: '30.1234',
+            longitude: '31.4321',
+            arAddress: 'بنها، مصر',
+            enAddress: 'Banha, Egypt',
+            status: RequestStatus.PENDING,
+            price: 250.00,
+            requestNumber: 'REQ-SEED-26500',
+            user: user1,
+            technician: tech1,
+            services: [service2],
+        });
+
+        requestsToCreate.push({
+            title: 'تصليح تسريب في الحمام',
+            description: 'تسريب تحت الحوض، يحتاج إلى تصليح سباكة.',
+            latitude: '30.1234',
+            longitude: '31.4321',
+            arAddress: 'بنها، مصر',
+            enAddress: 'Banha, Egypt',
+            status: RequestStatus.CANCELLED,
+            price: 250.00,
+            requestNumber: 'REQ-SEED-2656',
+            user: user1,
+            technician: tech1,
+            services: [service2],
+        });
+    }
+
+    for (const req of requestsToCreate) {
+        const newReq = manager.create(ServiceRequestsEntity, req);
+        await manager.save(newReq);
+    }
+
+    console.log('Service requests seeded successfully');
 }

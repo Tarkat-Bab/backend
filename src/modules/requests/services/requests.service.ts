@@ -25,6 +25,7 @@ export class RequestsService {
     private readonly paginatorService: PaginatorService,
   ) {}
 
+  //User
   async createServiceRequest(createServiceRequestDto: CreateServiceRequestDto, userId: number, media: Express.Multer.File[], lang: LanguagesEnum): Promise<ServiceRequestsEntity> {
     const user = await this.usersService.findById(userId);
     const requestNumber = `REQ-${uuidv4().split('-')[0]}`;
@@ -74,8 +75,23 @@ export class RequestsService {
 
     return this.serviceRequestsRepository.save(serviceRequest);
   }
+  
+  //User & Admin
+  async updateServiceRequest(id: number, updateServiceRequestDto: UpdateServiceRequestDto, userId:number, dashboard?:boolean): Promise<ServiceRequestsEntity> {
+      const request = await this.findServiceRequestById(id, LanguagesEnum.ENGLISH, userId, dashboard);
+      
+      if (updateServiceRequestDto.technicianId && !dashboard) {
+        const technician = await this.usersService.findById(updateServiceRequestDto.technicianId);
+        request.technician = technician;
+        request.status = RequestStatus.IN_PROGRESS;
+        delete updateServiceRequestDto.technicianId;
+      }
 
-  async findAllServiceRequests(filter: FilterRequestDto){
+      Object.assign(request, updateServiceRequestDto);
+      return this.serviceRequestsRepository.save(request);
+  }
+
+  async findAllServiceRequests(filter: FilterRequestDto,lang:LanguagesEnum, userId?: number){
     const page = filter.page || 1;
     const take = filter.limit || 10;
 
@@ -101,15 +117,22 @@ export class RequestsService {
         { search: `%${filter.search}%` }
       );
     }
+
+    if (userId) {
+      query.andWhere('serviceRequest.userId = :userId', { userId });
+    }
     query.skip((filter.page - 1) * filter.limit).take(filter.limit);
     const [result, total] = await query.getManyAndCount();
 
     return this.paginatorService.makePaginate(result, total, take, page);
   }
 
-  async findServiceRequestById(id: number, lang: LanguagesEnum): Promise<ServiceRequestsEntity> {
+  async findServiceRequestById(id: number, lang: LanguagesEnum, userId?: number, dashboard?:boolean): Promise<ServiceRequestsEntity> {
     const request = await this.serviceRequestsRepository.findOne({
-      where: { id },
+      where: { 
+        id,
+        ...(userId && !dashboard ? { user: { id: userId } } : {})
+        },
       relations: ['user', 'technician', 'offers', 'offers.technician', 'media'],
     });
 
@@ -119,20 +142,8 @@ export class RequestsService {
 
     return request;
   }
-
-  async updateServiceRequest(id: number, updateServiceRequestDto: UpdateServiceRequestDto): Promise<ServiceRequestsEntity> {
-    const request = await this.findServiceRequestById(id, LanguagesEnum.ENGLISH);
-    
-    if (updateServiceRequestDto.technicianId) {
-      const technician = await this.usersService.findById(updateServiceRequestDto.technicianId);
-      request.technician = technician;
-      delete updateServiceRequestDto.technicianId;
-    }
-
-    Object.assign(request, updateServiceRequestDto);
-    return this.serviceRequestsRepository.save(request);
-  }
-
+  
+  //user
   async removeServiceRequest(id: number): Promise<void> {
     const result = await this.serviceRequestsRepository.delete(id);
     if (result.affected === 0) {

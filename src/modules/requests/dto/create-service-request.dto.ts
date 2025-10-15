@@ -15,12 +15,13 @@ export class CreateServiceRequestDto {
   description: string;
 
   @ApiProperty({
-    required: true,
-    description: 'User Location (Latitude, Longitude)',
+    required: false,
+    description: 'Request Location (Latitude, Longitude, Address.)',
     type: CreateLocationDto
   })
-  @IsNotEmpty()
-  location: CreateLocationDto;
+  @IsOptional()
+  @Type(() => CreateLocationDto)
+  location?: CreateLocationDto;
 
   @ApiProperty({ description: 'Price for the service request' })
   @IsNotEmpty()

@@ -1,7 +1,17 @@
-// Polyfill crypto on globalThis before importing other modules that may use it
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import express = require('express'); // Using require syntax for CommonJS modules
+import { ExpressAdapter } from '@nestjs/platform-express';
+
+import helmet from 'helmet';
+import * as morgan from 'morgan';
 import * as crypto from 'crypto';
-/* Provide minimal polyfill so code that expects globalThis.crypto.randomUUID works.
-   If globalThis.crypto already exists, don't overwrite it. Otherwise expose randomUUID. */
+import { rateLimit } from 'express-rate-limit';
+
+import { setupSwagger } from './common/swagger';
+import { SeedsService } from './modules/seeds/seeds.service';
+
 if (!(globalThis as any).crypto) {
 	(globalThis as any).crypto = {
 		randomUUID: (crypto as any).randomUUID?.bind(crypto) ?? (() => {
@@ -15,25 +25,11 @@ if (!(globalThis as any).crypto) {
 		})
 	};
 }
-// Also set legacy global for modules using global.crypto
 if (!(global as any).crypto) {
 	(global as any).crypto = (globalThis as any).crypto;
 }
 
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import express = require('express'); // Using require syntax for CommonJS modules
-import { ExpressAdapter } from '@nestjs/platform-express';
 
-import helmet from 'helmet';
-import * as morgan from 'morgan';
-import { rateLimit } from 'express-rate-limit';
-
-import { setupSwagger } from './common/swagger';
-import { SeedsService } from './modules/seeds/seeds.service';
-
-// Create Express instance
 const expressApp = express();
 const adapter = new ExpressAdapter(expressApp);
 
@@ -78,8 +74,8 @@ async function bootstrap() {
 // For local development
 if (process.env.NODE_ENV !== 'production') {
   bootstrap().then(app => {
-    app.listen(3000);
-    console.log('Listening on port 3000');
+    app.listen(process.env.PORT || 3000);
+    console.log('Listening on port ', process.env.PORT || 3000);
   });
 }
 

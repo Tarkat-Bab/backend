@@ -9,12 +9,11 @@ export class DashboardRequestsService {
         private readonly requestsService: RequestsService,
     ) {}
 
-    async findAll(filter: FilterRequestDto) {
-        return this.requestsService.findAllServiceRequests(filter);
+    async findAll(filter: FilterRequestDto, lang: LanguagesEnum) {
+        return this.requestsService.findAllServiceRequests(filter, lang);
     }
 
     async findOne(id: number, lang: LanguagesEnum) {
         return this.requestsService.findServiceRequestById(id, lang);
     }
-    
 }

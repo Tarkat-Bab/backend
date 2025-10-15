@@ -20,7 +20,7 @@ export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
   // Service Requests Endpoints
-  @Post()
+  @Post('client')
   @ApiHeader({
     name: 'Accept-Language',
     description: 'Language preference',
@@ -28,7 +28,7 @@ export class RequestsController {
     schema: { enum: Object.values(LanguagesEnum), default: LanguagesEnum.ENGLISH },
   })
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Create a new service request' })
+  @ApiOperation({ summary: 'Create a new request (Client Api)' })
   @ApiBody({ type: CreateServiceRequestDto })
   @UseInterceptors(FilesInterceptor('images'))
   async createServiceRequest(
@@ -40,30 +40,32 @@ export class RequestsController {
     return this.requestsService.createServiceRequest(createServiceRequestDto, user.id, images, lang);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a service request by id' })
+  @Get('client/:id')
+  @ApiOperation({ summary: 'Get a request by id' })
   @ApiParam({ name: 'id', description: 'Service Request ID' })
   @ApiResponse({ status: 200, description: 'Return the service request.', type: ServiceRequestsEntity })
   @ApiResponse({ status: 404, description: 'Service request not found.' })
   @ApiBearerAuth()
   async findServiceRequestById(
+    @CurrentUser() user: any,
     @Param('id') id: number,
     @Language() lang: LanguagesEnum,
   ): Promise<ServiceRequestsEntity> {
-    return this.requestsService.findServiceRequestById(id, lang);
+    return this.requestsService.findServiceRequestById(id, lang, user.id);
   }
 
-  @Patch(':id')
+  @Patch('client/:id')
   @ApiOperation({ summary: 'Update a service request' })
   @ApiParam({ name: 'id', description: 'Service Request ID' })
   @ApiBody({ type: UpdateServiceRequestDto })
   @ApiResponse({ status: 200, description: 'Return the updated service request.', type: ServiceRequestsEntity })
   @ApiResponse({ status: 404, description: 'Service request not found.' })
   async updateServiceRequest(
+    @CurrentUser() user: any,
     @Param('id') id: number,
     @Body() updateServiceRequestDto: UpdateServiceRequestDto,
   ): Promise<ServiceRequestsEntity> {
-    return this.requestsService.updateServiceRequest(id, updateServiceRequestDto);
+    return this.requestsService.updateServiceRequest(id, updateServiceRequestDto, user.id);
   }
 
   @Delete(':id')

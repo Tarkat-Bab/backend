@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { CreateLocationDto } from 'src/modules/locations/createLocation.dto';
 
 export class CreateRequestOfferDto {
   @ApiProperty({ description: 'Price offered for the request' })
@@ -17,25 +19,14 @@ export class CreateRequestOfferDto {
   @IsString()
   description: string;
 
-  @ApiProperty({ description: 'Latitude of the technician location', required: false })
+  @ApiProperty({
+    required: false,
+    description: 'Request Location (Latitude, Longitude, Address.)',
+    type: CreateLocationDto
+  })
   @IsOptional()
-  @IsNumber()
-  latitude?: number;
-
-  @ApiProperty({ description: 'Longitude of the technician location', required: false })
-  @IsOptional()
-  @IsNumber()
-  longitude?: number;
-
-  @ApiProperty({ description: 'Address in Arabic', required: false })
-  @IsOptional()
-  @IsString()
-  arAddress?: string;
-
-  @ApiProperty({ description: 'Address in English', required: false })
-  @IsOptional()
-  @IsString()
-  enAddress?: string;
+  @Type(() => CreateLocationDto)
+  location?: CreateLocationDto;
 
   @ApiProperty({ description: 'ID of the request' })
   @IsNotEmpty()
