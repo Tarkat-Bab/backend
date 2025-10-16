@@ -21,4 +21,3 @@ EXPOSE 3000
 
 # Run the compilerd code
 CMD ["node", "dist/main.js"]
->>>>>>> a6cb87a268103f28ce11f60468527ee0dc4ff995
