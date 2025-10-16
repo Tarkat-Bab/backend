@@ -12,7 +12,6 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { isPublic } from 'src/common/decorators/public.decorator';
 @ApiBearerAuth()
 @ApiTags('requests')
 @Controller('requests')
