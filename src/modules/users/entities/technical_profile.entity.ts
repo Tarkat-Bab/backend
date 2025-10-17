@@ -35,11 +35,11 @@ export class TechnicalProfileEntity extends BaseEntity {
     @AfterLoad()
     async MediaUrl() {
         if (typeof this.workLicenseImage === 'string' && process.env.APP_URL) {
-            const fullPath = join('api', process.env.MEDIA_DIR, MediaDir.WORKLICENSE, this.workLicenseImage);
+            const fullPath = join(process.env.MEDIA_DIR, MediaDir.WORKLICENSE, this.workLicenseImage);
             this.workLicenseImage = `${process.env.APP_URL}/${fullPath}`;
         }
         if (typeof this.identityImage === 'string' && process.env.APP_URL) {
-            const fullPath = join('api', process.env.MEDIA_DIR, MediaDir.IDENTITY, this.identityImage);
+            const fullPath = join(process.env.MEDIA_DIR, MediaDir.IDENTITY, this.identityImage);
             this.identityImage = `${process.env.APP_URL}/${fullPath}`;
         }
     }

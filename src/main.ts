@@ -1,13 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import express = require('express'); // Using require syntax for CommonJS modules
 import { ExpressAdapter } from '@nestjs/platform-express';
 
 import helmet from 'helmet';
 import * as morgan from 'morgan';
 import * as crypto from 'crypto';
 import { rateLimit } from 'express-rate-limit';
+import express = require('express'); // Using require syntax for CommonJS modules
 
 import { setupSwagger } from './common/swagger';
 import { SeedsService } from './modules/seeds/seeds.service';
@@ -45,12 +45,12 @@ async function bootstrap() {
     });
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ transform: true }));    
-    // Configure helmet with settings that allow Swagger UI to work
     app.use(helmet({
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: { policy: 'cross-origin' }
     }));    
+
     // Only use morgan in development
     if (process.env.NODE_ENV !== 'production') {
       app.use(morgan('combined'));
@@ -60,12 +60,10 @@ async function bootstrap() {
       max: 100, 
     }));
 
-    // Run seeds only in specific environments or with a flag
     const seedsService = app.get(SeedsService);
     await seedsService.seedDatabase();
     
     setupSwagger(app);
-
     await app.init();
   }
   return app;

@@ -8,7 +8,7 @@ export class verifyEmailOtpDto extends SendEmailOtpDto{
   @ApiProperty({
     required: true,
     description: 'otp code',
-    example: '123456',
+    example: '12345',
     type: String,
   })
   @IsNotEmpty()

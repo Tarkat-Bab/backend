@@ -14,20 +14,20 @@ import { AppService    } from './app.service';
 import { ResponseTransformInterceptor } from './common/Interceptors/response-transform';
 import { AllExceptionsFilter } from './common/exceptions/all-exceptions.filter';
 
-import { DatabaseModule  } from './databases/database.module';
-import { PaginatorModule } from './common/paginator/paginator.module';
-import { FilesModule     } from './common/files/files.module';
-import { AuthModule      } from './modules/auth/auth.module';
-import { UsersModule     } from './modules/users/users.module';
-import { EmailModule     } from './modules/mailer/mailer.module';
-import { SeedsModule } from './modules/seeds/seeds.module';
-import { LocationsModule } from './modules/locations/locations.module';
-import { ServicesModule } from './modules/services/services.module';
+import { SeedsModule }        from './modules/seeds/seeds.module';
+import { ReportsModule }      from './modules/reports/reports.module';
+import { ReviewsModule }      from './modules/reviews/reviews.module';
+import { RequestsModule }     from './modules/requests/requests.module';
+import { ServicesModule }     from './modules/services/services.module';
+import { DatabaseModule  }    from './databases/database.module';
+import { PaginatorModule }    from './common/paginator/paginator.module';
+import { FilesModule     }    from './common/files/files.module';
+import { AuthModule      }    from './modules/auth/auth.module';
+import { UsersModule     }    from './modules/users/users.module';
+import { EmailModule     }    from './modules/mailer/mailer.module';
+import { LocationsModule }    from './modules/locations/locations.module';
+import { DashboardModule }    from './dashboard/dashboard.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
-import { DashboardModule } from './dashboard/dashboard.module';
-import { RequestsModule } from './modules/requests/requests.module';
-import { ReportsModule } from './modules/reports/reports.module';
-import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -66,10 +66,10 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     SeedsModule,
     LocationsModule,
     ServicesModule,
-    NationaltiesModule,
     RequestsModule,
     ReportsModule,
     ReviewsModule,
+    NationaltiesModule,
   ],
   controllers: [AppController],
   providers: [
@@ -78,7 +78,6 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
       provide: APP_INTERCEPTOR,
       useClass: ResponseTransformInterceptor,
     },
-
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
