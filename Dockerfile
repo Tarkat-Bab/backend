@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Expose the port
-EXPOSE 3000
+EXPOSE 5000
 
 # Run the compilerd code
 CMD ["node", "dist/main.js"]
