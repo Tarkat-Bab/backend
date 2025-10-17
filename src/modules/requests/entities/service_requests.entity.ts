@@ -1,5 +1,5 @@
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { AfterLoad, Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
 import { RequestStatus } from "../enums/requestStatus.enum";
 import { ServiceEntity } from "src/modules/services/entities/service.entity";
 import { UserEntity } from "src/modules/users/entities/users.entity";
@@ -38,8 +38,9 @@ export class ServiceRequestsEntity extends BaseEntity {
     @Column({type:'varchar', unique:true})
     requestNumber: string;
 
-    @OneToMany(() => ServiceEntity, service => service.requests)
-    services: ServiceEntity[];
+    @ManyToOne(() => ServiceEntity, service => service.requests)
+    @JoinColumn({ name: 'service_id' })
+    service: ServiceEntity;
 
     @ManyToOne(() => UserEntity, user => user.serviceRequests, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'user_id' })
@@ -51,5 +52,16 @@ export class ServiceRequestsEntity extends BaseEntity {
 
     @OneToMany(() => RequestOffersEntity, offer => offer.request)
     offers: RequestOffersEntity[];
+
+    @AfterLoad()
+    async loadMediaUrls() {
+        if (this.media && this.media.length > 0) {
+            for (const mediaItem of this.media) {
+                const url = await mediaItem.MediaUrl();
+                console.log('Loaded media URL:', url);
+                return  url;
+            }   
+        }
+    }
 
 }

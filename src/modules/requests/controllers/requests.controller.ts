@@ -1,17 +1,12 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { RequestsService } from '../services/requests.service';
 import { CreateServiceRequestDto } from '../dto/create-service-request.dto';
-import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
-import { CreateRequestOfferDto } from '../dto/create-request-offer.dto';
-import { UpdateRequestOfferDto } from '../dto/update-request-offer.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth, ApiConsumes, ApiHeader } from '@nestjs/swagger';
 import { ServiceRequestsEntity } from '../entities/service_requests.entity';
-import { RequestOffersEntity } from '../entities/request_offers.entity';
 import { RequestStatus } from '../enums/requestStatus.enum';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
-import { isPublic } from 'src/common/decorators/public.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
 @ApiBearerAuth()
@@ -37,36 +32,26 @@ export class RequestsController {
     @Body() createServiceRequestDto: CreateServiceRequestDto,
     @UploadedFiles() images: Express.Multer.File[],
     @Language() lang: LanguagesEnum,
-  ): Promise<ServiceRequestsEntity> {
+  ){
     return this.requestsService.createServiceRequest(createServiceRequestDto, user.id, images, lang);
   }
 
   @Get('client/:id')
-  @ApiOperation({ summary: 'Get a request by id' })
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Language preference',
+    required: false,
+    enum: LanguagesEnum
+  })
+  @ApiOperation({ summary: 'Get a request by id ' })
   @ApiParam({ name: 'id', description: 'Service Request ID' })
-  @ApiResponse({ status: 200, description: 'Return the service request.', type: ServiceRequestsEntity })
-  @ApiResponse({ status: 404, description: 'Service request not found.' })
   @ApiBearerAuth()
-  async findServiceRequestById(
+  async findRequestById(
     @CurrentUser() user: any,
     @Param('id') id: number,
     @Language() lang: LanguagesEnum,
-  ): Promise<ServiceRequestsEntity> {
-    return this.requestsService.findServiceRequestById(id, lang, user.id);
-  }
-
-  @Patch('client/:id')
-  @ApiOperation({ summary: 'Update a service request' })
-  @ApiParam({ name: 'id', description: 'Service Request ID' })
-  @ApiBody({ type: UpdateServiceRequestDto })
-  @ApiResponse({ status: 200, description: 'Return the updated service request.', type: ServiceRequestsEntity })
-  @ApiResponse({ status: 404, description: 'Service request not found.' })
-  async updateServiceRequest(
-    @CurrentUser() user: any,
-    @Param('id') id: number,
-    @Body() updateServiceRequestDto: UpdateServiceRequestDto,
-  ): Promise<ServiceRequestsEntity> {
-    return this.requestsService.updateServiceRequest(id, updateServiceRequestDto, user.id);
+  ){
+    return this.requestsService.findRequestById(id, lang, user.id);
   }
 
   @Delete(':id')

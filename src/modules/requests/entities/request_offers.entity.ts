@@ -2,6 +2,7 @@ import { BaseEntity } from "src/common/baseEntity/baseEntity";
 import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 import { ServiceRequestsEntity } from "./service_requests.entity";
 import { UserEntity } from "src/modules/users/entities/users.entity";
+import { TechnicalProfileEntity } from "src/modules/users/entities/technical_profile.entity";
 
 @Entity("request_offers")
 export class RequestOffersEntity extends BaseEntity {
@@ -26,11 +27,14 @@ export class RequestOffersEntity extends BaseEntity {
     @Column({ type: 'varchar', length: 255, nullable: true })
     enAddress: string
     
+    @Column({ type: 'boolean', default: false })
+    accepted: boolean;
+
     @ManyToOne(() => ServiceRequestsEntity, serviceRequest => serviceRequest.offers)
     @JoinColumn({ name: 'request_id' })
     request: ServiceRequestsEntity;
 
-    @ManyToOne(() => UserEntity, user => user.id, { onDelete: 'RESTRICT' })
+    @ManyToOne(() => TechnicalProfileEntity, user => user.id, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'technical_id' })
-    technician: UserEntity;
+    technician: TechnicalProfileEntity;
 }

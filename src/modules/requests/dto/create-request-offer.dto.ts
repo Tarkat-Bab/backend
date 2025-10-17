@@ -27,14 +27,4 @@ export class CreateRequestOfferDto {
   @IsOptional()
   @Type(() => CreateLocationDto)
   location?: CreateLocationDto;
-
-  @ApiProperty({ description: 'ID of the request' })
-  @IsNotEmpty()
-  @IsNumber()
-  requestId: number;
-
-  @ApiProperty({ description: 'ID of the technical user making the offer' })
-  @IsNotEmpty()
-  @IsNumber()
-  technicianId: number;
 }

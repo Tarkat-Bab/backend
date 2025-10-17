@@ -135,7 +135,7 @@ export class OtpService {
   }
 
   /**
-   * Send OTP email depending on purpose
+   * Send OTP email dePENDING on purpose
    */
   private async sendOtpEmail(
     { email, name }: userDetailsDto,
