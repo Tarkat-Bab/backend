@@ -46,19 +46,10 @@ export class UsersService {
       lastLoginAt: new Date(),
       status: UserStatus.UNVERIFIED
     };
-    
-    // Add location data if provided
-    // if (location) {
-    //   const { latitude, longitude } = location;
-    //   userData.latitude = latitude;
-    //   userData.longitude = longitude;
-    // }
-
     const newUser = this.usersRepo.create(userData);
     
     try {
       const savedUser = await this.usersRepo.save(newUser);
-      // Only exclude password if it exists
       const { password, ...userData } = savedUser as any;
       return userData;
     } catch(error) {
@@ -68,8 +59,6 @@ export class UsersService {
 
   async adminLogin(loginDto: AdminLoginDto, lang: LanguagesEnum) {
     const { email, password } = loginDto;
-    // const hashPassword = await hash(password, 10);
-    // console.log('Hashed Password:', hashPassword); // Debugging line to check hashed password
     const existUser = await this.usersRepo.findOne({
       where: {
         email,
@@ -95,7 +84,6 @@ export class UsersService {
     } 
 
     const correctPassword = await compare(password, existUser.password);
-    // console.log('Password Match:', correctPassword); // Debugging line to check password match result
     if (!correctPassword){
       if(lang === LanguagesEnum.ENGLISH){
         throw new BadRequestException('Invalid email or password.');
@@ -176,7 +164,6 @@ export class UsersService {
       }
     }
 
-    // Create a new object without the location property
     const { location: _, ...rest } = registerDto;
     const dataToUpdate: any = { ...rest };
     
@@ -279,37 +266,6 @@ export class UsersService {
     return this.paginatorService.makePaginate(result, total, take, page);
   } 
 
-  async removeUsers(ids: number[], user: { id: number }, type: UsersTypes) {
-    const { id } = user;
-    const batchSize = 50;
-    let users: UserEntity[];
-
-    do {
-      users = await this.usersRepo.find({
-        where: {
-          id: In(ids),
-          deleted: false,
-          type,
-        },
-        take: batchSize,
-        order: { id: 'asc' },
-        select: { id: true },
-      });
-
-      if (users.length > 0) {
-        await this.usersRepo.update(
-          { id: In(users.map((u) => u.id)) },
-          {
-            deleted: true,
-            deletedBy: id,
-            deletedAt: new Date(),
-          },
-        );
-      }
-    } while (users.length === batchSize);
-    return true;
-  }
-
   async checkUserExist(
     dto: {
       email?: string | null;
@@ -347,76 +303,76 @@ export class UsersService {
     return;
   }
 
-async findById(id: number, lang?: LanguagesEnum): Promise<UserEntity> {
-  const addressColumn =
-    lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
+  async findById(id: number, lang?: LanguagesEnum): Promise<UserEntity> {
+    const addressColumn =
+      lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
 
-  let query = this.usersRepo
-    .createQueryBuilder('u')
-    .where('u.deleted = :deleted', { deleted: false })
-    .andWhere('u.id = :id', { id })
-    .select([
-      'u.id AS id',
-      'u.type AS type',
-      'u.username AS username',
-      'u.image AS image',
-      'u.createdAt AS createdAt',
-      'u.phone AS phone',
-      'u.status AS status',
-      `${addressColumn} AS address`,
-    ]);
-
-  let existUser = await query.getRawOne();
-
-  if (!existUser) {
-    throw new NotFoundException(
-      lang === LanguagesEnum.ARABIC
-        ? 'المستخدم غير موجود.'
-        : 'User not found.'
-    );
-  }
-
-  if (existUser.type === UsersTypes.TECHNICAL) {
-    query = this.usersRepo
+    let query = this.usersRepo
       .createQueryBuilder('u')
-      .leftJoin('u.technicalProfile', 'tech')
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere('u.id = :id', { id })
       .select([
         'u.id AS id',
-        'u.username AS username',
-        'u.phone AS phone',
         'u.type AS type',
+        'u.username AS username',
         'u.image AS image',
         'u.createdAt AS createdAt',
+        'u.phone AS phone',
         'u.status AS status',
         `${addressColumn} AS address`,
-        'tech.id AS techId',
-        'tech.avgRating AS avgRating',
       ]);
 
-    existUser = await query.getRawOne();
+    let existUser = await query.getRawOne();
+
+    if (!existUser) {
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC
+          ? 'المستخدم غير موجود.'
+          : 'User not found.'
+      );
+    }
+
+    if (existUser.type === UsersTypes.TECHNICAL) {
+      query = this.usersRepo
+        .createQueryBuilder('u')
+        .leftJoin('u.technicalProfile', 'tech')
+        .where('u.deleted = :deleted', { deleted: false })
+        .andWhere('u.id = :id', { id })
+        .select([
+          'u.id AS id',
+          'u.username AS username',
+          'u.phone AS phone',
+          'u.type AS type',
+          'u.image AS image',
+          'u.createdAt AS createdAt',
+          'u.status AS status',
+          `${addressColumn} AS address`,
+          'tech.id AS techId',
+          'tech.avgRating AS avgRating',
+        ]);
+
+      existUser = await query.getRawOne();
+    }
+
+    const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
+    const isUser = existUser?.type === UsersTypes.USER;
+
+    return {
+      id: existUser.id,
+      username: existUser.username,
+      createdAt: existUser.createdat,
+      phone: existUser.phone,
+      address: existUser.address,
+      image: existUser.image,
+      status: existUser.status,
+      totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
+      reports: Number(existUser.reportssubmitted ?? 0),
+      avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
+      completedOrders: isTechnical
+        ? Number(existUser.completedorders ?? 0)
+        : undefined,
+    } as unknown as UserEntity;
   }
-
-  const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
-  const isUser = existUser?.type === UsersTypes.USER;
-
-  return {
-    id: existUser.id,
-    username: existUser.username,
-    createdAt: existUser.createdat,
-    phone: existUser.phone,
-    address: existUser.address,
-    image: existUser.image,
-    status: existUser.status,
-    totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
-    reports: Number(existUser.reportssubmitted ?? 0),
-    avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
-    completedOrders: isTechnical
-      ? Number(existUser.completedorders ?? 0)
-      : undefined,
-  } as unknown as UserEntity;
-}
 
   async findUserForGuard(id:number){
     return await this.usersRepo.findOne({
@@ -574,65 +530,6 @@ async findById(id: number, lang?: LanguagesEnum): Promise<UserEntity> {
 
     await this.usersRepo.save(user);
     return this.userProfile(userId, lang);
-  }
-
-  async deleteAccount(user: { id: number }): Promise<void> {
-    const existUser = await this.usersRepo.findOne({
-      where: { id: user.id, deleted: false },
-      select: { id: true, image: true },
-    });
-    if (!existUser) return;
-    await this.usersRepo.update(
-      { id: user.id },
-      {
-        deleted: true,
-        deletedAt: new Date(),
-        deletedBy: user.id,
-      },
-    );
-    if (existUser?.image) return;
-    //   void (await this.filesService.deleteFiles(
-    //     [existUser.image],
-    //     MediaFolders.Profiles,
-    //     true,
-    //   ));
-  }
-
-  async getUsersForReport() {
-    const query = this.usersRepo
-      .createQueryBuilder('u')
-      .select([ 
-        'u.id',
-        'u.active',
-        'u.type',
-        'u.deleted',
-        'u.blocked',
-      ])
-      .getMany();
-
-      return await query;
-  }
-
-  async generateUserTypeReport(type: UsersTypes) {
-    const result = await this.usersRepo
-      .createQueryBuilder('u')
-      .select([
-        'COUNT(*) as total',
-        `COUNT(CASE WHEN u.active = true AND u.deleted = false AND u.blocked = false THEN 1 END) as active`,
-        `COUNT(CASE WHEN u.active = false AND u.deleted = false AND u.blocked = false THEN 1 END) as inactive`,
-        `COUNT(CASE WHEN u.deleted = true THEN 1 END) as deleted`,
-        `COUNT(CASE WHEN u.blocked = true AND u.deleted = false THEN 1 END) as blocked`,
-      ])
-      .where('u.type = :type', { type })
-      .getRawOne();
-    
-    return {
-      [`total${type}s`]: Number(result.total),
-      [`active${type}s`]: Number(result.active),
-      [`inactive${type}s`]: Number(result.inactive),
-      [`deleted${type}s`]: Number(result.deleted),
-      [`blocked${type}s`]: Number(result.blocked),
-    };
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto, lang: LanguagesEnum) {
