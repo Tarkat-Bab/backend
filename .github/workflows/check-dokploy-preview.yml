@@ -1,0 +1,67 @@
+name: Check Dokploy Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: read
+  issues: read
+
+jobs:
+  verify-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get Dokploy Preview URL from PR comments
+        id: get-url
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            // Find last Dokploy comment
+            const dokployComment = comments.reverse().find(c => 
+              c.user.login.toLowerCase().includes("bot") && 
+              c.body.includes("Dokploy Preview Deployment")
+            );
+
+            if (!dokployComment) {
+              core.setFailed("No Dokploy preview comment found.");
+              return;
+            }
+
+            // Extract URL (first http link)
+            const match = dokployComment.body.match(/http:\/\/[^\s]+/);
+            if (!match) {
+              core.setFailed("No Preview URL found in Dokploy comment.");
+              return;
+            }
+
+            const previewUrl = match[0];
+            core.setOutput("preview_url", previewUrl);
+            console.log("Found Preview URL:", previewUrl);
+
+      - name: Check Preview URL HTTP response
+        id: check-url
+        run: |
+          url="${{ steps.get-url.outputs.preview_url }}"
+          echo "Checking preview URL: $url"
+
+          # Send request and get HTTP code only
+          http_code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+
+          echo "Response code: $http_code"
+
+          # If 500–599 fail
+          if [ "$http_code" -ge 500 ] && [ "$http_code" -lt 600 ]; then
+            echo "❌ Preview returned server error ($http_code). Failing check."
+            exit 1
+          fi
+
+          echo "✅ Preview responded OK ($http_code)."
