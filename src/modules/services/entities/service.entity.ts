@@ -3,7 +3,7 @@ import { BaseEntity } from "src/common/baseEntity/baseEntity";
 import { MediaDir } from "src/common/files/media-dir-.enum";
 import { ServiceRequestsEntity } from "src/modules/requests/entities/service_requests.entity";
 import { TechnicalProfileEntity } from "src/modules/users/entities/technical_profile.entity";
-import { AfterLoad, Column, Entity, ManyToOne, OneToMany } from "typeorm";
+import { AfterLoad, Column, Entity, ManyToOne } from "typeorm";
 
 @Entity('services')
 export class ServiceEntity extends BaseEntity {
@@ -19,8 +19,8 @@ export class ServiceEntity extends BaseEntity {
     @ManyToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.services, { onDelete: 'RESTRICT' })
     technicalProfile: TechnicalProfileEntity;
 
-    @OneToMany(() => ServiceRequestsEntity, serviceRequests => serviceRequests.service, { onDelete: 'RESTRICT' })
-    requests: ServiceRequestsEntity[];
+    @ManyToOne(() => ServiceRequestsEntity, serviceRequests => serviceRequests.services, { onDelete: 'RESTRICT' })
+    requests: ServiceRequestsEntity;
 
     @AfterLoad()
     async MediaUrl() {

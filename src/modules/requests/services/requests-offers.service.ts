@@ -20,39 +20,23 @@ export class RequestOffersService {
     private usersService: UsersService,
   ) {}
 
-  async createRequestOffer(technicianId: number, requestId: number, createRequestOfferDto: CreateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
-    const request = await this.requestService.findRequestById(requestId, lang);
-    if(!request){
-      if(lang === LanguagesEnum.ARABIC){
-        throw new NotFoundException(`الطلب غير موجود`);
-      }else{
-        throw new NotFoundException(`Request not found`);
-      }
-    }
-
-    if(request.status !== RequestStatus.PENDING){
-      if(lang === LanguagesEnum.ARABIC){
-        throw new NotFoundException(`لا يمكن تقديم عرض على طلب غير في حالة انتظار`);
-      }else{
-        throw new NotFoundException(`Cannot make an offer on a request that is not in pending status`);
-      }
-    }
-
-    const technician = await this.usersService.findTechnicianById(technicianId, lang);
+  async createRequestOffer(createRequestOfferDto: CreateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
+    const request = await this.requestService.findServiceRequestById(createRequestOfferDto.requestId, lang);
+    const technician = await this.usersService.findById(createRequestOfferDto.technicianId, lang);
 
     if (!technician) {
-      if(lang === LanguagesEnum.ARABIC){
-        throw new NotFoundException(`المستخدم الفني غير موجود`);
-      }
-      throw new NotFoundException(`Technician not found`);
+      throw new NotFoundException(`Technical user with ID ${createRequestOfferDto.technicianId} not found`);
     }
 
+    // Remove IDs from DTO as we're using the entities
+    const { requestId, technicianId, ...offerData } = createRequestOfferDto;
+    
     const offer = this.requestOffersRepository.create({
-      ...createRequestOfferDto,
+      ...offerData,
       request,
       technician,
     });
-    console.log('Created Offer:', offer);
+
     return this.requestOffersRepository.save(offer);
   }
 
@@ -69,49 +53,21 @@ export class RequestOffersService {
     });
   }
 
-  async findRequestOfferById(userId:number,id: number, lang: LanguagesEnum, dashboard?:boolean): Promise<RequestOffersEntity> {
+  async findRequestOfferById(userId:number,id: number): Promise<RequestOffersEntity> {
     const offer = await this.requestOffersRepository.findOne({
       where: { id },
       relations: ['request', 'technician'],
-      select: {
-        id: true,
-        price: true,
-        needsDelivery: true,
-        description: true,
-        accepted: true,
-        technician: {
-          id: true,
-          user:{
-            id: true,
-            username: true,
-          },
-          avgRating: true,
-       },
-        request: {
-          id: true,
-          user: {
-            id: true,
-          },
-        },
-    }
     });
 
     if (!offer) {
-      if(lang === LanguagesEnum.ARABIC){
-        throw new NotFoundException('العرض غير موجود');
-      }
-      throw new NotFoundException(`Offer not found`);
-    }
-
-    if(!dashboard && offer.technician.id !== userId || offer.request.id !== userId ){
-      offer.price = null;
+      throw new NotFoundException(`Request offer with ID ${id} not found`);
     }
 
     return offer;
   }
 
-  async updateRequestOffer(userId:number, id: number, updateRequestOfferDto: UpdateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
-    const offer = await this.findRequestOfferById(userId, id, lang);
+  async updateRequestOffer(userId:number, id: number, updateRequestOfferDto: UpdateRequestOfferDto): Promise<RequestOffersEntity> {
+    const offer = await this.findRequestOfferById(userId, id);
     Object.assign(offer, updateRequestOfferDto);
     return this.requestOffersRepository.save(offer);
   }
@@ -123,23 +79,14 @@ export class RequestOffersService {
     }
   }
 
-  async acceptOffer(userId: number, offerId: number, lang: LanguagesEnum) {
-    const offer = await this.findRequestOfferById(userId, offerId, lang);
-    if(userId !== offer.request.user.id){
-      if(lang === LanguagesEnum.ARABIC){
-        throw new NotFoundException(`لا يمكنك قبول عرض ليس لطلبك`);
-      }else{
-        throw new NotFoundException(`You cannot accept an offer that is not for your request`);
-      }
-    }
-    const request = await this.requestService.findRequestById(offer.request.id, lang);
+  async acceptOffer(userId: number, offerId: number) {
+    const offer = await this.findRequestOfferById(userId, offerId);
+    const request = offer.request;
     
     request.technician = offer.technician;
     request.price = offer.price;
     request.status = RequestStatus.IN_PROGRESS;
-    offer.accepted = true;
     
-    await this.requestOffersRepository.save(offer);
-    return this.requestService.save(request);
+    // return this.requestService.save(request);
   }
 }

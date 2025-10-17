@@ -34,12 +34,4 @@ export class CreateServiceRequestDto {
   @IsNotEmpty()
   @IsOptional()
   images?: Express.Multer.File[];
-
-
-  @ApiProperty({ description: 'ID of the service being requested' })
-  @IsNotEmpty()
-  @IsNumber()
-  @IsPositive()
-  @Type(() => Number)
-  serviceId: number;
 }

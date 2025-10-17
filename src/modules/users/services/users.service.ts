@@ -381,31 +381,6 @@ export class UsersService {
     })
   }
 
-  async findTechnicianById(id: number, lang: LanguagesEnum, dashboard?: boolean): Promise<TechnicalProfileEntity> {
-    const technician = await this.technicalProfileRepo.findOne({
-      where: { id, deleted: false, user: { deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } },
-      relations: ['user'],
-      select: {
-        id: true,
-        avgRating: true,
-        description: true,
-        user: {
-          id: true,
-          username: true,
-          phone: true,
-          image: true,
-        },
-      },
-    });
-    if (!technician) {
-      if(lang === LanguagesEnum.ARABIC){
-        throw new NotFoundException(`المستخدم الفني غير موجود`);
-      } else {
-        throw new NotFoundException(`Technician not found`);
-      }
-    }
-    return technician;
-  }
   async findByEmail(email: string, lang: LanguagesEnum, status?: UserStatus) {
     const user = await this.usersRepo.findOne({
       where: {

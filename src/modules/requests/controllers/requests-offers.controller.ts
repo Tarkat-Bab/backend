@@ -7,7 +7,6 @@ import { RequestOffersEntity } from '../entities/request_offers.entity';
 import { RequestOffersService } from '../services/requests-offers.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { Language } from 'src/common/decorators/languages-headers.decorator';
 
 @ApiBearerAuth()
 @ApiTags('request-offers')
@@ -15,22 +14,22 @@ import { Language } from 'src/common/decorators/languages-headers.decorator';
 export class RequestOffersController {
   constructor(private readonly requestsOffersService: RequestOffersService) {}
 
-  @Post('offers/:requestId')
-  @ApiHeader({
-    name: 'accept-language',
-    description: 'Language preference for the response',
-    required: false,
-  })
-  @ApiOperation({ summary: 'Create a new request offer (Technician API)' })
-  @ApiBearerAuth()
-  async createRequestOffer(
-    @CurrentUser() user: any,
-    @Param('requestId') requestId: number,
-    @Language() lang: LanguagesEnum,
-    @Body() createRequestOfferDto: CreateRequestOfferDto,
-  ): Promise<RequestOffersEntity> {
-    return this.requestsOffersService.createRequestOffer(user.id, requestId, createRequestOfferDto, lang);
-  }
+  // @Post('offers')
+  // @ApiHeader({
+  //   name: 'accept-language',
+  //   description: 'Language preference for the response',
+  //   required: false,
+  // })
+  // @ApiOperation({ summary: 'Create a new request offer' })
+  // @ApiResponse({ status: 201, description: 'The offer has been created successfully.', type: RequestOffersEntity })
+  // @ApiBody({ type: CreateRequestOfferDto })
+  // @ApiBearerAuth()
+  // async createRequestOffer(
+  //   @Query('lang') lang: LanguagesEnum,
+  //   @Body() createRequestOfferDto: CreateRequestOfferDto,
+  // ): Promise<RequestOffersEntity> {
+  //   return this.requestsOffersService.createRequestOffer(createRequestOfferDto, lang);
+  // }
 
   // @Get('offers')
   // @ApiOperation({ summary: 'Get all request offers' })
@@ -41,22 +40,25 @@ export class RequestOffersController {
   // }
 
   @Get('offers/:id')
-  @ApiHeader({
-    name: 'accept-language',
-    description: 'Language preference for the response',
-    required: false,
-  })
-  @ApiOperation({ summary: 'Get a request offer by id (Technician API, Client API)' })
+  @ApiOperation({ summary: 'Get a request offer by id' })
   @ApiParam({ name: 'id', description: 'Request Offer ID' })
+  @ApiResponse({ status: 200, description: 'Return the request offer.', type: RequestOffersEntity })
+  @ApiResponse({ status: 404, description: 'Request offer not found.' })
   @ApiBearerAuth()
   async findRequestOfferById(
-    @Language() lang: LanguagesEnum,
     @CurrentUser() user: any,
     @Param('id') id: number
   ): Promise<RequestOffersEntity> {
-    return this.requestsOffersService.findRequestOfferById(user.id, id, lang);
+    return this.requestsOffersService.findRequestOfferById(user.id, id);
   }
 
+  @Get('/:requestId/offers')
+  @ApiOperation({ summary: 'Get all offers for a service request' })
+  @ApiParam({ name: 'requestId', description: 'Service Request ID' })
+  @ApiResponse({ status: 200, description: 'Return all offers for the request.', type: [RequestOffersEntity] })
+  async findRequestOffersByRequestId(@Param('requestId') requestId: number): Promise<RequestOffersEntity[]> {
+    return this.requestsOffersService.findRequestOffersByRequestId(requestId);
+  }
 
   @Patch('offers/:id')
   @ApiOperation({ summary: 'Update a request offer' })
@@ -69,9 +71,8 @@ export class RequestOffersController {
     @CurrentUser() user: any,
     @Param('id') id: number,
     @Body() updateRequestOfferDto: UpdateRequestOfferDto,
-    @Language() lang: LanguagesEnum,
   ): Promise<RequestOffersEntity> {
-    return this.requestsOffersService.updateRequestOffer(user.id,id,  updateRequestOfferDto, lang);
+    return this.requestsOffersService.updateRequestOffer(user.id,id,  updateRequestOfferDto);
   }
 
   @Delete('offers/:id')
@@ -84,16 +85,13 @@ export class RequestOffersController {
     return this.requestsOffersService.removeRequestOffer(id);
   }
 
-  @Post('offers/accept/:id')
-  @ApiOperation({ summary: 'Accept an offer for a  request' })
-  @ApiParam({ name: 'id', description: 'Request Offer ID' })
-  @ApiResponse({ status: 200, description: 'The offer has been accepted.', type: ServiceRequestsEntity })
-  @ApiBearerAuth()
-  async acceptOffer(
-    @CurrentUser() user: any,
-    @Param('id') id: number,
-    @Language() lang: LanguagesEnum,
-  ){
-    return this.requestsOffersService.acceptOffer(user.id, id, lang);
-  }
+  // @Post('offers/:id/accept')
+  // @ApiOperation({ summary: 'Accept an offer for a service request' })
+  // @ApiParam({ name: 'id', description: 'Request Offer ID' })
+  // @ApiResponse({ status: 200, description: 'The offer has been accepted.', type: ServiceRequestsEntity })
+  // @ApiResponse({ status: 404, description: 'Request offer not found.' })
+  // @ApiBearerAuth()
+  // async acceptOffer(@Param('id') id: string): Promise<ServiceRequestsEntity> {
+  //   return this.requestsOffersService.acceptOffer(id);
+  // }
 }

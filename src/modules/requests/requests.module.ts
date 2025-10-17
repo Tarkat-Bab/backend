@@ -11,13 +11,11 @@ import { RequestOffersController } from './controllers/requests-offers.controlle
 import { FilesModule } from 'src/common/files/files.module';
 import { LocationsModule } from '../locations/locations.module';
 import { PaginatorModule } from 'src/common/paginator/paginator.module';
-import { ServicesModule } from '../services/services.module';
 
 @Module({
     imports: [
         UsersModule,
         FilesModule,
-        ServicesModule,
         LocationsModule,
         PaginatorModule,
         TypeOrmModule.forFeature([ServiceRequestsEntity, RequestOffersEntity, RequestsMedia])

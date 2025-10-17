@@ -17,8 +17,8 @@ export class RequestsMedia extends BaseEntity {
     @AfterLoad()
     async MediaUrl() {
         if (this.media && process.env.APP_URL) {
+            this.media = `${process.env.APP_URL}/${this.media}`;
             const fullPath = join(process.env.MEDIA_DIR, MediaDir.REQUESTS, this.media);
-            // console.log('Full Media Path:', `${process.env.APP_URL}/${fullPath}`);
             return `${process.env.APP_URL}/${fullPath}`;
         }
     }
