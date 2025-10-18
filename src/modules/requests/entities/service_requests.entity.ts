@@ -59,8 +59,8 @@ export class ServiceRequestsEntity extends BaseEntity {
             for (const mediaItem of this.media) {
                 try {
                     const url = await mediaItem.MediaUrl();
-                    (mediaItem as any).url = url;
-                    // console.log('Loaded media URL for media id', mediaItem.id, url);
+                    (mediaItem as any).media = url;
+                    console.log('Loaded media URL for media id', mediaItem.id, url);
                 } catch (err) {
                     console.warn('Failed loading media URL for media id', mediaItem.id, err?.message ?? err);
                 }

@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { DashboardRequestsService } from './requests.service';
 import { FilterRequestDto } from 'src/modules/requests/dto/filter-request.dto';
 import { AdminPermissions } from 'src/common/permissions/admin.permissions';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
+import { Permissions } from 'src/common/decorators/permissions.decorator';
 
 @ApiBearerAuth()
 @ApiTags('Dashboard')
@@ -18,11 +19,25 @@ export class DashboardRequestsController {
         required:false
     })
     @Get()
-    // @Permissions(AdminPermissions.VIEW_REQUESTS)
+    @Permissions(AdminPermissions.VIEW_REQUESTS)
     async getRequests(
         @Query() filter: FilterRequestDto,
         @Language() lang: LanguagesEnum,
     ) {
         return this.requestsService.findAll(filter, lang);
+    }
+
+    @ApiHeader({
+        name:'accept-language',
+        description:'Language',
+        required:false
+    })
+    @Get(':id')
+    @Permissions(AdminPermissions.VIEW_REQUESTS)
+    async getOneRequest(
+        @Param('id') id: number,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.requestsService.findOne(id, lang);
     }
 }

@@ -142,9 +142,7 @@ export class RequestsService {
     }
 
     if (filter.status) {
-      console.log('Filtering by status:', filter.status);
-      query.andWhere('request.status = :status::service_requests_status_enum', { status: filter.status as RequestStatus });
-
+      query.andWhere('LOWER(request.status::text) = LOWER(:status)', { status: filter.status });
     }
     
     query
@@ -152,7 +150,7 @@ export class RequestsService {
       .skip((filter.page - 1) * filter.limit).take(filter.limit);
 
     const [result, total] = await query.getManyAndCount();
-    
+
     let mappedResult;
     if(lang === LanguagesEnum.ARABIC){
       mappedResult = result.map(r => {

@@ -9,7 +9,7 @@ export class PaginatorInput {
   })
   @IsOptional()
   @IsNumber()
-  page: number;
+  page: number = 1;
 
   @ApiProperty({ required: false, default: 20 })
   @Transform(({ value }) => {
@@ -18,5 +18,5 @@ export class PaginatorInput {
   @IsNumber()
   @Max(100)
   @IsOptional()
-  limit: number;
+  limit: number = 20;
 }
