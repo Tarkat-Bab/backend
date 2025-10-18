@@ -118,10 +118,11 @@ export class RequestsService {
         'offers.id',
         'media.id',
         'media.media'
-      ])
-      if(!dashboard){
-        query.andWhere('user.status = :status', { status: 'active' })
-      }
+      ]);
+      
+    if(!dashboard){
+      query.andWhere('user.status = :status', { status: 'active' })
+    }
 
     if (filter.serviceId) {
       query.andWhere('request.service_id = :serviceId', { serviceId: filter.serviceId });
@@ -137,19 +138,25 @@ export class RequestsService {
     if (userId) {
       query.andWhere('request.user_id = :userId', { userId });
     }
+
     if (technicianId) {
       query.andWhere('request.technician_id = :technicianId', { technicianId });
     }
 
-    if (filter.status) {
-      query.andWhere('LOWER(request.status::text) = LOWER(:status)', { status: filter.status });
-    }
+   if (filter.status) {
+    query.andWhere('CAST(request.status AS text) = :status', { status: filter.status.toLowerCase() });
+   }
     
-    query
-      .orderBy('request.createdAt', 'DESC')
-      .skip((filter.page - 1) * filter.limit).take(filter.limit);
+  if(!dashboard && !userId && !technicianId ){
+    query.andWhere('CAST(request.status AS text) = :status', { status: 'pending' });
+  }
+  
+  query
+    .orderBy('request.createdAt', 'DESC')
+    .skip((filter.page - 1) * filter.limit).take(filter.limit);
 
     const [result, total] = await query.getManyAndCount();
+
 
     let mappedResult;
     if(lang === LanguagesEnum.ARABIC){

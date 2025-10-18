@@ -1,7 +1,7 @@
 import { PaginatorInput } from "src/common/paginator/types/paginate.input";
 import { RequestStatus } from "../enums/requestStatus.enum";
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsOptional } from "class-validator";
+import { IsEnum, IsNotEmpty, IsOptional } from "class-validator";
 
 export class FilterRequestDto extends PaginatorInput{
     @ApiProperty({ description: 'Filter by status',required: false, enum: RequestStatus })
@@ -23,4 +23,10 @@ export class FilterRequestByStatusDto extends PaginatorInput{
     @IsEnum(RequestStatus)
     @IsOptional()
     status?: RequestStatus;
+}
+
+export class FilterRequestByServiceDto extends PaginatorInput{
+    @ApiProperty({ description: 'Filter by service ID', required: false })
+    @IsNotEmpty()
+    serviceId?: number;
 }

@@ -26,15 +26,14 @@ export class CreateServiceRequestDto {
   @ApiProperty({ description: 'Price for the service request' })
   @IsNotEmpty()
   @IsNumber()
-  @IsPositive()
   @Type(() => Number)
+  @Min(0)
   price: number;  
 
   @ApiProperty({ type: 'array', items: { type: 'string', format: 'binary' }, description: 'Images for the service request', required: false })
   @IsNotEmpty()
   @IsOptional()
   images?: Express.Multer.File[];
-
 
   @ApiProperty({ description: 'ID of the service being requested' })
   @IsNotEmpty()
