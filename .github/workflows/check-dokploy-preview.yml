@@ -1,0 +1,91 @@
+name: Check Dokploy Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: read
+  issues: read
+
+jobs:
+  verify-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for Dokploy to finish and get Preview URL
+        id: get-url
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pr = context.issue.number;
+
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+            let dokployComment;
+            let tries = 0;
+            const maxTries = 10; // 10 * 10s = 100s max wait
+
+            while (tries < maxTries) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner, repo, issue_number: pr,
+              });
+
+              dokployComment = comments.reverse().find(c =>
+                c.user.login.toLowerCase().includes("bot") &&
+                c.body.includes("Dokploy Preview Deployment")
+              );
+
+              if (dokployComment && dokployComment.body.includes("✅ Done")) {
+                console.log("✅ Dokploy deployment finished.");
+                break;
+              }
+
+              console.log(`⏳ Waiting for Dokploy to finish... (try ${tries + 1}/${maxTries})`);
+              tries++;
+              await sleep(10000); // 10 seconds
+            }
+
+            if (!dokployComment) {
+              core.setFailed("❌ No Dokploy preview comment found.");
+              return;
+            }
+
+            if (!dokployComment.body.includes("✅ Done")) {
+              core.setFailed("❌ Dokploy deployment not finished after waiting.");
+              return;
+            }
+
+            const match = dokployComment.body.match(/http:\/\/[^\s)\]]+/);
+            if (!match) {
+              core.setFailed("❌ No valid Preview URL found in Dokploy comment.");
+              return;
+            }
+
+            let previewUrl = match[0].trim();
+            previewUrl = previewUrl.replace(/[)\].,]+$/, "");
+
+            core.setOutput("preview_url", previewUrl);
+            console.log("🔗 Found Preview URL:", previewUrl);
+
+      - name: Check Preview URL HTTP response
+        id: check-url
+        run: |
+          url="${{ steps.get-url.outputs.preview_url }}"
+          echo "Checking preview URL: $url"
+
+          # Wait a few seconds more to be safe
+          sleep 5
+
+          http_code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+          echo "Response code: $http_code"
+
+          if [ "$http_code" -ge 500 ] && [ "$http_code" -lt 600 ]; then
+            echo "❌ Preview returned server error ($http_code). Failing check."
+            exit 1
+          fi
+
+          echo "✅ Preview responded OK ($http_code)."
