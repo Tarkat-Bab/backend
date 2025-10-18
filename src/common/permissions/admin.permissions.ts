@@ -30,4 +30,11 @@ export const AdminPermissions = {
     type: UsersTypes.ADMIN,
   },
   
+  VIEW_REQUESTS: {
+    enModule: 'Requests',
+    arModule: 'الطلبات',
+    key: PermissionTypes.VIEW,
+    type: UsersTypes.ADMIN,
+  },
+    
 };
