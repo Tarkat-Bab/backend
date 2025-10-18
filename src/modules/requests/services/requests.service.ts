@@ -194,6 +194,8 @@ export class RequestsService {
       .leftJoinAndSelect('request.technician', 'technician')
       .leftJoinAndSelect('request.offers', 'offers')
       .leftJoinAndSelect('offers.technician', 'offerTechnician')
+      // ensure the technician's user relation is loaded so .technician.user.username exists
+      .leftJoinAndSelect('offerTechnician.user', 'offerTechnicianUser')
       .leftJoinAndSelect('request.media', 'media')
       .leftJoinAndSelect('request.service', 'service')
       .where('request.id = :id', { id })
@@ -202,7 +204,7 @@ export class RequestsService {
       .andWhere('user.status = :status', { status: 'active' })
       .andWhere('(technician.id IS NULL OR (technician.deleted = false AND technician.status = :techStatus))', { techStatus: 'active' })
       .getOne();
-
+      
     if (!requestEntity) {
       if(lang === LanguagesEnum.ARABIC){
         throw new NotFoundException(`هذا الطلب غير موجود`);
@@ -216,7 +218,11 @@ export class RequestsService {
       id: o.id,
       price: typeof o.price === 'number' ? o.price : Number(o.price),
       createdAt: o.createdAt,
-      technician: o.technician ? { id: o.technician.id, username: o.technician.user.username, avgRating: (o.technician as any).avgRating } : null,
+      technician: o.technician ? {
+         id: o.technician.id,
+         username: o.technician?.user?.username ?? null,
+         avgRating: (o.technician as any)?.avgRating ?? null
+      } : null,
       needsDelivery: (o as any).needsDelivery,
       description: (o as any).description,
       

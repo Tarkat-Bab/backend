@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RequestOffersEntity } from '../entities/request_offers.entity';
@@ -9,6 +9,7 @@ import { UsersService } from '../../users/services/users.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { RequestStatus } from '../enums/requestStatus.enum';
 import { RequestsService } from './requests.service';
+import { LocationService } from 'src/modules/locations/location.service';
 
 @Injectable()
 export class RequestOffersService {
@@ -18,6 +19,7 @@ export class RequestOffersService {
   
     private requestService: RequestsService,
     private usersService: UsersService,
+    private readonly locationService: LocationService,
   ) {}
 
   async createRequestOffer(technicianId: number, requestId: number, createRequestOfferDto: CreateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
@@ -37,23 +39,52 @@ export class RequestOffersService {
         throw new NotFoundException(`Cannot make an offer on a request that is not in pending status`);
       }
     }
+    const { location, ...rest } = createRequestOfferDto;
+    const dataToUpdate: any = { ...rest };
 
-    const technician = await this.usersService.findTechnicianById(technicianId, lang);
 
-    if (!technician) {
-      if(lang === LanguagesEnum.ARABIC){
-        throw new NotFoundException(`المستخدم الفني غير موجود`);
+    if (location) {
+      let parsedLocation = location as any;
+      if (typeof location === 'string') {
+        try {
+        parsedLocation = JSON.parse(location);
+      } catch {
+        if(lang === LanguagesEnum.ARABIC){
+          throw new BadRequestException('تنسيق الموقع غير صالح');
+        }
+        throw new BadRequestException('Invalid location format');
       }
-      throw new NotFoundException(`Technician not found`);
-    }
+      }
+      const { latitude, longitude, address } = parsedLocation;
+      
+      let saveLocation = null;
+      if(address){
+          saveLocation = await this.locationService.getLatLongFromText(address, lang);
+        }else{
+          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
+      }
 
+      dataToUpdate.latitude  = saveLocation.latitude;
+      dataToUpdate.longitude = saveLocation.longitude;
+      dataToUpdate.arAddress = saveLocation.ar_address;
+      dataToUpdate.enAddress = saveLocation.en_address;
+    }
+    
+    const user = await this.usersService.findById(technicianId, lang);
     const offer = this.requestOffersRepository.create({
-      ...createRequestOfferDto,
+      latitude: dataToUpdate.latitude,
+      longitude: dataToUpdate.longitude,
+      arAddress: dataToUpdate.arAddress,
+      enAddress: dataToUpdate.enAddress,
+      price: createRequestOfferDto.price,
+      needsDelivery: createRequestOfferDto.needsDelivery,
+      description: createRequestOfferDto.description,
       request,
-      technician,
+      technician: { id: user.technicalProfile.id },
     });
-    console.log('Created Offer:', offer);
-    return this.requestOffersRepository.save(offer);
+    // console.log('Created Offer:', offer);
+    await this.requestOffersRepository.save(offer);
+    return this.findRequestOfferById(user.technicalProfile.id, offer.id, lang, true);
   }
 
   async findAllRequestOffers(): Promise<RequestOffersEntity[]> {
@@ -73,27 +104,27 @@ export class RequestOffersService {
     const offer = await this.requestOffersRepository.findOne({
       where: { id },
       relations: ['request', 'technician'],
-      select: {
-        id: true,
-        price: true,
-        needsDelivery: true,
-        description: true,
-        accepted: true,
-        technician: {
-          id: true,
-          user:{
-            id: true,
-            username: true,
-          },
-          avgRating: true,
-       },
-        request: {
-          id: true,
-          user: {
-            id: true,
-          },
-        },
-    }
+    //   select: {
+    //     id: true,
+    //     price: true,
+    //     needsDelivery: true,
+    //     description: true,
+    //     accepted: true,
+    //     technician: {
+    //       id: true,
+    //       user:{
+    //         id: true,
+    //         username: true,
+    //       },
+    //       avgRating: true,
+    //    },
+    //     request: {
+    //       id: true,
+    //       user: {
+    //         id: true,
+    //       },
+    //     },
+    // }
     });
 
     if (!offer) {
