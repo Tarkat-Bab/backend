@@ -40,9 +40,13 @@ export class UsersService {
       return;
     }
 
+    
     // Prepare user data
     const userData: any = {
       ...loginDto,
+      technicalProfile:{
+        
+      },
       lastLoginAt: new Date(),
       status: UserStatus.UNVERIFIED
     };
@@ -120,7 +124,7 @@ export class UsersService {
 
     if (!existUser){
       return {
-        user: await this.createUser({ phone, type: UsersTypes.USER }, lang),
+        user: await this.createUser({ phone, type }, lang),
         newUser: true
       }
     }
@@ -357,6 +361,10 @@ export class UsersService {
     const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
     const isUser = existUser?.type === UsersTypes.USER;
 
+    // Raw query returns flattened keys (lowercased), e.g. techId -> techid, avgRating -> avgrating.
+    // Avoid accessing nested objects on the raw result (existUser.technicalProfile is undefined).
+    const rawTechId = isTechnical ? Number(existUser.techid ?? existUser.techId ?? 0) : undefined;
+
     return {
       id: existUser.id,
       username: existUser.username,
@@ -367,10 +375,11 @@ export class UsersService {
       status: existUser.status,
       totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
       reports: Number(existUser.reportssubmitted ?? 0),
+      // Provide both a flat techId and a technicalProfile object to keep backward compatibility
+      techId: rawTechId,
+      technicalProfile: isTechnical ? { id: rawTechId } : undefined,
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
-      completedOrders: isTechnical
-        ? Number(existUser.completedorders ?? 0)
-        : undefined,
+      completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
     } as unknown as UserEntity;
   }
 
@@ -382,6 +391,7 @@ export class UsersService {
   }
 
   async findTechnicianById(id: number, lang: LanguagesEnum, dashboard?: boolean): Promise<TechnicalProfileEntity> {
+    console.log('Finding technician by ID:', id, 'Dashboard mode:', dashboard);
     const technician = await this.technicalProfileRepo.findOne({
       where: { id, deleted: false, user: { deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } },
       relations: ['user'],

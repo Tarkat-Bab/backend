@@ -32,14 +32,6 @@ export class RequestOffersController {
     return this.requestsOffersService.createRequestOffer(user.id, requestId, createRequestOfferDto, lang);
   }
 
-  // @Get('offers')
-  // @ApiOperation({ summary: 'Get all request offers' })
-  // @ApiResponse({ status: 200, description: 'Return all request offers.', type: [RequestOffersEntity] })
-  // @ApiBearerAuth()
-  // async findAllRequestOffers(): Promise<RequestOffersEntity[]> {
-  //   return this.requestsOffersService.findAllRequestOffers();
-  // }
-
   @Get('offers/:id')
   @ApiHeader({
     name: 'accept-language',
@@ -84,7 +76,7 @@ export class RequestOffersController {
     return this.requestsOffersService.removeRequestOffer(id);
   }
 
-  @Post('offers/accept/:id')
+  @Patch('offers/accept/:id')
   @ApiOperation({ summary: 'Accept an offer for a  request' })
   @ApiParam({ name: 'id', description: 'Request Offer ID' })
   @ApiResponse({ status: 200, description: 'The offer has been accepted.', type: ServiceRequestsEntity })
