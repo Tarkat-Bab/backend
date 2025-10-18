@@ -8,6 +8,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
+import { FilterRequestByStatusDto, FilterRequestDto } from '../dto/filter-request.dto';
 
 @ApiBearerAuth()
 @ApiTags('requests')
@@ -54,14 +55,50 @@ export class RequestsController {
     return this.requestsService.findRequestById(id, lang, user.id);
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete a service request' })
-  @ApiParam({ name: 'id', description: 'Service Request ID' })
-  @ApiResponse({ status: 200, description: 'The service request has been deleted.' })
-  @ApiResponse({ status: 404, description: 'Service request not found.' })
-  async removeServiceRequest(@Param('id') id: number): Promise<void> {
-    return this.requestsService.removeServiceRequest(id);
+
+  @Get('client/all/me')
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Language preference',
+    required: false,
+    enum: LanguagesEnum
+  })
+  @ApiOperation({ summary: 'Get a client requests' })
+  @ApiBearerAuth()
+  async findClientRequests(
+    @CurrentUser() user: any,
+    @Query() filterRequest: FilterRequestByStatusDto,
+    @Language() lang: LanguagesEnum,
+  ){
+    return this.requestsService.findAllServiceRequests(filterRequest, lang, user.id);
   }
+
+
+  @Get('technician/all/me')
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Language preference',
+    required: false,
+    enum: LanguagesEnum
+  })
+  @ApiOperation({ summary: 'Get a technician requests' })
+  @ApiBearerAuth()
+  async findTechnicianRequests(
+    @CurrentUser() user: any,
+    @Query() filterRequest: FilterRequestByStatusDto,
+    @Language() lang: LanguagesEnum,
+  ){
+    return this.requestsService.findAllServiceRequests(filterRequest, lang, null, user.id);
+  }
+
+  // @Delete(':id')
+  // @ApiOperation({ summary: 'Delete a service request' })
+  // @ApiParam({ name: 'id', description: 'Service Request ID' })
+  // @ApiResponse({ status: 200, description: 'The service request has been deleted.' })
+  // @ApiResponse({ status: 404, description: 'Service request not found.' })
+  // async removeServiceRequest(@Param('id') id: number): Promise<void> {
+  //   return this.requestsService.removeServiceRequest(id);
+  // }
 
   // @Get('user/:userId')
   // @ApiOperation({ summary: 'Get all service requests by user id' })
@@ -79,15 +116,15 @@ export class RequestsController {
   //   return this.requestsService.findServiceRequestsByTechnicianId(technicianId);
   // }
 
-  @Patch(':id/status')
-  @ApiOperation({ summary: 'Change status of a service request (dashboard)' })
-  @ApiParam({ name: 'id', description: 'Service Request ID' })
-  @ApiBody({ schema: { properties: { status: { type: 'number', enum: Object.values(RequestStatus) } } } })
-  @ApiResponse({ status: 200, description: 'Return the updated service request.', type: ServiceRequestsEntity })
-  async changeRequestStatus(
-    @Param('id') id: number,
-    @Body('status') status: RequestStatus,
-  ): Promise<ServiceRequestsEntity> {
-    return this.requestsService.changeRequestStatus(id, status);
-  }
+  // @Patch(':id/status')
+  // @ApiOperation({ summary: 'Change status of a service request (dashboard)' })
+  // @ApiParam({ name: 'id', description: 'Service Request ID' })
+  // @ApiBody({ schema: { properties: { status: { type: 'number', enum: Object.values(RequestStatus) } } } })
+  // @ApiResponse({ status: 200, description: 'Return the updated service request.', type: ServiceRequestsEntity })
+  // async changeRequestStatus(
+  //   @Param('id') id: number,
+  //   @Body('status') status: RequestStatus,
+  // ): Promise<ServiceRequestsEntity> {
+  //   return this.requestsService.changeRequestStatus(id, status);
+  // }
 }

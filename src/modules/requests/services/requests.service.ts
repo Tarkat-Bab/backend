@@ -87,7 +87,7 @@ export class RequestsService {
 
   }
 
-  async findAllServiceRequests(filter: FilterRequestDto,lang:LanguagesEnum, userId?: number, dashboard?:boolean){
+  async findAllServiceRequests(filter: FilterRequestDto,lang:LanguagesEnum, userId?: number, technicianId?: number, dashboard?:boolean){
     const page = filter.page || 1;
     const take = filter.limit || 10;
 
@@ -114,6 +114,7 @@ export class RequestsService {
         'service.id',
         'service.arName',
         'service.enName',
+        'service.icone',
         'offers.id',
         'media.id',
         'media.media'
@@ -121,11 +122,6 @@ export class RequestsService {
       if(!dashboard){
         query.andWhere('user.status = :status', { status: 'active' })
       }
-
-        
-    if (filter.status) {
-      query.andWhere('request.status = :status', { status: filter.status });
-    }
 
     if (filter.serviceId) {
       query.andWhere('request.service_id = :serviceId', { serviceId: filter.serviceId });
@@ -139,12 +135,22 @@ export class RequestsService {
     }
 
     if (userId) {
-      query.andWhere('request.userId = :userId', { userId });
+      query.andWhere('request.user_id = :userId', { userId });
+    }
+    if (technicianId) {
+      query.andWhere('request.technician_id = :technicianId', { technicianId });
     }
 
+    if (filter.status) {
+      console.log('Filtering by status:', filter.status);
+      query.andWhere('request.status = :status::service_requests_status_enum', { status: filter.status as RequestStatus });
+
+    }
+    
     query
-        .orderBy('request.createdAt', 'DESC')
-        .skip((filter.page - 1) * filter.limit).take(filter.limit);
+      .orderBy('request.createdAt', 'DESC')
+      .skip((filter.page - 1) * filter.limit).take(filter.limit);
+
     const [result, total] = await query.getManyAndCount();
     
     let mappedResult;
