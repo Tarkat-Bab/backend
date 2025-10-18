@@ -26,7 +26,7 @@ export class ServiceRequestsEntity extends BaseEntity {
     @Column({type:'varchar'})
     enAddress: string;
 
-    @Column({type:'enum', enum: RequestStatus, default: RequestStatus.PENDING})
+    @Column({type:'varchar', enum: RequestStatus, default: RequestStatus.PENDING})
     status: RequestStatus;
 
     @Column({type:'decimal', precision:10, scale:2})
@@ -60,7 +60,7 @@ export class ServiceRequestsEntity extends BaseEntity {
                 try {
                     const url = await mediaItem.MediaUrl();
                     (mediaItem as any).media = url;
-                    console.log('Loaded media URL for media id', mediaItem.id, url);
+                    // console.log('Loaded media URL for media id', mediaItem.id, url);
                 } catch (err) {
                     console.warn('Failed loading media URL for media id', mediaItem.id, err?.message ?? err);
                 }

@@ -8,7 +8,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { FilterRequestByStatusDto, FilterRequestDto } from '../dto/filter-request.dto';
+import { FilterRequestByServiceDto, FilterRequestByStatusDto, FilterRequestDto } from '../dto/filter-request.dto';
 
 @ApiBearerAuth()
 @ApiTags('requests')
@@ -91,40 +91,19 @@ export class RequestsController {
     return this.requestsService.findAllServiceRequests(filterRequest, lang, null, user.id);
   }
 
-  // @Delete(':id')
-  // @ApiOperation({ summary: 'Delete a service request' })
-  // @ApiParam({ name: 'id', description: 'Service Request ID' })
-  // @ApiResponse({ status: 200, description: 'The service request has been deleted.' })
-  // @ApiResponse({ status: 404, description: 'Service request not found.' })
-  // async removeServiceRequest(@Param('id') id: number): Promise<void> {
-  //   return this.requestsService.removeServiceRequest(id);
-  // }
-
-  // @Get('user/:userId')
-  // @ApiOperation({ summary: 'Get all service requests by user id' })
-  // @ApiParam({ name: 'userId', description: 'User ID' })
-  // @ApiResponse({ status: 200, description: 'Return all service requests for the user.', type: [ServiceRequestsEntity] })
-  // async findServiceRequestsByUserId(@Param('userId') userId: number): Promise<ServiceRequestsEntity[]> {
-  //   return this.requestsService.findServiceRequestsByUserId(userId);
-  // }
-
-  // @Get('technician/:technicianId')
-  // @ApiOperation({ summary: 'Get all service requests by technician id' })
-  // @ApiParam({ name: 'technicianId', description: 'Technician ID' })
-  // @ApiResponse({ status: 200, description: 'Return all service requests for the technician.', type: [ServiceRequestsEntity] })
-  // async findServiceRequestsByTechnicianId(@Param('technicianId') technicianId: number): Promise<ServiceRequestsEntity[]> {
-  //   return this.requestsService.findServiceRequestsByTechnicianId(technicianId);
-  // }
-
-  // @Patch(':id/status')
-  // @ApiOperation({ summary: 'Change status of a service request (dashboard)' })
-  // @ApiParam({ name: 'id', description: 'Service Request ID' })
-  // @ApiBody({ schema: { properties: { status: { type: 'number', enum: Object.values(RequestStatus) } } } })
-  // @ApiResponse({ status: 200, description: 'Return the updated service request.', type: ServiceRequestsEntity })
-  // async changeRequestStatus(
-  //   @Param('id') id: number,
-  //   @Body('status') status: RequestStatus,
-  // ): Promise<ServiceRequestsEntity> {
-  //   return this.requestsService.changeRequestStatus(id, status);
-  // }
+    @Get('technician/all/global')
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Language preference',
+    required: false,
+    enum: LanguagesEnum
+  })
+  @ApiOperation({ summary: 'Get all requests for a technician' })
+  @ApiBearerAuth()
+  async findRequestsForTechnician(
+    @Query() filterRequest: FilterRequestByServiceDto,
+    @Language() lang: LanguagesEnum,
+  ){
+    return this.requestsService.findAllServiceRequests(filterRequest, lang);
+  }
 }
