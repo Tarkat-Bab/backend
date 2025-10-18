@@ -17,3 +17,10 @@ export class FilterRequestDto extends PaginatorInput{
     @IsOptional()
     search?: string;
 }
+
+export class FilterRequestByStatusDto extends PaginatorInput{
+    @ApiProperty({ description: 'Filter by status',required: false, enum: RequestStatus })
+    @IsEnum(RequestStatus)
+    @IsOptional()
+    status?: RequestStatus;
+}
