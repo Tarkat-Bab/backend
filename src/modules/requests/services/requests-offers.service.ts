@@ -72,12 +72,12 @@ export class RequestOffersService {
     }
     
     const user = await this.usersService.findById(technicianId, lang);
-    if(user.type !== UsersTypes.TECHNICAL){
-      if(lang === LanguagesEnum.ARABIC){
-        throw new UnauthorizedException('المستخدم ليس فني');
-      }
-      throw new UnauthorizedException('User is not a technician');
-    }
+    // if(user.type !== UsersTypes.TECHNICAL){
+    //   if(lang === LanguagesEnum.ARABIC){
+    //     throw new UnauthorizedException('المستخدم ليس فني');
+    //   }
+    //   throw new UnauthorizedException('User is not a technician');
+    // }
     const offer = this.requestOffersRepository.create({
       latitude: dataToUpdate.latitude,
       longitude: dataToUpdate.longitude,
