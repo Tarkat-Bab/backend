@@ -13,6 +13,7 @@ import { FilterRequestDto } from '../dto/filter-request.dto';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { MediaDir } from '../../../common/files/media-dir-.enum';
 import { ServicesService } from 'src/modules/services/services.service';
+import { join } from 'path';
 
 @Injectable()
 export class RequestsService {
@@ -242,7 +243,12 @@ export class RequestsService {
       price: typeof requestEntity.price === 'number' ? requestEntity.price : Number(requestEntity.price),
       requestNumber: requestEntity.requestNumber,
       offersCount: offers.length,
-      user: { id: requestEntity.user.id },
+      user: { 
+        id: requestEntity.user.id,
+        username: requestEntity.user.username,
+        image: `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, requestEntity.user.image)}`,
+        address: lang === LanguagesEnum.ARABIC ? requestEntity.arAddress : requestEntity.enAddress
+        },
       service: { id: requestEntity.service?.id ?? null, name: requestEntity.service ? (requestEntity.service as any)[serviceNameField] : null },
       technician: requestEntity.technician ? { id: requestEntity.technician.id } : null,
       media,
