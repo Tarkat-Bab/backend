@@ -26,7 +26,7 @@ export class FilterRequestByStatusDto extends PaginatorInput{
 }
 
 export class FilterRequestByServiceDto extends PaginatorInput{
-    @ApiProperty({ description: 'Filter by service ID', required: false })
+    @ApiProperty({ description: 'Filter by service ID', required: true })
     @IsNotEmpty()
     serviceId?: number;
 }
