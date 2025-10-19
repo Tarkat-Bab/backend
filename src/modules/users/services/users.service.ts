@@ -17,6 +17,7 @@ import { MediaDir } from 'src/common/files/media-dir-.enum';
 import { NationaltiesService } from 'src/modules/nationalties/nationalties.service';
 import { ServicesService } from 'src/modules/services/services.service';
 import { FilterUsersDto } from '../dtos/filter-user-dto';
+import { join } from 'path/win32';
 
 @Injectable()
 export class UsersService {
@@ -257,7 +258,7 @@ export class UsersService {
       return {
         id: u.id,
         username: u.username,
-        image: u.image,
+        image: u.image? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, u.image)}`: null,
         createdAt: u.createdat,
         address: u.address,
         status: u.status,
@@ -461,6 +462,8 @@ export class UsersService {
           phone: true,
           email: true,
           image: true,
+          latitude: true,
+          longitude: true,
           arAddress: true,
           enAddress: true,
           type: true,
