@@ -36,7 +36,7 @@ export class UsersService {
   ) {}
   
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
-    const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: UsersTypes.USER });
+    const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type });
     if(existingUser){
       return;
     }
@@ -48,6 +48,7 @@ export class UsersService {
       technicalProfile:{
         
       },
+      type: loginDto.type,
       lastLoginAt: new Date(),
       status: UserStatus.UNVERIFIED
     };
