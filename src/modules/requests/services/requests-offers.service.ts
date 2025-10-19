@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RequestOffersEntity } from '../entities/request_offers.entity';
@@ -10,6 +10,7 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { RequestStatus } from '../enums/requestStatus.enum';
 import { RequestsService } from './requests.service';
 import { LocationService } from 'src/modules/locations/location.service';
+import { UsersTypes } from 'src/common/enums/users.enum';
 
 @Injectable()
 export class RequestOffersService {
@@ -71,6 +72,12 @@ export class RequestOffersService {
     }
     
     const user = await this.usersService.findById(technicianId, lang);
+    if(user.type !== UsersTypes.TECHNICAL){
+      if(lang === LanguagesEnum.ARABIC){
+        throw new UnauthorizedException('المستخدم ليس فني');
+      }
+      throw new UnauthorizedException('User is not a technician');
+    }
     const offer = this.requestOffersRepository.create({
       latitude: dataToUpdate.latitude,
       longitude: dataToUpdate.longitude,
