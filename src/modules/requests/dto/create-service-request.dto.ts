@@ -38,7 +38,7 @@ export class CreateServiceRequestDto {
   @ApiProperty({ description: 'ID of the service being requested' })
   @IsNotEmpty()
   @IsNumber()
-  @IsPositive()
+  // @IsPositive()
   @Type(() => Number)
   serviceId: number;
 }

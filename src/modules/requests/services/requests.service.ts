@@ -149,7 +149,8 @@ export class RequestsService {
    }
     
   if(!dashboard && !userId && !technicianId ){
-    query.andWhere('CAST(request.status AS text) = :status', { status: 'pending' });
+    // console.log("No filters applied, defaulting to pending status");
+    // query.andWhere('CAST(request.status AS text) = :status', { status: 'pending' });
   }
   
   query
@@ -246,7 +247,7 @@ export class RequestsService {
       user: { 
         id: requestEntity.user.id,
         username: requestEntity.user.username,
-        image: `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, requestEntity.user.image)}`,
+        image: requestEntity.user.image ? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, requestEntity.user.image)}` : null,
         address: lang === LanguagesEnum.ARABIC ? requestEntity.arAddress : requestEntity.enAddress
         },
       service: { id: requestEntity.service?.id ?? null, name: requestEntity.service ? (requestEntity.service as any)[serviceNameField] : null },
