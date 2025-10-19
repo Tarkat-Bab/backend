@@ -36,7 +36,7 @@ export class UsersService {
   ) {}
   
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
-    const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: UsersTypes.USER });
+    const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type });
     if(existingUser){
       return;
     }
@@ -48,6 +48,7 @@ export class UsersService {
       technicalProfile:{
         
       },
+      type: loginDto.type,
       lastLoginAt: new Date(),
       status: UserStatus.UNVERIFIED
     };
@@ -376,7 +377,7 @@ export class UsersService {
       status: existUser.status,
       totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
       reports: Number(existUser.reportssubmitted ?? 0),
-      // Provide both a flat techId and a technicalProfile object to keep backward compatibility
+      type: existUser.type,
       techId: rawTechId,
       technicalProfile: isTechnical ? { id: rawTechId } : undefined,
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
