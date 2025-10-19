@@ -10,7 +10,7 @@ export class DashboardRequestsService {
     ) {}
 
     async findAll(filter: FilterRequestDto, lang: LanguagesEnum) {
-        return this.requestsService.findAllServiceRequests(filter, lang);
+        return this.requestsService.findAllServiceRequests(filter, lang, null, null, true);
     }
 
     async findOne(id: number, lang: LanguagesEnum) {
