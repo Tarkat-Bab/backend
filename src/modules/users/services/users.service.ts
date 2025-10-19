@@ -377,7 +377,7 @@ export class UsersService {
       status: existUser.status,
       totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
       reports: Number(existUser.reportssubmitted ?? 0),
-      // Provide both a flat techId and a technicalProfile object to keep backward compatibility
+      type: existUser.type,
       techId: rawTechId,
       technicalProfile: isTechnical ? { id: rawTechId } : undefined,
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
