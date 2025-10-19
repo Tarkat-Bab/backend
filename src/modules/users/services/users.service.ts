@@ -372,7 +372,7 @@ export class UsersService {
       createdAt: existUser.createdat,
       phone: existUser.phone,
       address: existUser.address,
-      image: `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, existUser.image)}`,
+      image: existUser.image ? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, existUser.image)}` : null,
       status: existUser.status,
       totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
       reports: Number(existUser.reportssubmitted ?? 0),
