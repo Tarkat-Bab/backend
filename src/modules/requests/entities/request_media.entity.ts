@@ -1,4 +1,3 @@
-import e from "express";
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
 import { AfterLoad, Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 import { ServiceRequestsEntity } from "./service_requests.entity";
@@ -9,6 +8,9 @@ import { MediaDir } from "src/common/files/media-dir-.enum";
 export class RequestsMedia extends BaseEntity {
     @Column({ type: 'text' })
     media: string;
+
+    @Column({ type: 'text', nullable: true })
+    mediaId: string;
 
     @ManyToOne(() => ServiceRequestsEntity, request => request.media)
     @JoinColumn({ name: 'request_id' })

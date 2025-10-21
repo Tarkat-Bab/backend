@@ -35,6 +35,9 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   image: string;
 
+  @Column({ type: 'text', nullable: true })
+  imageId: string;
+
   @Column({ length: 255, nullable: true })
   password: string;
   
@@ -76,11 +79,11 @@ export class UserEntity extends BaseEntity {
     }
   }
 
-  @AfterLoad()
-  async MediaUrl() {
-    if (typeof this.image === 'string' && process.env.APP_URL) {
-      const fullPath = join(process.env.MEDIA_DIR, MediaDir.PROFILES, this.image);
-      this.image = `${process.env.APP_URL}/${fullPath}`;
-    }
-  }
+  // @AfterLoad()
+  // async MediaUrl() {
+  //   if (typeof this.image === 'string' && process.env.APP_URL) {
+  //     const fullPath = join(process.env.MEDIA_DIR, MediaDir.PROFILES, this.image);
+  //     this.image = `${process.env.APP_URL}/${fullPath}`;
+  //   }
+  // }
 }
