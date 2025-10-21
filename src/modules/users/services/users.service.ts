@@ -556,9 +556,7 @@ export class UsersService {
       user.enAddress = saveLocation.en_address;
     }
     
-    if (image) {
-      console.log('Image file received for upload:', image);
-      
+    if (image) {      
       if(user.imageId) {
         try {
           await this.cloudflareService.deleteFileFromCloudflare(user.imageId);
