@@ -19,6 +19,9 @@ export class ReportsEntity extends BaseEntity {
     @Column({ type: 'text' })
     message: string;
 
+    @Column({ type: 'boolean', default: false })
+    resolved: boolean;
+    
     @OneToMany(() => ReportsMedia, media => media.report, { cascade: true, eager: true })
     media: ReportsMedia[];
 
