@@ -6,12 +6,15 @@ import { UserEntity } from "src/modules/users/entities/users.entity";
 import { TechnicalProfileEntity } from "src/modules/users/entities/technical_profile.entity";
 import { ServiceRequestsEntity } from "src/modules/requests/entities/service_requests.entity";
 import { RequestStatus } from "src/modules/requests/enums/requestStatus.enum";
+import { ReportsEntity } from "src/modules/reports/entities/reports.entity";
+import { ReportReason } from "src/modules/reports/enums/reports.enum";
 
 export const seedData = async (manager: EntityManager) => {
     await seedNationalities(manager);
     await seedServices(manager);
     await seedUsers(manager);
     await seedServiceRequests(manager);
+    await seedReports(manager); // <--- add call to seed reports
 }
 
 async function seedNationalities(manager: EntityManager) {
@@ -329,4 +332,76 @@ async function seedServiceRequests(manager: EntityManager) {
     }
 
     console.log('Service requests seeded successfully');
+}
+
+// New: seed reports
+async function seedReports(manager: EntityManager) {
+    const existingReports = await manager.find(ReportsEntity);
+    if (existingReports.length > 0) {
+        return;
+    }
+
+    console.log('Seeding reports...');
+
+    // Find sample user, technician and a request created earlier
+    const user1 = await manager.findOne(UserEntity, { where: { username: 'user1' }});
+    const tech1 = await manager.findOne(UserEntity, { where: { username: 'فني 1' }});
+    const req1 = await manager.findOne(ServiceRequestsEntity, { where: { requestNumber: 'REQ-SEED-1' }});
+
+    const reportsToCreate: Partial<ReportsEntity>[] = [];
+
+    if (user1 && tech1 && req1) {
+         reportsToCreate.push({
+            reportNumber: 'REP-SEED-0',
+            type: 'user', // reporter is a user
+            reason: ReportReason.unprofessionalBehavior,
+            message: 'الفني كان غير محترم ولم يكمل العمل كما هو متفق عليه.',
+            reporter: user1,
+            reported: tech1,
+            request: req1,
+            media: []
+        });
+
+        reportsToCreate.push({
+            reportNumber: 'REP-SEED-1',
+            type: 'user', // user reporting technician
+            reason: ReportReason.other,
+            message: 'Technician arrived late and did not complete the work as agreed.',
+            reporter: user1,
+            reported: tech1,
+            request: req1,
+            media: []
+        });
+
+        reportsToCreate.push({
+            reportNumber: 'REP-SEED-2',
+            type: 'user', // user reporting technician
+            reason: ReportReason.badQualityWork,
+            message: 'Issue with service quality — some parts were left unfinished.',
+            reporter: user1,
+            reported: tech1,
+            request: req1,
+            media: []
+        });
+    }
+
+    // A report filed by the technician about the client
+    if (user1 && tech1) {
+        reportsToCreate.push({
+            reportNumber: 'REP-SEED-3',
+            type: 'technician', // technician reporting user
+            reason: ReportReason.other,
+            message: 'العميل كان مسيئًا أثناء الزيارة.',
+            reporter: tech1,
+            reported: user1,
+            media: []
+        });
+    }
+
+    for (const rep of reportsToCreate) {
+        const newRep = manager.create(ReportsEntity, rep);
+        await manager.save(newRep);
+    }
+
+    console.log('Reports seeded successfully');
 }

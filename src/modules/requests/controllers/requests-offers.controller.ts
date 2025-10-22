@@ -50,31 +50,21 @@ export class RequestOffersController {
   }
 
 
-  @Patch('offers/:id')
-  @ApiOperation({ summary: 'Update a request offer' })
-  @ApiParam({ name: 'id', description: 'Request Offer ID' })
-  @ApiBody({ type: UpdateRequestOfferDto })
-  @ApiResponse({ status: 200, description: 'Return the updated request offer.', type: RequestOffersEntity })
-  @ApiResponse({ status: 404, description: 'Request offer not found.' })
-  @ApiBearerAuth()
-  async updateRequestOffer(
-    @CurrentUser() user: any,
-    @Param('id') id: number,
-    @Body() updateRequestOfferDto: UpdateRequestOfferDto,
-    @Language() lang: LanguagesEnum,
-  ): Promise<RequestOffersEntity> {
-    return this.requestsOffersService.updateRequestOffer(user.id,id,  updateRequestOfferDto, lang);
-  }
-
-  @Delete('offers/:id')
-  @ApiOperation({ summary: 'Delete a request offer' })
-  @ApiParam({ name: 'id', description: 'Request Offer ID' })
-  @ApiResponse({ status: 200, description: 'The request offer has been deleted.' })
-  @ApiResponse({ status: 404, description: 'Request offer not found.' })
-  @ApiBearerAuth()
-  async removeRequestOffer(@Param('id') id: number): Promise<void> {
-    return this.requestsOffersService.removeRequestOffer(id);
-  }
+  // @Patch('offers/:id')
+  // @ApiOperation({ summary: 'Update a request offer' })
+  // @ApiParam({ name: 'id', description: 'Request Offer ID' })
+  // @ApiBody({ type: UpdateRequestOfferDto })
+  // @ApiResponse({ status: 200, description: 'Return the updated request offer.', type: RequestOffersEntity })
+  // @ApiResponse({ status: 404, description: 'Request offer not found.' })
+  // @ApiBearerAuth()
+  // async updateRequestOffer(
+  //   @CurrentUser() user: any,
+  //   @Param('id') id: number,
+  //   @Body() updateRequestOfferDto: UpdateRequestOfferDto,
+  //   @Language() lang: LanguagesEnum,
+  // ): Promise<RequestOffersEntity> {
+  //   return this.requestsOffersService.updateRequestOffer(user.id,id,  updateRequestOfferDto, lang);
+  // }
 
   @Patch('offers/accept/:id')
   @ApiOperation({ summary: 'Accept an offer for a  request' })

@@ -91,7 +91,7 @@ export class RequestsController {
     return this.requestsService.findAllServiceRequests(filterRequest, lang, null, user.id);
   }
 
-    @Get('technician/all/global')
+  @Get('technician/all/global')
   @ApiHeader({
     name: 'Accept-Language',
     description: 'Language preference',

@@ -10,6 +10,9 @@ export class ReportsEntity extends BaseEntity {
     @Column({ type: 'varchar', unique: true })
     reportNumber: string;
 
+    @Column({ type: 'varchar', enum: ['user', 'technician'] })
+    type: string;
+    
     @Column({ type: 'enum', enum: ReportReason, default: ReportReason.other })
     reason: ReportReason;
 
@@ -19,14 +22,15 @@ export class ReportsEntity extends BaseEntity {
     @OneToMany(() => ReportsMedia, media => media.report, { cascade: true, eager: true })
     media: ReportsMedia[];
 
-    @OneToMany(() => ServiceRequestsEntity, request => request.id, { nullable: true })
-    request: ServiceRequestsEntity[];
+    @ManyToOne(() => ServiceRequestsEntity, request => request.id, { nullable: true })
+    @JoinColumn({ name: 'request_id' })
+    request: ServiceRequestsEntity;
 
     @ManyToOne(() => UserEntity, user => user.id, { onDelete: 'RESTRICT' })
-    @JoinColumn({ name: 'user_id' })
-    user: UserEntity;
+    @JoinColumn({ name: 'reporter_id' })
+    reporter: UserEntity;
 
     @ManyToOne(() => UserEntity, user => user.id, { onDelete: 'RESTRICT' })
-    @JoinColumn({ name: 'technician_id' })
-    technician: UserEntity;
+    @JoinColumn({ name: 'reported_id' })
+    reported: UserEntity;
 }
