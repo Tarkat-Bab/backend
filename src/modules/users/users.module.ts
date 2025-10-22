@@ -11,6 +11,7 @@ import { UserFcmTokenEntity } from './entities/user-fcm-token.entity';
 import { NationaltiesModule } from '../nationalties/nationalties.module';
 import { ServicesModule } from '../services/services.module';
 import { PaginatorModule } from 'src/common/paginator/paginator.module';
+import { CloudflareService } from 'src/common/files/cloudflare.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { PaginatorModule } from 'src/common/paginator/paginator.module';
     TypeOrmModule.forFeature([ UserEntity, TechnicalProfileEntity, UserFcmTokenEntity ])
   ],
   controllers: [ UsersController],
-  providers  : [ UsersService, LocationService ],
+  providers  : [ UsersService, LocationService, CloudflareService ],
   exports    : [ UsersService ],
 })
 export class UsersModule {}

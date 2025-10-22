@@ -211,7 +211,7 @@ export class RequestsService {
       if(lang === LanguagesEnum.ARABIC){
         throw new NotFoundException(`هذا الطلب غير موجود`);
       }else{
-        throw new NotFoundException(`Service not found`);
+        throw new NotFoundException(`Request not found`);
       }
     }
 

@@ -1,19 +1,14 @@
 import { Body, Controller, HttpCode, Patch, Post, Query, Req, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
-import { ApiBearerAuth, ApiConsumes, ApiHeader, ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
+import { ApiConsumes, ApiHeader, ApiTags } from '@nestjs/swagger';
 
 import { AuthService }  from '../services/auth.service';
 import { isPublic }     from '../../../common/decorators/public.decorator';
 import { Language }     from '../../../common/decorators/languages-headers.decorator';
 
-import { verifyEmailOtpDto, verifyPhoneOtpDto } from '../dtos/verify-otp.dto';
-import { RegisterDto, TechnicalRegisterDto, UserRegisterDto }  from '../dtos/register.dto';
+import { verifyPhoneOtpDto } from '../dtos/verify-otp.dto';
+import { TechnicalRegisterDto, UserRegisterDto }  from '../dtos/register.dto';
 import { LoginDto }     from '../dtos/login.dto';
-import { ForgetPasswordDto } from '../dtos/forgot-password-dto';
-import { ResetPasswordDto }  from '../dtos/reset-password.dto';
-import { SendEmailOtpDto }        from '../dtos/send-otp-dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { imageFilter } from 'src/common/files/files.filter';
 

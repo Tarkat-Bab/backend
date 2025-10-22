@@ -18,6 +18,7 @@ import { NationaltiesService } from 'src/modules/nationalties/nationalties.servi
 import { ServicesService } from 'src/modules/services/services.service';
 import { FilterUsersDto } from '../dtos/filter-user-dto';
 import { join } from 'path/win32';
+import { CloudflareService } from 'src/common/files/cloudflare.service';
 
 @Injectable()
 export class UsersService {
@@ -30,17 +31,14 @@ export class UsersService {
 
     private readonly paginatorService: PaginatorService,
     private readonly fileService: FilesService,
+    private readonly cloudflareService: CloudflareService,
     private readonly locationService: LocationService,
     private readonly nationalityService: NationaltiesService,
     private readonly serviceService: ServicesService,
   ) {}
   
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
-    const existingUser = await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type });
-    if(existingUser){
-      return;
-    }
-
+    await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type }, lang);
     
     // Prepare user data
     const userData: any = {
@@ -199,8 +197,9 @@ export class UsersService {
     }
 
     if (image) {
-      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
-      dataToUpdate.image = savedImage.path;
+      const savedImage = await this.cloudflareService.uploadFileToCloudflare(image.path);
+      dataToUpdate.image = savedImage.url;
+      dataToUpdate.imageId = savedImage.id;
     }
     await this.usersRepo.update({ id: existUser.id }, dataToUpdate);
     return await this.findById(existUser.id);
@@ -277,31 +276,31 @@ export class UsersService {
       email?: string | null;
       phone: string | null;
       type?: UsersTypes;
-    },
+    }, lang?: LanguagesEnum
   ) {
 
     let { email, phone, type } = dto;
     
-    // Build where conditions based on available data
-    const whereConditions = [];
-    type? type : In([UsersTypes.USER, UsersTypes.TECHNICAL]);
-    if (email) {
-      whereConditions.push({ email, type });
-    }
-    
-    if (phone) {
-      whereConditions.push({ phone, type });
-    }
-    
-    if (whereConditions.length === 0) {
-      return;
-    }
-    
     const existingUser = await this.usersRepo.findOne({
-      where: whereConditions,
+      where: {
+        deleted: false,
+        status: In([UserStatus.ACTIVE, UserStatus.UNVERIFIED]),
+        ...(email ? { email } : {}),
+        ...(phone ? { phone } : {}),
+        // ...(type ? { type } : {}),
+      },
       select: { id: true, email: true, phone: true, type: true },
     });
-    
+
+    if (existingUser && type && type !== existingUser.type) {
+       if(lang === LanguagesEnum.ARABIC){
+          throw new BadRequestException('نوع المستخدم غير متطابق مع السجل الموجود.');
+       }else{
+          throw new BadRequestException('User type mismatch with existing user.');
+       }
+       
+    }
+
     if (existingUser) {
       return existingUser;
     }
@@ -331,6 +330,7 @@ export class UsersService {
     let existUser = await query.getRawOne();
 
     if (!existUser) {
+      console.log('User not found with ID:', id);
       throw new NotFoundException(
         lang === LanguagesEnum.ARABIC
           ? 'المستخدم غير موجود.'
@@ -383,6 +383,60 @@ export class UsersService {
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
       completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
     } as unknown as UserEntity;
+  }
+
+  async findOne(id: number, lang?: LanguagesEnum){
+    let query = this.usersRepo
+      .createQueryBuilder('u')
+      .where('u.deleted = :deleted', { deleted: false })
+      .andWhere('u.id = :id', { id })
+      .select([
+        'u.id',
+        'u.type',
+        'u.status',
+      ]);
+
+    let existUser = await query.getRawOne();
+
+    if (!existUser) {
+      console.log('User not found with ID:', id);
+      if(existUser.type === UsersTypes.TECHNICAL){
+        throw new NotFoundException(
+          lang === LanguagesEnum.ARABIC
+            ? 'الفني غير موجود.'
+            : 'Technician not found.'
+        );
+      }else{
+        throw new NotFoundException(
+          lang === LanguagesEnum.ARABIC
+            ? 'المستخدم غير موجود.'
+            : 'User not found.'
+        );
+      }
+    }
+
+    if (existUser.type === UsersTypes.TECHNICAL) {
+      query = this.usersRepo
+        .createQueryBuilder('u')
+        .leftJoin('u.technicalProfile', 'tech')
+        .where('u.deleted = :deleted', { deleted: false })
+        .andWhere('u.id = :id', { id })
+        .select([
+          'u.id AS id',
+          'u.username AS username',
+          'u.phone AS phone',
+          'u.type AS type',
+          'u.image AS image',
+          'u.createdAt AS createdAt',
+          'u.status AS status',
+          'tech.id AS techId',
+          'tech.avgRating AS avgRating',
+        ]);
+
+      existUser = await query.getRawOne();
+    }
+
+    return existUser;
   }
 
   async findUserForGuard(id:number){
@@ -531,7 +585,6 @@ export class UsersService {
           { description: description }
         );
       }
-
     }
 
     if (location) {
@@ -558,13 +611,26 @@ export class UsersService {
       user.enAddress = saveLocation.en_address;
     }
     
-    if (image) {
-      if(user.image){
-        await this.fileService.deleteFiles([user.image], MediaDir.PROFILES, true);
-      }
-      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
-      user.image = savedImage.path;
+    if (image) {      
+      // if(user.imageId) {
+      //   try {
+      //     await this.cloudflareService.deleteFileFromCloudflare(user.imageId);
+      //   } catch (error) {
+      //     console.error('Error deleting old image from Cloudflare:', error);
+      //   }
+      // }
+      
+      // try {
+      //   // Pass the entire image object to the service
+      //   const savedImage = await this.cloudflareService.uploadFileToCloudflare(image);
+      //   user.image = savedImage.url;
+      //   user.imageId = savedImage.id;
+      // } catch (error) {
+      //   console.error('Error uploading image to Cloudflare:', error);
+      //   throw new Error(`Failed to upload profile image: ${error.message}`);
+      // }
     }
+    
     if(username) user.username = username;
 
     await this.usersRepo.save(user);
