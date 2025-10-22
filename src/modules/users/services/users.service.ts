@@ -330,7 +330,6 @@ export class UsersService {
     let existUser = await query.getRawOne();
 
     if (!existUser) {
-      console.log('User not found with ID:', id);
       throw new NotFoundException(
         lang === LanguagesEnum.ARABIC
           ? 'المستخدم غير موجود.'
