@@ -1,8 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RequestOffersEntity } from '../entities/request_offers.entity';
-import { ServiceRequestsEntity } from '../entities/service_requests.entity';
 import { CreateRequestOfferDto } from '../dto/create-request-offer.dto';
 import { UpdateRequestOfferDto } from '../dto/update-request-offer.dto';
 import { UsersService } from '../../users/services/users.service';
@@ -10,7 +9,6 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { RequestStatus } from '../enums/requestStatus.enum';
 import { RequestsService } from './requests.service';
 import { LocationService } from 'src/modules/locations/location.service';
-import { UsersTypes } from 'src/common/enums/users.enum';
 
 @Injectable()
 export class RequestOffersService {
