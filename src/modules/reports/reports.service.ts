@@ -22,16 +22,26 @@ export class ReportsService {
 
     async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum) {
         const { requestId, reportedId, images, ...rest } = createReportDto;
-        
+        console.log("User ID creating report:", userId);    
+
     
         const reporter   = await this.usersService.findOne(userId, lang);
         const request    = await this.requestsService.findRequestById(requestId, lang, null);
         const reported   = await this.usersService.findOne(reportedId, lang);
         console.log('Reporter:', reporter);
         const requesterType =  reporter.type;
+       
         
         let reportMedia = [];
-        if(images){}
+        if(images){
+            // reportMedia = await Promise.all(images.map(async (image) => {
+            //     const savedImage = await this.cloudflareService.uploadFileToCloudflare(image.path);
+            //     return {
+            //         url: savedImage.url,
+            //         id: savedImage.id,
+            //     };
+            // }));
+        }
 
         const report = this.reportsRepo.create({
             ...rest,
@@ -48,8 +58,38 @@ export class ReportsService {
 
     async findReportById(id: number, lang: LanguagesEnum) {
         const report = await  this.reportsRepo.findOne({
-            where: { id, deleted: false, reporter: { deleted: false } , reported: {deleted: false}},
-            relations: ['reporter', 'reported', 'media'],
+            where: { id, deleted: false, reporter: { deleted: false } , reported: {deleted: false}, request: { deleted: false } },
+            relations: ['reporter', 'reported', 'request'],
+            select: {
+                id: true,
+                reportNumber: true,
+                message: true,
+                type: true,
+                resolved: true,
+                createdAt: true,
+                request:{
+                    id: true,
+                    title: true,
+                    requestNumber: true,
+                    createdAt : true
+                },
+                reporter: {
+                    id: true,
+                    username: true,
+                    image: true,
+                    phone: true,
+                    enAddress: true,
+                    arAddress: true,
+                },
+                reported: {
+                    id: true,
+                    username: true,
+                    image: true,
+                    phone: true,
+                    enAddress: true,
+                    arAddress: true,
+                }
+            },
         });
 
         if(!report){
@@ -69,8 +109,14 @@ export class ReportsService {
                 { deleted: false, reporter: { id: userId, deleted: false } },
                 { deleted: false, reported: { id: userId, deleted: false } },
             ],
-            relations: ['request', 'reported', 'reporter', 'media'],
             order: { createdAt: 'DESC' },
+            select:{
+                id: true,
+                reportNumber: true,
+                message: true,
+                resolved: true,
+                createdAt: true,
+            }
         });
     }
 

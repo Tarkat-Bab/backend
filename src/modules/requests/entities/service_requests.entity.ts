@@ -35,6 +35,12 @@ export class ServiceRequestsEntity extends BaseEntity {
     @OneToMany(() => RequestsMedia, media => media.request, { cascade: true, eager: true })
     media: RequestsMedia[];
     
+    @Column({type:'int', default:20})
+    remainingWarrantyDays: number;
+
+    @Column({type:'timestamp', nullable:true})
+    completedAt: Date;
+
     @Column({type:'varchar', unique:true})
     requestNumber: string;
 

@@ -11,13 +11,11 @@ export class RequestsOfferTechnician1760703002204 implements MigrationInterface 
               AND "technical_id" NOT IN (SELECT "id" FROM "technical_profiles")
         `);
 
-        // 2️⃣ إسقاط الـ foreign key القديم
         await queryRunner.query(`
             ALTER TABLE "request_offers" 
             DROP CONSTRAINT "FK_6e11e123f327a231d9c5cb9a1cf"
         `);
 
-        // 3️⃣ إضافة الـ foreign key الجديد
         await queryRunner.query(`
             ALTER TABLE "request_offers" 
             ADD CONSTRAINT "FK_6e11e123f327a231d9c5cb9a1cf" 

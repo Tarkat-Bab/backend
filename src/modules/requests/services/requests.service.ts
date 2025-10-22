@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Req } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ServiceRequestsEntity } from '../entities/service_requests.entity';
@@ -215,6 +215,12 @@ export class RequestsService {
       }
     }
 
+    if(requestEntity.status === RequestStatus.COMPLETED && requestEntity.completedAt){
+      const warrantyDays = requestEntity.remainingWarrantyDays;
+      requestEntity.remainingWarrantyDays = this.calculateRemainingWarrantyDays(requestEntity.completedAt, warrantyDays);
+      await this.serviceRequestsRepository.save(requestEntity);
+    }
+
     // build DTO safely from the entity
     const offers = (requestEntity.offers || []).map(o => ({
       id: o.id,
@@ -254,6 +260,8 @@ export class RequestsService {
       technician: requestEntity.technician ? { id: requestEntity.technician.id } : null,
       media,
       offers,
+      remainingWarrantyDays: requestEntity.remainingWarrantyDays,
+      createdAt: requestEntity.createdAt,
     };
 
     // hide price/offers prices from non-owner callers when not dashboard
@@ -292,4 +300,12 @@ export class RequestsService {
     request.status = status;
     return this.serviceRequestsRepository.save(request);
   }
+
+private calculateRemainingWarrantyDays(completedAt: Date, warrantyDays: number): number {
+  const currentDate = new Date();
+  const passedDays = Math.floor((currentDate.getTime() - completedAt.getTime()) / (1000 * 3600 * 24));
+  const remainingDays = warrantyDays - passedDays;
+  return remainingDays > 0 ? remainingDays : 0;
+}
+
 }
