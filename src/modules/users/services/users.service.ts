@@ -330,6 +330,7 @@ export class UsersService {
     let existUser = await query.getRawOne();
 
     if (!existUser) {
+      console.log('User not found with ID:', id);
       throw new NotFoundException(
         lang === LanguagesEnum.ARABIC
           ? 'المستخدم غير موجود.'
@@ -382,6 +383,60 @@ export class UsersService {
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
       completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
     } as unknown as UserEntity;
+  }
+
+  async findOne(id: number, lang?: LanguagesEnum){
+    let query = this.usersRepo
+      .createQueryBuilder('u')
+      .where('u.deleted = :deleted', { deleted: false })
+      .andWhere('u.id = :id', { id })
+      .select([
+        'u.id',
+        'u.type',
+        'u.status',
+      ]);
+
+    let existUser = await query.getRawOne();
+
+    if (!existUser) {
+      console.log('User not found with ID:', id);
+      if(existUser.type === UsersTypes.TECHNICAL){
+        throw new NotFoundException(
+          lang === LanguagesEnum.ARABIC
+            ? 'الفني غير موجود.'
+            : 'Technician not found.'
+        );
+      }else{
+        throw new NotFoundException(
+          lang === LanguagesEnum.ARABIC
+            ? 'المستخدم غير موجود.'
+            : 'User not found.'
+        );
+      }
+    }
+
+    if (existUser.type === UsersTypes.TECHNICAL) {
+      query = this.usersRepo
+        .createQueryBuilder('u')
+        .leftJoin('u.technicalProfile', 'tech')
+        .where('u.deleted = :deleted', { deleted: false })
+        .andWhere('u.id = :id', { id })
+        .select([
+          'u.id AS id',
+          'u.username AS username',
+          'u.phone AS phone',
+          'u.type AS type',
+          'u.image AS image',
+          'u.createdAt AS createdAt',
+          'u.status AS status',
+          'tech.id AS techId',
+          'tech.avgRating AS avgRating',
+        ]);
+
+      existUser = await query.getRawOne();
+    }
+
+    return existUser;
   }
 
   async findUserForGuard(id:number){
@@ -557,23 +612,23 @@ export class UsersService {
     }
     
     if (image) {      
-      if(user.imageId) {
-        try {
-          await this.cloudflareService.deleteFileFromCloudflare(user.imageId);
-        } catch (error) {
-          console.error('Error deleting old image from Cloudflare:', error);
-        }
-      }
+      // if(user.imageId) {
+      //   try {
+      //     await this.cloudflareService.deleteFileFromCloudflare(user.imageId);
+      //   } catch (error) {
+      //     console.error('Error deleting old image from Cloudflare:', error);
+      //   }
+      // }
       
-      try {
-        // Pass the entire image object to the service
-        const savedImage = await this.cloudflareService.uploadFileToCloudflare(image);
-        user.image = savedImage.url;
-        user.imageId = savedImage.id;
-      } catch (error) {
-        console.error('Error uploading image to Cloudflare:', error);
-        throw new Error(`Failed to upload profile image: ${error.message}`);
-      }
+      // try {
+      //   // Pass the entire image object to the service
+      //   const savedImage = await this.cloudflareService.uploadFileToCloudflare(image);
+      //   user.image = savedImage.url;
+      //   user.imageId = savedImage.id;
+      // } catch (error) {
+      //   console.error('Error uploading image to Cloudflare:', error);
+      //   throw new Error(`Failed to upload profile image: ${error.message}`);
+      // }
     }
     
     if(username) user.username = username;

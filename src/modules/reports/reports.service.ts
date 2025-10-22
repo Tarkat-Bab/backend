@@ -21,12 +21,14 @@ export class ReportsService {
     ){}
 
     async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum) {
-        const { requestId, technicianId, images, ...rest } = createReportDto;
+        const { requestId, reportedId, images, ...rest } = createReportDto;
         
-        const user       = await this.usersService.findById(userId, lang);
+    
+        const reporter   = await this.usersService.findOne(userId, lang);
         const request    = await this.requestsService.findRequestById(requestId, lang, null);
-        const technician = await this.usersService.findById(technicianId, lang);
-        const requesterType =  user.type;
+        const reported   = await this.usersService.findOne(reportedId, lang);
+        console.log('Reporter:', reporter);
+        const requesterType =  reporter.type;
         
         let reportMedia = [];
         if(images){}
@@ -35,8 +37,8 @@ export class ReportsService {
             ...rest,
             reportNumber: `RPT-${Date.now()}`,
             type      : requesterType === UsersTypes.USER ? UsersTypes.USER : UsersTypes.TECHNICAL, // the reporter type
-            reporter  : requesterType === UsersTypes.USER ? user : technician,
-            reported  : requesterType === UsersTypes.USER ? technician : user,
+            reporter  : requesterType === UsersTypes.USER ? reporter : reported,
+            reported  : requesterType === UsersTypes.USER ? reported : reporter,
             media: reportMedia,
             request,
         });

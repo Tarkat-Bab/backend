@@ -5,6 +5,7 @@ import {
   AfterLoad,
   OneToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { hash, genSalt } from 'bcrypt';
 import { join } from 'path';
@@ -35,8 +36,9 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   image: string;
 
-  @Column({ type: 'text', nullable: true })
-  imageId: string;
+  // @Column({ type: 'text', nullable: true })
+  // @JoinColumn({ name: 'image_id' })
+  // imageId: string;
 
   @Column({ length: 255, nullable: true })
   password: string;

@@ -14,7 +14,7 @@ export const seedData = async (manager: EntityManager) => {
     await seedServices(manager);
     await seedUsers(manager);
     await seedServiceRequests(manager);
-    await seedReports(manager); // <--- add call to seed reports
+    await seedReports(manager);
 }
 
 async function seedNationalities(manager: EntityManager) {
@@ -168,9 +168,9 @@ async function  seedUsers(manager: EntityManager) {
                 const techincian = await manager.create(TechnicalProfileEntity, {
                     user: newUser,
                     description: 'فني  خبره 4 سنين',
-                    nationality: {id: 2},
+                    nationality: {id: 235},
                     avgRating: 4,
-                    services: [{id:2}]
+                    services: [{id:131}]
                     
                 })
               await manager.save(techincian);
@@ -389,7 +389,7 @@ async function seedReports(manager: EntityManager) {
     if (user1 && tech1) {
         reportsToCreate.push({
             reportNumber: 'REP-SEED-3',
-            type: 'technician', // technician reporting user
+            type: UsersTypes.TECHNICAL, // technician reporting user
             reason: ReportReason.other,
             message: 'العميل كان مسيئًا أثناء الزيارة.',
             reporter: tech1,
