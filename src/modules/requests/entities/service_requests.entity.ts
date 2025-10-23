@@ -1,5 +1,5 @@
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
-import { AfterLoad, Column, Entity, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { AfterLoad, Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany } from "typeorm";
 import { RequestStatus } from "../enums/requestStatus.enum";
 import { ServiceEntity } from "src/modules/services/entities/service.entity";
 import { UserEntity } from "src/modules/users/entities/users.entity";
@@ -14,11 +14,11 @@ export class ServiceRequestsEntity extends BaseEntity {
     @Column({type:'text'})
     description: string;
     
-    @Column({type:'varchar'})
-    latitude: string;
+    @Column({type:'decimal', precision:10, scale:6})
+    latitude: number;
     
-    @Column({type:'varchar'})
-    longitude: string;
+    @Column({type:'decimal', precision:10, scale:6})
+    longitude: number;
     
     @Column({type:'varchar'})
     arAddress: string;

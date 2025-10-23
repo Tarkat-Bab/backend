@@ -229,6 +229,7 @@ export class RequestsService {
       technician: o.technician ? {
          id: o.technician.id,
          username: o.technician?.user?.username ?? null,
+         image: o.technician?.user?.image ? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, o.technician.user.image)}` : null,
          avgRating: (o.technician as any)?.avgRating ?? null
       } : null,
       needsDelivery: (o as any).needsDelivery,
