@@ -11,6 +11,8 @@ import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { FilterReportsDto } from './dtos/filter-type.dto';
 import { ReportsRepliesEntity } from './entities/reports_replies.entity'; // Updated import
 import { CreateReplyDto } from './dtos/create-replay.dto';
+import { MediaDir } from 'src/common/files/media-dir-.enum';
+import { join } from 'path';
 
 @Injectable()
 export class ReportsService {
@@ -28,14 +30,30 @@ export class ReportsService {
 
     async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum, files?: Express.Multer.File[]) {
         const { requestId, images, ...rest } = createReportDto;
-    
-        const reporter   = await this.usersService.findOne(userId, lang);
         const request    = await this.requestsService.findRequestById(requestId, lang, null);
 
-        let reportedId   = request.user.id === userId ? request.technician.id : request.user.id;
+        if(request.technician === null){
+            throw new NotFoundException(
+                lang === LanguagesEnum.ARABIC
+                    ? 'الفني غير موجود.'
+                    : 'Technician not found.'
+            );  
+        }
+
+        const reporter   = await this.usersService.findOne(userId, lang);
+        
+        let reportedId: number;
+        let type: UsersTypes;
+
+        if(reporter.type === UsersTypes.USER){
+            reportedId = request.technician.id;
+            type = UsersTypes.USER;
+        } else {
+            reportedId = request.user.id;
+            type = UsersTypes.TECHNICAL;
+        }
         
         const reported   = await this.usersService.findOne(reportedId, lang);
-        const requesterType =  reporter.type;
     
         let reportMedia = [];
         if(files && files.length > 0){
@@ -48,14 +66,15 @@ export class ReportsService {
             // }));
         }
 
+        console.log(reporter, reported);
         const report = this.reportsRepo.create({
             ...rest,
             reportNumber: `RPT-${Date.now()}`,
-            type      : requesterType === UsersTypes.USER ? UsersTypes.USER : UsersTypes.TECHNICAL, // the reporter type
-            reporter  : requesterType === UsersTypes.USER ? reporter : reported,
-            reported  : requesterType === UsersTypes.USER ? reported : reporter,
-            media: reportMedia,
+            type,
             request,
+            reporter: {id: reporter.u_id},
+            reported: {id: reported.u_id},
+            media: reportMedia,
         });
 
         return this.reportsRepo.save(report);
