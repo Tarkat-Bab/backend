@@ -40,4 +40,19 @@ export class DashboardRequestsController {
     ) {
         return this.requestsService.findOne(id, lang);
     }
+
+
+    @ApiHeader({
+        name:'accept-language',
+        description:'Language',
+        required:false
+    })
+    @Get('/user/:id')
+    @Permissions(AdminPermissions.VIEW_REQUESTS)
+    async findServiceRequestsByUserId(
+        @Param('id') id: number,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.requestsService.findServiceRequestsByUserId(id, lang);
+    }
 }

@@ -16,4 +16,8 @@ export class DashboardRequestsService {
     async findOne(id: number, lang: LanguagesEnum) {
         return this.requestsService.findRequestById(id, lang);
     }
+
+    async findServiceRequestsByUserId(userId: number, lang: LanguagesEnum) {
+        return this.requestsService.findServiceRequestsByUserId(userId, lang);
+    }
 }
