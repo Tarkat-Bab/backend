@@ -6,6 +6,7 @@ import {
   OneToOne,
   OneToMany,
   JoinColumn,
+  BeforeUpdate,
 } from 'typeorm';
 import { hash, genSalt } from 'bcrypt';
 import { join } from 'path';
@@ -85,11 +86,12 @@ export class UserEntity extends BaseEntity {
     }
   }
 
-  // @AfterLoad()
-  // async MediaUrl() {
-  //   if (typeof this.image === 'string' && process.env.APP_URL) {
-  //     const fullPath = join(process.env.MEDIA_DIR, MediaDir.PROFILES, this.image);
-  //     this.image = `${process.env.APP_URL}/${fullPath}`;
-  //   }
-  // }
+  @BeforeInsert()
+  @BeforeUpdate()
+  async MediaUrl() {
+    if (typeof this.image === 'string' && process.env.APP_URL) {
+      const fullPath = join(process.env.MEDIA_DIR, MediaDir.PROFILES, this.image);
+      this.image = `${process.env.APP_URL}/${fullPath}`;
+    }
+  }
 }

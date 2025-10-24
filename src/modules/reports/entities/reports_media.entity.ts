@@ -1,6 +1,6 @@
 import e from "express";
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
-import { AfterLoad, Column, Entity, JoinColumn, ManyToOne } from "typeorm";
+import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 import { ReportsEntity } from "./reports.entity";
 import { join } from "path/win32";
 import { MediaDir } from "src/common/files/media-dir-.enum";
@@ -14,7 +14,8 @@ export class ReportsMedia extends BaseEntity {
     @JoinColumn({ name: 'report_id' })
     report: ReportsEntity;
 
-    @AfterLoad()
+    @BeforeInsert()
+    @BeforeUpdate()
     async MediaUrl() {
         if (this.media && process.env.APP_URL) {
             this.media = `${process.env.APP_URL}/${this.media}`;
