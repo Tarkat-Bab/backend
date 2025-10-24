@@ -74,9 +74,12 @@ export class UserEntity extends BaseEntity {
 
   @OneToMany(() => ServiceRequestsEntity, serviceRequests => serviceRequests.technician)
   implementedRequests: ServiceRequestsEntity[];
-  
-  @OneToMany(() => ReportsEntity, reports => reports.reported || reports.reporter)
-  reports: ReportsEntity[];
+
+  @OneToMany(() => ReportsEntity, report => report.reporter)
+  reportedReports: ReportsEntity[];
+
+  @OneToMany(() => ReportsEntity, report => report.reported)
+  receivedReports: ReportsEntity[];
 
   @BeforeInsert()
   async hashPassword() {
