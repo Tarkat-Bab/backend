@@ -15,6 +15,7 @@ import { MediaDir } from 'src/common/files/media-dir-.enum';
 import { TechnicalProfileEntity } from './technical_profile.entity';
 import { UserFcmTokenEntity } from './user-fcm-token.entity';
 import { ServiceRequestsEntity } from 'src/modules/requests/entities/service_requests.entity';
+import { ReportsEntity } from 'src/modules/reports/entities/reports.entity';
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
@@ -73,6 +74,9 @@ export class UserEntity extends BaseEntity {
   @OneToMany(() => ServiceRequestsEntity, serviceRequests => serviceRequests.technician)
   implementedRequests: ServiceRequestsEntity[];
   
+  @OneToMany(() => ReportsEntity, reports => reports.reported || reports.reporter)
+  reports: ReportsEntity[];
+
   @BeforeInsert()
   async hashPassword() {
     if (this.password) {

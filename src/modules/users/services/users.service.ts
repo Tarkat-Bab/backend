@@ -314,6 +314,8 @@ export class UsersService {
 
     let query = this.usersRepo
       .createQueryBuilder('u')
+      .leftJoin('u.serviceRequests', 'serviceRequests')
+      .leftJoin('u.reports', 'reports')
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere('u.id = :id', { id })
       .select([
@@ -325,7 +327,10 @@ export class UsersService {
         'u.phone AS phone',
         'u.status AS status',
         `${addressColumn} AS address`,
-      ]);
+        'COUNT(DISTINCT serviceRequests.id) AS ordersCount',
+        'COUNT(DISTINCT reports.id) AS reportsSubmitted',
+      ])
+      .groupBy('u.id');
 
     let existUser = await query.getRawOne();
 
