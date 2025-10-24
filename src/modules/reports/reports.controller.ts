@@ -61,4 +61,18 @@ export class ReportsController {
     ) {
         return this.reportsService.findReportById(id, lang );
     }
+
+
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Language for the response (e.g., ar, en)',
+        required: false,
+    })
+    @Get('/replies/:reportId')
+    async getRepliesByReport(
+        @Param("reportId") reportId: number,
+        @Language() lang: LanguagesEnum
+    ) {
+        return this.reportsService.findRepliesByReport(reportId, lang);
+    }   
 }

@@ -24,4 +24,5 @@ export class DashboardRequestsService {
     async findServiceRequestsByTechnicianId(technicianId: number, lang: LanguagesEnum) {
         return this.requestsService.findServiceRequestsByTechnicianId(technicianId, lang);
     }
+
 }

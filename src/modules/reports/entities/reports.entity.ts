@@ -4,6 +4,8 @@ import { ReportReason } from "../enums/reports.enum";
 import { ServiceRequestsEntity } from "src/modules/requests/entities/service_requests.entity";
 import { UserEntity } from "src/modules/users/entities/users.entity";
 import { ReportsMedia } from "./reports_media.entity";
+import { ReportsRepliesEntity } from "./reports_replies.entity";
+import { ReportReplyEntity } from "./report-reply.entity";
 
 @Entity("reports")
 export class ReportsEntity extends BaseEntity {
@@ -36,4 +38,7 @@ export class ReportsEntity extends BaseEntity {
     @ManyToOne(() => UserEntity, user => user.id, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'reported_id' })
     reported: UserEntity;
+
+    @OneToMany(() => ReportReplyEntity, reply => reply.report)
+    replies: ReportReplyEntity[];
 }
