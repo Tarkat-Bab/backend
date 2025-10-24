@@ -83,7 +83,7 @@ export class ReportsService {
     async findReportById(id: number, lang: LanguagesEnum) {
         const report = await  this.reportsRepo.findOne({
             where: { id, deleted: false, reporter: { deleted: false } , reported: {deleted: false}, request: { deleted: false } },
-            relations: ['reporter', 'reported', 'request'],
+            relations: ['reporter', 'reported', 'request', 'request.service'],
             select: {
                 id: true,
                 reportNumber: true,
@@ -95,7 +95,13 @@ export class ReportsService {
                     id: true,
                     title: true,
                     requestNumber: true,
-                    createdAt : true
+                    createdAt : true,
+                    service: {
+                        id: true,
+                        icone: true,
+                        enName: true,
+                        arName: true,
+                    }
                 },
                 reporter: {
                     id: true,
