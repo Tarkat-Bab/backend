@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateReportDto } from './dtos/create-report.dto';
 import { Repository } from 'typeorm';
 import { ReportsEntity } from './entities/reports.entity';
@@ -9,12 +9,18 @@ import { RequestsService } from '../requests/services/requests.service';
 import { UsersTypes } from 'src/common/enums/users.enum';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { FilterReportsDto } from './dtos/filter-type.dto';
+import { ReportsRepliesEntity } from './entities/reports_replies.entity'; // Updated import
+import { CreateReplyDto } from './dtos/create-replay.dto';
 
 @Injectable()
 export class ReportsService {
     constructor(
         @InjectRepository(ReportsEntity)
         private readonly reportsRepo: Repository<ReportsEntity>,
+
+        @InjectRepository(ReportsRepliesEntity)
+        private readonly reportsRepliesRepo: Repository<ReportsRepliesEntity>,
+
         private readonly usersService: UsersService,
         private readonly requestsService: RequestsService,
         private readonly paginatorService: PaginatorService,
@@ -154,4 +160,36 @@ export class ReportsService {
             
     }
 
+    async createReply(reportId: number, createReplyDto: CreateReplyDto, lang: LanguagesEnum) {
+        const report = await this.reportsRepo.findOne({ where: { id: reportId } });
+        if (!report) {
+            throw new NotFoundException(
+                lang === LanguagesEnum.ARABIC
+                    ? 'البلاغ غير موجود.'
+                    : 'Report not found.'
+            )
+        }
+
+        const reply = this.reportsRepliesRepo.create({
+            ...createReplyDto,
+            report: report,
+        });
+
+        return await this.reportsRepliesRepo.save(reply);
+    }
+
+    async findRepliesByReport(reportId: number, lang: LanguagesEnum) {
+        const report = await this.reportsRepo.findOne({ where: { id: reportId } });
+        if (!report) {
+            throw new NotFoundException(
+                lang === LanguagesEnum.ARABIC
+                    ? 'البلاغ غير موجود.'
+                    : 'Report not found.'
+            )
+        }
+        return await this.reportsRepliesRepo.find({
+            where: { report: { id: reportId } },
+            order: { createdAt: 'DESC' },
+        });
+    }
 }
