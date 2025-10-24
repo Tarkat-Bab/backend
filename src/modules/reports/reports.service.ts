@@ -22,7 +22,6 @@ export class ReportsService {
 
     async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum, files?: Express.Multer.File[]) {
         const { requestId, reportedId, images, ...rest } = createReportDto;
-
     
         const reporter   = await this.usersService.findOne(userId, lang);
         const request    = await this.requestsService.findRequestById(requestId, lang, null);
@@ -148,7 +147,7 @@ export class ReportsService {
         q.skip((page - 1) * limit).take(limit);
         const [reports, total] = await q.getManyAndCount();
         
-        return this.paginatorService.makePaginate(reports, total, page, limit);
+        return this.paginatorService.makePaginate(reports, total, limit, page);
             
     }
 
