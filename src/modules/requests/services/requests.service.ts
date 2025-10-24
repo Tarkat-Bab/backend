@@ -219,9 +219,9 @@ export class RequestsService {
       requestEntity.remainingWarrantyDays = this.calculateRemainingWarrantyDays(requestEntity.completedAt, warrantyDays);
       await this.serviceRequestsRepository.save(requestEntity);
     }
-
+ 
     // build DTO safely from the entity
-    const offers = (requestEntity.offers || []).map(o => ({
+    let offers = (requestEntity.offers || []).map(o => ({
       id: o.id,
       price: typeof o.price === 'number' ? o.price : Number(o.price),
       createdAt: o.createdAt,
@@ -234,9 +234,13 @@ export class RequestsService {
       } : null,
       needsDelivery: (o as any).needsDelivery,
       description: (o as any).description,
-      
+      accepted : (o as any).accepted,
     }));
 
+    if(requestEntity.status === RequestStatus.COMPLETED || requestEntity.status === RequestStatus.IN_PROGRESS){
+      offers = offers.filter(o => o.accepted === true);
+    }
+    
     const media = (requestEntity.media || []).map(m => ({
       id: m.id,
       media: m.media,
