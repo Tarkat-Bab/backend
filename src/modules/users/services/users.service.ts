@@ -258,7 +258,7 @@ export class UsersService {
       return {
         id: u.id,
         username: u.username,
-        image: u.image? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, u.image)}`: null,
+        image: u.image,
         createdAt: u.createdat,
         address: u.address,
         status: u.status,
@@ -377,7 +377,7 @@ export class UsersService {
       createdAt: existUser.createdat,
       phone: existUser.phone,
       address: existUser.address,
-      image: existUser.image ? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, existUser.image)}` : null,
+      image: existUser.image,
       status: existUser.status,
       totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
       reports: Number(existUser.reportssubmitted ?? 0),

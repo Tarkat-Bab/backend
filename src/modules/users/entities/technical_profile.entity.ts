@@ -1,4 +1,4 @@
-import { AfterLoad, Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne } from "typeorm";
+import { AfterLoad, BeforeInsert, BeforeUpdate, Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne } from "typeorm";
 import { UserEntity } from "./users.entity";
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
 import { MediaDir } from "src/common/files/media-dir-.enum";
@@ -32,7 +32,8 @@ export class TechnicalProfileEntity extends BaseEntity {
     @OneToMany(() => ServiceEntity, service => service.technicalProfile)
     services: ServiceEntity[];
 
-    @AfterLoad()
+    @BeforeInsert()
+    @BeforeUpdate()   
     async MediaUrl() {
         if (typeof this.workLicenseImage === 'string' && process.env.APP_URL) {
             const fullPath = join(process.env.MEDIA_DIR, MediaDir.WORKLICENSE, this.workLicenseImage);

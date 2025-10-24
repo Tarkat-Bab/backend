@@ -228,7 +228,7 @@ export class RequestsService {
       technician: o.technician ? {
          id: o.technician.id,
          username: o.technician?.user?.username ?? null,
-         image: o.technician?.user?.image ? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, o.technician.user.image)}` : null,
+         image: o.technician?.user?.image,
          avgRating: (o.technician as any)?.avgRating ?? null,
          address: lang === LanguagesEnum.ARABIC ? o.technician?.user?.arAddress : o.technician?.user?.enAddress
       } : null,
@@ -258,7 +258,7 @@ export class RequestsService {
       user: { 
         id: requestEntity.user.id,
         username: requestEntity.user.username,
-        image: requestEntity.user.image ? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, requestEntity.user.image)}` : null,
+        image: requestEntity.user.image,
         address: lang === LanguagesEnum.ARABIC ? requestEntity.arAddress : requestEntity.enAddress
         },
       service: { id: requestEntity.service?.id ?? null, name: requestEntity.service ? (requestEntity.service as any)[serviceNameField] : null },
@@ -334,7 +334,7 @@ export class RequestsService {
           user: {
             id: r.user.id,
             username: r.user.username,
-            image: r.user.image? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, r.user.image)}` : null,
+            image: r.user.image,
             address: address
           },
           offersCount: r.offers.length,
@@ -391,7 +391,7 @@ export class RequestsService {
           user: {
             id: r.user.id,
             username: r.user.username,
-            image: r.user.image? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, r.user.image)}` : null,
+            image: r.user.image,
             address: address
           },
           offersCount: r.offers.length,
