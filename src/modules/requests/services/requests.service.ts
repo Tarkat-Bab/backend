@@ -282,11 +282,62 @@ export class RequestsService {
     }
   }
 
-  async findServiceRequestsByUserId(userId: number): Promise<ServiceRequestsEntity[]> {
-    return this.serviceRequestsRepository.find({
+  async findServiceRequestsByUserId(userId: number, lang?: LanguagesEnum): Promise<{requests: any[]}> {
+    const requests = await this.serviceRequestsRepository.find({
       where: { user: { id: userId } },
-      relations: ['user', 'technician', 'offers', 'offers.technician', 'media'],
+      relations: ['service','user', 'technician', 'offers', 'offers.technician', 'media'],
+      select:{
+        id:true, 
+        requestNumber:true,
+        title:true,
+        description:true,
+        status:true,
+        createdAt:true,
+        service:{
+          id:true,
+          arName:true,
+          enName:true,
+          icone:true
+        },
+        user:{
+          id:true,
+          username:true,
+          image:true,
+          enAddress:true,
+          arAddress:true
+        },
+        offers:{ id:true},
+        media:{ id:true, media:true}
+      }
     });
+
+    return {
+      requests: requests.map(r => {
+        const address = lang === LanguagesEnum.ARABIC ? r.arAddress : r.enAddress;
+        const serviceName = r.service ? (lang === LanguagesEnum.ARABIC ? r.service.arName : r.service.enName) : null;
+        return {
+          id: r.id,
+          requestNumber: r.requestNumber,
+          title: r.title,
+          description: r.description,
+          status: r.status,
+          createdAt: r.createdAt,
+          service: r.service ? {
+            id: r.service.id,
+            name: serviceName,
+            icone: r.service.icone? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.SERVICES, r.service.icone)}` : null
+          } : null,
+          user: {
+            id: r.user.id,
+            username: r.user.username,
+            image: r.user.image? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.PROFILES, r.user.image)}` : null,
+            address: address
+          },
+          offersCount: r.offers.length,
+          media: r.media
+        };
+      })
+    };
   }
 
   async findServiceRequestsByTechnicianId(technicianId: number): Promise<ServiceRequestsEntity[]> {
