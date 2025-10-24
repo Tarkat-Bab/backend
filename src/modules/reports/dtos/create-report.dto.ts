@@ -18,12 +18,12 @@ export class CreateReportDto {
     })
     message: string;
 
-    @ApiProperty({
-        description: "Person ID being reported",
-        example: 42,
-        required: true,
-    })
-    reportedId?: number;
+    // @ApiProperty({
+    //     description: "Person ID being reported",
+    //     example: 42,
+    //     required: true,
+    // })
+    // reportedId?: number;
 
     @ApiProperty({
         description: "Request ID related to the report",
