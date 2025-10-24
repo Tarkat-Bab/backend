@@ -189,6 +189,9 @@ export class ReportsService {
             )
         }
 
+        report.resolved = true;
+        await this.reportsRepo.save(report);
+        
         const reply = this.reportsRepliesRepo.create({
             ...createReplyDto,
             report: report,
