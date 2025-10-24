@@ -155,6 +155,7 @@ export class ReportsService {
             .leftJoinAndSelect('report.media', 'media')
             .where('report.deleted = :deleted', { deleted: false })
             .andWhere('report.type = :type', { type: filterReportsDto.type })
+            .andWhere('report.resolved = :resolved', { resolved: false })
             .orderBy('report.createdAt', 'DESC')
             .select([
             'report.id',
@@ -191,7 +192,7 @@ export class ReportsService {
 
         report.resolved = true;
         await this.reportsRepo.save(report);
-        
+
         const reply = this.reportsRepliesRepo.create({
             ...createReplyDto,
             report: report,

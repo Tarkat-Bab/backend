@@ -315,7 +315,7 @@ export class UsersService {
     let query = this.usersRepo
       .createQueryBuilder('u')
       .leftJoin('u.serviceRequests', 'serviceRequests')
-      .leftJoin('u.reports', 'reports')
+      .leftJoin('u.reportedReports', 'reportedReports')  // Changed from reports to reportedReports
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere('u.id = :id', { id })
       .select([
@@ -328,7 +328,7 @@ export class UsersService {
         'u.status AS status',
         `${addressColumn} AS address`,
         'COUNT(DISTINCT serviceRequests.id) AS ordersCount',
-        'COUNT(DISTINCT reports.id) AS reportsSubmitted',
+        'COUNT(DISTINCT reportedReports.id) AS reportsSubmitted',
       ])
       .groupBy('u.id');
 
