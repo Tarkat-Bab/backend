@@ -203,7 +203,7 @@ export class RequestsService {
       .andWhere('request.deleted = false')
       .andWhere('user.deleted = false')
       .andWhere('user.status = :status', { status: 'active' })
-      .andWhere('(technician.id IS NULL OR (technician.deleted = false AND technician.status = :techStatus))', { techStatus: 'active' })
+      // .andWhere('(technician.id IS NULL OR (technician.deleted = false AND technician.status = :techStatus))', { techStatus: 'active' })
       .getOne();
       
     if (!requestEntity) {
