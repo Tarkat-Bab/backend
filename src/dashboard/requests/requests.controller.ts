@@ -55,4 +55,20 @@ export class DashboardRequestsController {
     ) {
         return this.requestsService.findServiceRequestsByUserId(id, lang);
     }
+
+
+        @ApiHeader({
+        name:'accept-language',
+        description:'Language',
+        required:false
+    })
+
+    @Get('/technician/:id')
+    @Permissions(AdminPermissions.VIEW_REQUESTS)
+    async findServiceRequestsByTechnicianId(
+        @Param('id') id: number,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.requestsService.findServiceRequestsByTechnicianId(id, lang);
+    }
 }

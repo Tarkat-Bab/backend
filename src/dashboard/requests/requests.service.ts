@@ -20,4 +20,8 @@ export class DashboardRequestsService {
     async findServiceRequestsByUserId(userId: number, lang: LanguagesEnum) {
         return this.requestsService.findServiceRequestsByUserId(userId, lang);
     }
+
+    async findServiceRequestsByTechnicianId(technicianId: number, lang: LanguagesEnum) {
+        return this.requestsService.findServiceRequestsByTechnicianId(technicianId, lang);
+    }
 }
