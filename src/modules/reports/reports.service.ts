@@ -21,10 +21,13 @@ export class ReportsService {
     ){}
 
     async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum, files?: Express.Multer.File[]) {
-        const { requestId, reportedId, images, ...rest } = createReportDto;
+        const { requestId, images, ...rest } = createReportDto;
     
         const reporter   = await this.usersService.findOne(userId, lang);
         const request    = await this.requestsService.findRequestById(requestId, lang, null);
+
+        let reportedId   = request.user.id === userId ? request.technician.id : request.user.id;
+        
         const reported   = await this.usersService.findOne(reportedId, lang);
         const requesterType =  reporter.type;
     
