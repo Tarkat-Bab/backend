@@ -20,20 +20,17 @@ export class ReportsService {
         private readonly paginatorService: PaginatorService,
     ){}
 
-    async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum) {
+    async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum, files?: Express.Multer.File[]) {
         const { requestId, reportedId, images, ...rest } = createReportDto;
-        console.log("User ID creating report:", userId);    
 
     
         const reporter   = await this.usersService.findOne(userId, lang);
         const request    = await this.requestsService.findRequestById(requestId, lang, null);
         const reported   = await this.usersService.findOne(reportedId, lang);
-        console.log('Reporter:', reporter);
         const requesterType =  reporter.type;
-       
-        
+    
         let reportMedia = [];
-        if(images){
+        if(files && files.length > 0){
             // reportMedia = await Promise.all(images.map(async (image) => {
             //     const savedImage = await this.cloudflareService.uploadFileToCloudflare(image.path);
             //     return {

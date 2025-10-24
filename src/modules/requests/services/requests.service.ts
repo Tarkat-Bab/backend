@@ -303,6 +303,14 @@ export class RequestsService {
     return this.serviceRequestsRepository.save(request);
   }
 
+  async requestCompleted(id: number, lang: LanguagesEnum): Promise<ServiceRequestsEntity> {
+    const request = await this.serviceRequestsRepository.findOne({ where: { id } });
+    request.status = RequestStatus.COMPLETED;
+    request.completedAt = new Date();
+    request.remainingWarrantyDays = 20;
+    return this.serviceRequestsRepository.save(request);
+  }
+
 private calculateRemainingWarrantyDays(completedAt: Date, warrantyDays: number): number {
   const currentDate = new Date();
   const passedDays = Math.floor((currentDate.getTime() - completedAt.getTime()) / (1000 * 3600 * 24));

@@ -1,4 +1,4 @@
-import { Controller,Post, Get, Param, UseInterceptors, Body } from '@nestjs/common';
+import { Controller,Post, Get, Param, UseInterceptors, Body, UploadedFiles } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { ApiBearerAuth, ApiConsumes, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -20,7 +20,7 @@ export class ReportsController {
     
     @Post()
     @ApiConsumes('multipart/form-data')
-    @UseInterceptors(FileInterceptor('image', { fileFilter: imageFilter }))
+    @UseInterceptors(FileInterceptor('images', { fileFilter: imageFilter }))
     @ApiHeader({
         name: 'Accept-Language',
         description: 'Language for the response (e.g., ar, en)',
@@ -29,9 +29,10 @@ export class ReportsController {
     async createReport(
         @CurrentUser() user: any,
         @Body() createReportDto: CreateReportDto,
-        @Language() lang: LanguagesEnum
+        @Language() lang: LanguagesEnum,
+        @UploadedFiles() images: Express.Multer.File[],
     ){
-        return this.reportsService.createReport(createReportDto, user.id, lang);
+        return this.reportsService.createReport(createReportDto, user.id, lang, images);
     }
 
     @Get('all/me')

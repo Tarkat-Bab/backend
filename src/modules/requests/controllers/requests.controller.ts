@@ -106,4 +106,20 @@ export class RequestsController {
   ){
     return this.requestsService.findAllServiceRequests(filterRequest, lang);
   }
+
+
+
+  @Patch('client/completed/:id')
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Language preference',
+    required: false,
+    enum: LanguagesEnum
+  })
+  @ApiOperation({ summary: 'Clinet mark request as completed' })
+  @ApiBearerAuth()  async requestCompleted(
+    @Param('id') id: number,
+    @Language() lang: LanguagesEnum) {
+    return this.requestsService.requestCompleted(id, lang);
+  }
 }

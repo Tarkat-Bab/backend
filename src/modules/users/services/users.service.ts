@@ -399,19 +399,11 @@ export class UsersService {
 
     if (!existUser) {
       console.log('User not found with ID:', id);
-      if(existUser.type === UsersTypes.TECHNICAL){
-        throw new NotFoundException(
-          lang === LanguagesEnum.ARABIC
-            ? 'الفني غير موجود.'
-            : 'Technician not found.'
-        );
-      }else{
         throw new NotFoundException(
           lang === LanguagesEnum.ARABIC
             ? 'المستخدم غير موجود.'
             : 'User not found.'
-        );
-      }
+        );        
     }
 
     if (existUser.type === UsersTypes.TECHNICAL) {

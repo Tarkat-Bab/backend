@@ -108,28 +108,28 @@ export class RequestOffersService {
   async findRequestOfferById(userId:number,id: number, lang: LanguagesEnum, dashboard?:boolean): Promise<RequestOffersEntity> {
     const offer = await this.requestOffersRepository.findOne({
       where: { id },
-      relations: ['request', 'technician'],
-    //   select: {
-    //     id: true,
-    //     price: true,
-    //     needsDelivery: true,
-    //     description: true,
-    //     accepted: true,
-    //     technician: {
-    //       id: true,
-    //       user:{
-    //         id: true,
-    //         username: true,
-    //       },
-    //       avgRating: true,
-    //    },
-    //     request: {
-    //       id: true,
-    //       user: {
-    //         id: true,
-    //       },
-    //     },
-    // }
+      relations: ['request', 'technician', 'request.user', 'technician.user'],
+      select: {
+        id: true,
+        price: true,
+        needsDelivery: true,
+        description: true,
+        accepted: true,
+        technician: {
+          id: true,
+          user:{
+            id: true,
+            username: true,
+          },
+          avgRating: true,
+       },
+        request: {
+          id: true,
+          user: {
+            id: true,
+          },
+        },
+    }
     });
 
     if (!offer) {
@@ -160,7 +160,18 @@ export class RequestOffersService {
   }
 
   async acceptOffer(userId: number, offerId: number, lang: LanguagesEnum) {
-    const offer = await this.findRequestOfferById(userId, offerId, lang);
+    const offer = await this.requestOffersRepository.findOne({
+      where: { id: offerId },
+      relations: ['request', 'request.user', 'technician', 'technician.user'],
+    });
+    if(!offer){
+      if(lang === LanguagesEnum.ARABIC){
+        throw new NotFoundException(`العرض غير موجود`);
+      }else{
+        throw new NotFoundException(`Offer not found`);
+      }
+    }
+
     if(userId !== offer.request.user.id){
       if(lang === LanguagesEnum.ARABIC){
         throw new NotFoundException(`لا يمكنك قبول عرض ليس لطلبك`);
@@ -170,8 +181,7 @@ export class RequestOffersService {
     }
     const request = await this.requestService.findRequestById(offer.request.id, lang);
     
-    request.technician = offer.technician;
-    request.price = offer.price;
+    request.technician = offer.technician.user;
     request.status = RequestStatus.IN_PROGRESS;
     offer.accepted = true;
     
