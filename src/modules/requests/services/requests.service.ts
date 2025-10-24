@@ -144,15 +144,14 @@ export class RequestsService {
       query.andWhere('request.technician_id = :technicianId', { technicianId });
     }
 
-   if (filter.status) {
-    query.andWhere('CAST(request.status AS text) = :status', { status: filter.status.toLowerCase() });
-   }
+    if (filter.status) {
+      query.andWhere('CAST(request.status AS text) ILIKE :requestStatus', { requestStatus: filter.status });
+    }
     
-  if(!dashboard && !userId && !technicianId ){
-    // console.log("No filters applied, defaulting to pending status");
-    // query.andWhere('CAST(request.status AS text) = :status', { status: 'pending' });
-  }
-  
+    if (!dashboard && !userId && !technicianId && !filter.status) {
+      query.andWhere('CAST(request.status AS text) ILIKE :defaultStatus', { defaultStatus: 'pending' });
+    }
+
   query
     .orderBy('request.createdAt', 'DESC')
     .skip((filter.page - 1) * filter.limit).take(filter.limit);
