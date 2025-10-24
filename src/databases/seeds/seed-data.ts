@@ -70,7 +70,8 @@ async function seedServices(manager: EntityManager) {
         { arName: 'دهان', enName: 'Painting', icone: 'painting.png' },
         { arName: 'نجارة', enName: 'Carpentry', icone: 'carpentry.png' },
         { arName: 'نظافة المنزل', enName: 'House Cleaning', icone: 'house_cleaning.png' },
-        { arName: 'خدمات الأثاث', enName: 'Furniture Services', icone: 'furniture_services.png' }
+        { arName: 'خدمات الأثاث', enName: 'Furniture Services', icone: 'furniture_services.png' },
+        { arName:  'خدمات اخري', enName: 'Other Services', icone: 'others.png' }
     ];
 
     // Check if services already exist
