@@ -11,7 +11,7 @@ export class FilterUsersDto extends PaginatorInput {
     type: String,
     enum: UsersTypes,
     example: UsersTypes.USER,
-    required: true,
+    required: false,
   })
   @IsString()
   @IsOptional()

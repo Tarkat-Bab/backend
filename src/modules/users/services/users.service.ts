@@ -216,7 +216,7 @@ export class UsersService {
     const query = this.usersRepo
       .createQueryBuilder('u')
       .where('u.deleted = :deleted', { deleted: false })
-      .andWhere('u.type = :type', { type })
+      .andWhere(type ? 'u.type = :type' : '1=1', { type }) // Conditional type filter
       .select([
         'u.id AS id',
         'u.type AS type',
@@ -227,13 +227,12 @@ export class UsersService {
         `${addressColumn} AS address`, 
       ]);
 
-    if (type === UsersTypes.TECHNICAL) {
+    if (type && type === UsersTypes.TECHNICAL) {
       query
         .leftJoin('u.technicalProfile', 'tech')
         .addSelect([
           'tech.id AS techId',
           'tech.avgRating AS avgRating',
-          'COUNT(DISTINCT tech.reviews) AS totalReviews',
         ]);
     }
 
