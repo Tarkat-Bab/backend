@@ -197,9 +197,9 @@ export class UsersService {
     }
 
     if (image) {
-      const savedImage = await this.cloudflareService.uploadFileToCloudflare(image.path);
+      const savedImage = await this.cloudflareService.uploadFile(image);
       dataToUpdate.image = savedImage.url;
-      dataToUpdate.imageId = savedImage.id;
+      // dataToUpdate.imageId = savedImage.id;
     }
     await this.usersRepo.update({ id: existUser.id }, dataToUpdate);
     return await this.findById(existUser.id);
@@ -224,6 +224,7 @@ export class UsersService {
         'u.image AS image',
         'u.createdAt AS createdAt',
         'u.status AS status',
+        'u.phone AS phone',
         `${addressColumn} AS address`, 
       ]);
 
@@ -265,6 +266,7 @@ export class UsersService {
         createdAt: u.createdat,
         address: u.address,
         status: u.status,
+        phone: u.phone,
         totalOrders: isUser ? Number(u.orderscount ?? 0) : undefined,
         avgRating: isTechnical ? Number(u.avgrating ?? 0) : undefined,
         completedOrders: isTechnical ? Number(u.completedorders ?? 0) : undefined,
@@ -662,23 +664,23 @@ export class UsersService {
     }
     
     if (image) {      
-      // if(user.imageId) {
-      //   try {
-      //     await this.cloudflareService.deleteFileFromCloudflare(user.imageId);
-      //   } catch (error) {
-      //     console.error('Error deleting old image from Cloudflare:', error);
-      //   }
-      // }
+      if(user.imageId) {
+        try {
+          // await this.cloudflareService.deleteFileFromCloudflare(user.imageId);
+        } catch (error) {
+          console.error('Error deleting old image from Cloudflare:', error);
+        }
+      }
       
-      // try {
-      //   // Pass the entire image object to the service
-      //   const savedImage = await this.cloudflareService.uploadFileToCloudflare(image);
-      //   user.image = savedImage.url;
-      //   user.imageId = savedImage.id;
-      // } catch (error) {
-      //   console.error('Error uploading image to Cloudflare:', error);
-      //   throw new Error(`Failed to upload profile image: ${error.message}`);
-      // }
+      try {
+        // Pass the entire image object to the service
+        const savedImage = await this.cloudflareService.uploadFile(image);
+        user.image = savedImage.url;
+        // user.imageId = savedImage.id;
+      } catch (error) {
+        console.error('Error uploading image to Cloudflare:', error);
+        throw new Error(`Failed to upload profile image: ${error.message}`);
+      }
     }
     
     if(username) user.username = username;
