@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './services/users.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -43,4 +43,16 @@ export class UsersController {
         return this.usersService.updateProfile(user.id, updateDto, image);
     }
 
+    @ApiHeader({
+      name: 'Accept-Language',
+      description: 'Language for the response (e.g., ar, en)',
+      required: false,
+    })
+    @Get('technician/:technicianId')
+    async listUsers(
+        @Param('technicianId') technicianId: number,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.usersService.technicianProfile(technicianId, lang);
+    }
 }

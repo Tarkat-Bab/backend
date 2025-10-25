@@ -216,7 +216,7 @@ export class UsersService {
     const query = this.usersRepo
       .createQueryBuilder('u')
       .where('u.deleted = :deleted', { deleted: false })
-      .andWhere('u.type = :type', { type })
+      .andWhere(type ? 'u.type = :type' : '1=1', { type }) // Conditional type filter
       .select([
         'u.id AS id',
         'u.type AS type',
@@ -227,10 +227,13 @@ export class UsersService {
         `${addressColumn} AS address`, 
       ]);
 
-    if (type === UsersTypes.TECHNICAL) {
+    if (type && type === UsersTypes.TECHNICAL) {
       query
         .leftJoin('u.technicalProfile', 'tech')
-        .addSelect(['tech.id AS techId', 'tech.avgRating AS avgRating']);
+        .addSelect([
+          'tech.id AS techId',
+          'tech.avgRating AS avgRating',
+        ]);
     }
 
     if (username) {
@@ -265,6 +268,7 @@ export class UsersService {
         totalOrders: isUser ? Number(u.orderscount ?? 0) : undefined,
         avgRating: isTechnical ? Number(u.avgrating ?? 0) : undefined,
         completedOrders: isTechnical ? Number(u.completedorders ?? 0) : undefined,
+        totalReviews: isTechnical ? Number(u.totalreviews ?? 0) : undefined,
       }
     });
 
@@ -411,7 +415,7 @@ export class UsersService {
         );        
     }
 
-    if (existUser.type === UsersTypes.TECHNICAL) {
+    if (existUser.u_type === UsersTypes.TECHNICAL) {
       query = this.usersRepo
         .createQueryBuilder('u')
         .leftJoin('u.technicalProfile', 'tech')
@@ -427,6 +431,7 @@ export class UsersService {
           'u.status AS status',
           'tech.id AS techId',
           'tech.avgRating AS avgRating',
+          // 'tech.reviews AS reviews',
         ]);
 
       existUser = await query.getRawOne();
@@ -443,10 +448,12 @@ export class UsersService {
   }
 
   async findTechnicianById(id: number, lang: LanguagesEnum, dashboard?: boolean): Promise<TechnicalProfileEntity> {
-    console.log('Finding technician by ID:', id, 'Dashboard mode:', dashboard);
     const technician = await this.technicalProfileRepo.findOne({
-      where: { id, deleted: false, user: { deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } },
-      relations: ['user'],
+      where: [
+        { id, deleted: false, user: { deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } },
+        { deleted: false, user: { id, deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } }
+      ],
+      relations: ['user', 'reviews', 'services'],
       select: {
         id: true,
         avgRating: true,
@@ -457,6 +464,8 @@ export class UsersService {
           phone: true,
           image: true,
         },
+        reviews: { id: true },
+        services: { id: true, enName: true, arName: true, icone: true},
       },
     });
     if (!technician) {
@@ -468,6 +477,51 @@ export class UsersService {
     }
     return technician;
   }
+
+  async technicianProfile(id: number, lang: LanguagesEnum, dashboard?: boolean) {
+    const technician = await this.technicalProfileRepo.findOne({
+      where: [
+        { id, deleted: false, user: { deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } },
+        { deleted: false, user: { id, deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } }
+      ],
+      relations: ['user', 'reviews', 'services'],
+      select: {
+        id: true,
+        avgRating: true,
+        description: true,
+        user: {
+          id: true,
+          username: true,
+          phone: true,
+          image: true,
+        },
+        reviews: { id: true },
+        services: { id: true, enName: true, arName: true, icone: true},
+      },
+    });
+    if (!technician) {
+      if(lang === LanguagesEnum.ARABIC){
+        throw new NotFoundException(`المستخدم الفني غير موجود`);
+      } else {
+        throw new NotFoundException(`Technician not found`);
+      }
+    }
+    return {
+      id: technician.id,
+      avgRating: technician.avgRating,
+      description: technician.description,
+      username: technician.user.username,
+      phone: technician.user.phone,
+      image: technician.user.image,
+      services: technician.services.map(s => ({
+        id: s.id,
+        address: lang === LanguagesEnum.ARABIC ? s.arName : s.enName,
+        icone: s.icone,
+      })),
+      totalReviews: technician.reviews.length ?? 0,
+    };
+  }
+
   async findByEmail(email: string, lang: LanguagesEnum, status?: UserStatus) {
     const user = await this.usersRepo.findOne({
       where: {
@@ -747,16 +801,18 @@ export class UsersService {
       }
     }
 
-    // Save changes
     const updatedUser = await this.usersRepo.save(user);
 
-    // Remove circular references before returning
     if (updatedUser.technicalProfile) {
-      // Remove the user property from technicalProfile to avoid circular JSON
       updatedUser.technicalProfile.user = undefined;
     }
 
     const { password, ...result } = updatedUser;
     return result;
+  }
+
+  
+  async saveTechnicalProfile(technician: TechnicalProfileEntity) {
+    return this.technicalProfileRepo.save(technician);
   }
 }
