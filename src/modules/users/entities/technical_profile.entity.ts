@@ -5,6 +5,7 @@ import { MediaDir } from "src/common/files/media-dir-.enum";
 import { join } from "path";
 import { NationalityEntity } from "src/modules/nationalties/entities/nationality.entity";
 import { ServiceEntity } from "src/modules/services/entities/service.entity";
+import { ReviewsEntity } from "src/modules/reviews/entities/review.entity";
 
 
 @Entity('technical_profiles')
@@ -31,6 +32,10 @@ export class TechnicalProfileEntity extends BaseEntity {
 
     @OneToMany(() => ServiceEntity, service => service.technicalProfile)
     services: ServiceEntity[];
+
+    @OneToMany(() => ReviewsEntity, review => review.technician)
+    @JoinColumn()
+    reviews: ReviewsEntity[];
 
     @BeforeInsert()
     @BeforeUpdate()   
