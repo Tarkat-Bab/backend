@@ -58,20 +58,4 @@ export class ServiceRequestsEntity extends BaseEntity {
 
     @OneToMany(() => RequestOffersEntity, offer => offer.request)
     offers: RequestOffersEntity[];
-
-    @AfterLoad()
-    async loadMediaUrls() {
-        if (this.media && this.media.length > 0) {
-            for (const mediaItem of this.media) {
-                try {
-                    const url = await mediaItem.MediaUrl();
-                    (mediaItem as any).media = url;
-                    // console.log('Loaded media URL for media id', mediaItem.id, url);
-                } catch (err) {
-                    console.warn('Failed loading media URL for media id', mediaItem.id, err?.message ?? err);
-                }
-            }
-        }
-    }
-
 }

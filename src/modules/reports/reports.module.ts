@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from '../users/users.module';
 import { RequestsModule } from '../requests/requests.module';
 import { ReportsRepliesEntity } from './entities/reports_replies.entity';
+import { CloudflareService } from 'src/common/files/cloudflare.service';
 
 @Module({
     imports: [
@@ -15,7 +16,7 @@ import { ReportsRepliesEntity } from './entities/reports_replies.entity';
         TypeOrmModule.forFeature([ReportsEntity, ReportsMedia, ReportsRepliesEntity])
     ],
     controllers: [ReportsController],
-    providers: [ReportsService],
+    providers: [ReportsService, CloudflareService],
     exports: [ReportsService],
 })
 export class ReportsModule {}
