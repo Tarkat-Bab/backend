@@ -14,7 +14,7 @@ export class CloudflareService {
 
     this.s3 = new S3Client({
       region: 'auto',
-      endpoint: `https://${this.accountId}.r2.cloudflarestorage.com`, // ✅ no bucket here
+      endpoint: `https://${this.accountId}.r2.cloudflarestorage.com`,
       credentials: {
         accessKeyId: this.configService.get<string>('CLOUDFLARE_ACCESS_KEY_ID'),
         secretAccessKey: this.configService.get<string>('CLOUDFLARE_SECRET_ACCESS_KEY'),

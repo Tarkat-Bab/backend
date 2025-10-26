@@ -13,14 +13,4 @@ export class ReportsMedia extends BaseEntity {
     @ManyToOne(() => ReportsEntity, report => report.media)
     @JoinColumn({ name: 'report_id' })
     report: ReportsEntity;
-
-    @BeforeInsert()
-    @BeforeUpdate()
-    async MediaUrl() {
-        if (this.media && process.env.APP_URL) {
-            this.media = `${process.env.APP_URL}/${this.media}`;
-            const fullPath = join(process.env.MEDIA_DIR, MediaDir.REPORTS, this.media);
-            return `${process.env.APP_URL}/${fullPath}`;
-        }
-    }
 }

@@ -11,8 +11,7 @@ import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { FilterReportsDto } from './dtos/filter-type.dto';
 import { ReportsRepliesEntity } from './entities/reports_replies.entity'; // Updated import
 import { CreateReplyDto } from './dtos/create-replay.dto';
-import { MediaDir } from 'src/common/files/media-dir-.enum';
-import { join } from 'path';
+import { CloudflareService } from 'src/common/files/cloudflare.service';
 
 @Injectable()
 export class ReportsService {
@@ -26,6 +25,7 @@ export class ReportsService {
         private readonly usersService: UsersService,
         private readonly requestsService: RequestsService,
         private readonly paginatorService: PaginatorService,
+        private readonly cloudflareService: CloudflareService,
     ){}
 
     async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum, files?: Express.Multer.File[]) {
@@ -57,13 +57,14 @@ export class ReportsService {
     
         let reportMedia = [];
         if(files && files.length > 0){
-            // reportMedia = await Promise.all(images.map(async (image) => {
-            //     const savedImage = await this.cloudflareService.uploadFileToCloudflare(image.path);
-            //     return {
-            //         url: savedImage.url,
-            //         id: savedImage.id,
-            //     };
-            // }));
+            reportMedia = await Promise.all(
+                files.map(async(file) => {
+                    const uploadedFile =  await this.cloudflareService.uploadFile(file);
+                    return {
+                        url: uploadedFile.url,
+                    };
+                })
+            );
         }
 
         console.log(reporter, reported);
