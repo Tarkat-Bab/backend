@@ -199,6 +199,7 @@ export class RequestsService {
       .leftJoinAndSelect('request.technician', 'technician')
       .leftJoinAndSelect('request.offers', 'offers')
       .leftJoinAndSelect('offers.technician', 'offerTechnician')
+      .leftJoinAndSelect('offerTechnician.services', 'techService')
       // ensure the technician's user relation is loaded so .technician.user.username exists
       .leftJoinAndSelect('offerTechnician.user', 'offerTechnicianUser')
       .leftJoinAndSelect('request.media', 'media')
@@ -235,7 +236,8 @@ export class RequestsService {
         description: o.technician?.description ?? null,
         image: o.technician?.user?.image,
         avgRating: (o.technician as any)?.avgRating ?? null,
-        address: lang === LanguagesEnum.ARABIC ? o.technician?.user?.arAddress : o.technician?.user?.enAddress
+        address: lang === LanguagesEnum.ARABIC ? o.technician?.user?.arAddress : o.technician?.user?.enAddress,
+        service: o.technician?.services ?? null
       } : null,
       needsDelivery: (o as any).needsDelivery,
       description: (o as any).description,
