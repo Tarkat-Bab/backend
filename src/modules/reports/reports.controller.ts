@@ -3,7 +3,7 @@ import { ReportsService } from './reports.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { ApiBearerAuth, ApiConsumes, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { post } from 'node_modules/axios/index.cjs';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { imageFilter } from 'src/common/files/files.filter';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { CreateReportDto } from './dtos/create-report.dto';
@@ -20,7 +20,8 @@ export class ReportsController {
     
     @Post()
     @ApiConsumes('multipart/form-data')
-    @UseInterceptors(FileInterceptor('images', { fileFilter: imageFilter }))
+    @UseInterceptors(FilesInterceptor('images', 3, { fileFilter: imageFilter }))
+    @ApiOperation({ summary: 'Create a new report (Client, Technician Api)' })
     @ApiHeader({
         name: 'Accept-Language',
         description: 'Language for the response (e.g., ar, en)',
