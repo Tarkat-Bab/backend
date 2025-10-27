@@ -113,6 +113,7 @@ export class RequestsService {
 
         'user.id',
         'user.username',
+        'user.image',
 
         'service.id',
         'service.arName',
@@ -228,11 +229,12 @@ export class RequestsService {
       price: typeof o.price === 'number' ? o.price : Number(o.price),
       createdAt: o.createdAt,
       technician: o.technician ? {
-         id: o.technician.id,
-         username: o.technician?.user?.username ?? null,
-         image: o.technician?.user?.image,
-         avgRating: (o.technician as any)?.avgRating ?? null,
-         address: lang === LanguagesEnum.ARABIC ? o.technician?.user?.arAddress : o.technician?.user?.enAddress
+        id: o.technician?.user?.id,
+        username: o.technician?.user?.username ?? null,
+        description: o.technician?.description ?? null,
+        image: o.technician?.user?.image,
+        avgRating: (o.technician as any)?.avgRating ?? null,
+        address: lang === LanguagesEnum.ARABIC ? o.technician?.user?.arAddress : o.technician?.user?.enAddress
       } : null,
       needsDelivery: (o as any).needsDelivery,
       description: (o as any).description,
