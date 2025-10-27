@@ -84,7 +84,7 @@ export class ReportsService {
     async findReportById(id: number, lang: LanguagesEnum) {
         const report = await  this.reportsRepo.findOne({
             where: { id, deleted: false, reporter: { deleted: false } , reported: {deleted: false}, request: { deleted: false } },
-            relations: ['reporter', 'reported', 'request', 'request.service'],
+            relations: ['reporter', 'reported', 'request', 'request.service', 'replies'],
             select: {
                 id: true,
                 reportNumber: true,
@@ -119,15 +119,21 @@ export class ReportsService {
                     phone: true,
                     enAddress: true,
                     arAddress: true,
+                },
+
+                replies:{
+                    id: true,
+                    content: true,
+                    createdAt: true,
                 }
             },
         });
 
         if(!report){
             if(lang === LanguagesEnum.ARABIC){
-                throw new Error('الابلاغ غير موجود');
+                throw new NotFoundException('الابلاغ غير موجود');
             } else {
-                throw new Error('Report not found');
+                throw new NotFoundException('Report not found');
             }
         }
 
@@ -141,12 +147,17 @@ export class ReportsService {
                 { deleted: false, reported: { id: userId, deleted: false } },
             ],
             order: { createdAt: 'DESC' },
+            relations: {request: true},
             select:{
                 id: true,
                 reportNumber: true,
                 message: true,
                 resolved: true,
                 createdAt: true,
+                request:{
+                    id: true,
+                    title: true,
+                }
             }
         });
     }
@@ -170,6 +181,7 @@ export class ReportsService {
             'report.message',
             'report.type',
             'report.createdAt',
+            'report.reason',
 
             'reported.id',
             'reported.username',
@@ -178,6 +190,8 @@ export class ReportsService {
             'reporter.id',
             'reporter.image',
             'reporter.username',
+            'request.id',
+            'request.title',
             ]);
 
         q.skip((page - 1) * limit).take(limit);
