@@ -15,6 +15,7 @@ import { MediaDir } from '../../../common/files/media-dir-.enum';
 import { ServicesService } from 'src/modules/services/services.service';
 import { join } from 'path';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
+import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
 
 @Injectable()
 export class RequestsService {
@@ -405,10 +406,41 @@ export class RequestsService {
     };
   }
 
-  async changeRequestStatus(id: number, status: RequestStatus): Promise<ServiceRequestsEntity> {
-    const request = await this.findRequestById(id, LanguagesEnum.ENGLISH);
-    request.status = status;
+  async updateRequest(id: number, updateData: UpdateServiceRequestDto, images: Express.Multer.File[], lang: LanguagesEnum, userId?: number){
+    const request = await this.serviceRequestsRepository.findOne({ where: { id, user: { id: userId ? userId : undefined } } });
+    if(!request){
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC ? `طلب الخدمة غير موجود` : `Service request not found`
+      );
+    }
+    
+    let imagesPath = request.media ? request.media.map(m => m.media) : [];
+    if (images && images.length > 0) {
+      if(request.media && request.media.length > 0){
+        // Delete existing images from Cloudflare
+        // await Promise.all(
+        //   request.media.map(async (media) => {
+        //     const fileUrl = media.media;
+        //     await this.cloudflareService.deleteFile(fileUrl);
+        //   })
+        // );
+      }
+
+      await Promise.all(
+        images.map(async (file) => {
+          const uploadedFile = await this.cloudflareService.uploadFile(file);
+          imagesPath.push(uploadedFile.url);
+        })
+      );
+    }
+    Object.assign(request, {
+      ...updateData,
+      media: imagesPath.map((image) => {
+        return { media: image };
+      }),
+    });
     return this.serviceRequestsRepository.save(request);
+
   }
 
   async requestCompleted(id: number, lang: LanguagesEnum): Promise<ServiceRequestsEntity> {
@@ -419,6 +451,17 @@ export class RequestsService {
     return this.serviceRequestsRepository.save(request);
   }
 
+  async changeRequestStatus(id: number, status: RequestStatus, lang: LanguagesEnum, userId?: number): Promise<ServiceRequestsEntity> {
+    const request = await this.serviceRequestsRepository.findOne({ where: { id, user: { id: userId ? userId : undefined } } });
+    if(!request){
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC ? `طلب الخدمة غير موجود` : `Service request not found`
+      );
+    }
+
+    request.status = status;
+    return this.serviceRequestsRepository.save(request);
+  }
 private calculateRemainingWarrantyDays(completedAt: Date, warrantyDays: number): number {
   const currentDate = new Date();
   const passedDays = Math.floor((currentDate.getTime() - completedAt.getTime()) / (1000 * 3600 * 24));

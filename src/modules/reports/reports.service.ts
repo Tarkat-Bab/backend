@@ -61,13 +61,13 @@ export class ReportsService {
                 files.map(async(file) => {
                     const uploadedFile =  await this.cloudflareService.uploadFile(file);
                     return {
-                        url: uploadedFile.url,
+                        media: uploadedFile.url,
                     };
                 })
             );
         }
 
-        console.log(reporter, reported);
+        // console.log(reporter, reported);
         const report = this.reportsRepo.create({
             ...rest,
             reportNumber: `RPT-${Date.now()}`,
