@@ -19,6 +19,7 @@ import { ServicesService } from 'src/modules/services/services.service';
 import { FilterUsersDto } from '../dtos/filter-user-dto';
 import { join } from 'path/win32';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
+import { UserFcmTokenEntity } from '../entities/user-fcm-token.entity';
 
 @Injectable()
 export class UsersService {
@@ -28,6 +29,9 @@ export class UsersService {
 
     @InjectRepository(TechnicalProfileEntity)
     private readonly technicalProfileRepo: Repository<TechnicalProfileEntity>,
+
+    @InjectRepository(UserFcmTokenEntity)
+    private readonly userFcmTokenRepo: Repository<UserFcmTokenEntity>,
 
     private readonly paginatorService: PaginatorService,
     private readonly fileService: FilesService,
@@ -813,5 +817,19 @@ export class UsersService {
   
   async saveTechnicalProfile(technician: TechnicalProfileEntity) {
     return this.technicalProfileRepo.save(technician);
+  }
+
+  async getFcmTokensByUserIds(userIds: number[], lang?: LanguagesEnum) {
+    const users = await this.userFcmTokenRepo.find({
+      where: { user:{ id:  In(userIds) } },
+      relations: ['user'],
+      select: {
+        id: true,
+        fcm_token: true,
+        user: { id: true  }
+      },
+    })
+
+    return users;
   }
 }
