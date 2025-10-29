@@ -16,7 +16,7 @@ export class NotificationsEntity extends BaseEntity {
 
     @Column({type: 'varchar'})
     enBody : string;
-    
+
     @Column({type: 'varchar', enum: ReceiverTypes, default: ReceiverTypes.INDIVIDUAL})
     receiverTypes: ReceiverTypes;
 

@@ -29,8 +29,6 @@ import { LocationsModule }    from './modules/locations/locations.module';
 import { DashboardModule }    from './dashboard/dashboard.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
-import { NotificationsController } from './modules/notifications/notifications.controller';
-import { NotificationsService } from './modules/notifications/notifications.service';
 
 @Module({
   imports: [
@@ -75,7 +73,7 @@ import { NotificationsService } from './modules/notifications/notifications.serv
     NationaltiesModule,
     NotificationsModule,
   ],
-  controllers: [AppController, NotificationsController],
+  controllers: [AppController],
   providers: [
     AppService,
     {
@@ -86,7 +84,6 @@ import { NotificationsService } from './modules/notifications/notifications.serv
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
-    NotificationsService,
   ],
 })
 export class AppModule {}

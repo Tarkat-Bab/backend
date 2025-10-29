@@ -1,4 +1,4 @@
-import { Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Column } from 'typeorm';
 import { UserEntity } from 'src/modules/users/entities/users.entity';
 import { NotificationsEntity } from './notification.entity';
 
@@ -14,4 +14,7 @@ export class UsersNotifications {
     @ManyToOne(() => NotificationsEntity, (notification) => notification.userNotifications, { eager: true, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'notification_id' })
     notification: NotificationsEntity;
+
+    @Column({ type: 'boolean', default: false })
+    isRead: boolean;
 }
