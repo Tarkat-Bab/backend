@@ -146,6 +146,17 @@ export class RequestOffersService {
     return offer;
   }
 
+  async removeOffer(offerId: number, lang: LanguagesEnum) {
+    const offer = await this.requestOffersRepository.findOne({where:{id:offerId}});
+    if (!offer) {
+      if(lang === LanguagesEnum.ARABIC){
+        throw new NotFoundException('العرض غير موجود');
+      }
+      throw new NotFoundException(`Offer not found`);
+    }
+    await this.requestOffersRepository.remove(offer);
+  }
+
   async updateRequestOffer(userId:number, id: number, updateRequestOfferDto: UpdateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
     const offer = await this.findRequestOfferById(userId, id, lang);
     Object.assign(offer, updateRequestOfferDto);
@@ -181,7 +192,15 @@ export class RequestOffersService {
     }
     const request = await this.requestService.findRequestById(offer.request.id, lang);
     
-    request.technician = offer.technician.user;
+    // assign a technician object matching the Request.technician type 
+    request.technician = {
+      id: offer.technician.id,
+      username: offer.technician.user?.username ?? '',
+      image: (offer.technician as any).image ?? '',
+      avgRating: offer.technician.avgRating ?? 0,
+      totalReviews: (offer.technician as any).totalReviews ?? 0,
+      address: (offer.technician as any).address ?? '',
+    };
     request.status = RequestStatus.IN_PROGRESS;
     offer.accepted = true;
     

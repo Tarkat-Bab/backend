@@ -1,8 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { RequestsService } from '../services/requests.service';
 import { CreateServiceRequestDto } from '../dto/create-service-request.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth, ApiConsumes, ApiHeader } from '@nestjs/swagger';
-import { ServiceRequestsEntity } from '../entities/service_requests.entity';
+import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiBearerAuth, ApiConsumes, ApiHeader } from '@nestjs/swagger';
 import { RequestStatus } from '../enums/requestStatus.enum';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { FilesInterceptor } from '@nestjs/platform-express';

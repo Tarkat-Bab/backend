@@ -199,6 +199,7 @@ export class UsersService {
     if (image) {
       const savedImage = await this.cloudflareService.uploadFile(image);
       dataToUpdate.image = savedImage.url;
+      // dataToUpdate.imageId = savedImage.id;
     }
     await this.usersRepo.update({ id: existUser.id }, dataToUpdate);
     return await this.findById(existUser.id);
@@ -334,6 +335,7 @@ export class UsersService {
         `${addressColumn} AS address`,
         'COUNT(DISTINCT serviceRequests.id) AS ordersCount',
         'COUNT(DISTINCT reportedReports.id) AS reportsSubmitted',
+        `COUNT(DISTINCT CASE WHEN serviceRequests.status = 'completed' THEN serviceRequests.id END) AS completedOrders`,
       ])
       .groupBy('u.id');
 
@@ -672,8 +674,10 @@ export class UsersService {
       }
       
       try {
+        // Pass the entire image object to the service
         const savedImage = await this.cloudflareService.uploadFile(image);
         user.image = savedImage.url;
+        // user.imageId = savedImage.id;
       } catch (error) {
         console.error('Error uploading image to Cloudflare:', error);
         throw new Error(`Failed to upload profile image: ${error.message}`);
@@ -760,8 +764,8 @@ export class UsersService {
     let identityPath: string | undefined;
 
     if(image){
-      const savedImage = await this.cloudflareService.uploadFile(image);
-      imagePath = savedImage.url;
+      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
+      imagePath = savedImage.path;
     }
 
     if (identityImage) {
