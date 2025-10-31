@@ -21,4 +21,8 @@ export class DashboardUsersService {
     async changeUserStatus(userId: number, status: UserStatus){
         return await this.usersService.changeUserStatus(userId, status);
     }
+
+    async removeUser(userId: number, lang: LanguagesEnum){
+        return await this.usersService.removeUser(userId, lang);
+    }
 }
