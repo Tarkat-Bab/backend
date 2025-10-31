@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DashboardUsersService } from './users.service';
 import { FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
@@ -7,6 +7,7 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { isPublic } from 'src/common/decorators/public.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { AdminPermissions } from 'src/common/permissions/admin.permissions';
+import { UserStatus } from 'src/common/enums/users.enum';
 
 @ApiBearerAuth()
 @ApiTags('Dashboard')
@@ -42,5 +43,13 @@ export class DashboardUsersController {
         @Language() lang: LanguagesEnum,
     ) {
         return this.usersService.getUserById(id, lang);
+    }
+
+    @Patch('block/:id')
+    @Permissions(AdminPermissions.UPDATE_USER) 
+    changeUserStatus(
+        @Param('id') userId: number,
+    ) {
+        return this.usersService.changeUserStatus(userId, UserStatus.BLOCKED);
     }
 }
