@@ -16,13 +16,15 @@ import { ServicesService } from 'src/modules/services/services.service';
 import { join } from 'path';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
+import { RequestsMedia } from '../entities/request_media.entity';
 
 @Injectable()
 export class RequestsService {
   constructor(
     @InjectRepository(ServiceRequestsEntity)
     private serviceRequestsRepository: Repository<ServiceRequestsEntity>,
-
+    @InjectRepository(RequestsMedia)
+    private mediaRepository: Repository<RequestsMedia>,
     private readonly usersService: UsersService,
     private readonly servicesService: ServicesService,
     private readonly filesService: FilesService,
@@ -478,9 +480,9 @@ export class RequestsService {
   return this.paginatorService.makePaginate(mappedResult, total, limit, page);
 }
 
-
   async updateRequest(id: number, updateData: UpdateServiceRequestDto, images: Express.Multer.File[], lang: LanguagesEnum, userId?: number){
-    const request = await this.serviceRequestsRepository.findOne({ where: { id, user: { id: userId ? userId : undefined } } });
+    const {location, ...rest} = updateData;
+    const request = await this.serviceRequestsRepository.findOne({ where: { id,  } });
     if(!request){
       throw new NotFoundException(
         lang === LanguagesEnum.ARABIC ? `طلب الخدمة غير موجود` : `Service request not found`
@@ -489,8 +491,9 @@ export class RequestsService {
     
     let imagesPath = request.media ? request.media.map(m => m.media) : [];
     if (images && images.length > 0) {
+      await this.mediaRepository.remove(request.media);
+      // Delete existing images from Cloudflare
       if(request.media && request.media.length > 0){
-        // Delete existing images from Cloudflare
         // await Promise.all(
         //   request.media.map(async (media) => {
         //     const fileUrl = media.media;
@@ -506,8 +509,34 @@ export class RequestsService {
         })
       );
     }
+
+
+     if (location) {
+      let parsedLocation = location as any;
+      if (typeof location === 'string') {
+        try {
+        parsedLocation = JSON.parse(location);
+      } catch {
+        throw new BadRequestException('Invalid location format');
+      }
+      }
+      const { latitude, longitude, address } = parsedLocation;
+      
+      let saveLocation = null;
+      if(address){
+          saveLocation = await this.locationService.getLatLongFromText(address, lang);
+        }else{
+          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
+      }
+
+      request.latitude  = saveLocation.latitude;
+      request.longitude = saveLocation.longitude;
+      request.arAddress = saveLocation.ar_address;
+      request.enAddress = saveLocation.en_address;
+    }
+
     Object.assign(request, {
-      ...updateData,
+      ...rest,
       media: imagesPath.map((image) => {
         return { media: image };
       }),
