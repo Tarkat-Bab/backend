@@ -55,10 +55,10 @@ async function bootstrap() {
     if (process.env.NODE_ENV !== 'production') {
       app.use(morgan('combined'));
     }    
-    app.use(rateLimit({
-      windowMs: 15 * 60 * 1000, 
-      max: 100, 
-    }));
+    // app.use(rateLimit({
+    //   windowMs: 15 * 60 * 1000, 
+    //   max: 100, 
+    // }));
 
     const seedsService = app.get(SeedsService);
     await seedsService.seedDatabase();
