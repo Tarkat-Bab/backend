@@ -48,6 +48,9 @@ export class ServiceRequestsEntity extends BaseEntity {
     @JoinColumn({ name: 'service_id' })
     service: ServiceEntity;
 
+    @Column({ type: 'boolean', default: false })
+    reviewed: boolean;
+
     @ManyToOne(() => UserEntity, user => user.serviceRequests, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'user_id' })
     user: UserEntity;

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { DashboardRequestsService } from './requests.service';
 import { FilterRequestDto } from 'src/modules/requests/dto/filter-request.dto';
@@ -70,5 +70,20 @@ export class DashboardRequestsController {
         @Language() lang: LanguagesEnum,
     ) {
         return this.requestsService.findServiceRequestsByTechnicianId(id, lang);
+    }
+
+
+    @Delete('/offer/:id')
+    @Permissions(AdminPermissions.REMOVE_REQUESTS)
+    @ApiHeader({
+        name:'accept-language',
+        description:'Language',
+        required:false
+    })  
+    async removeOffer(
+        @Param('id') id: number,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.requestsService.removeOffer(id, lang);
     }
 }

@@ -466,7 +466,7 @@ export class UsersService {
           phone: true,
           image: true,
         },
-        reviews: { id: true },
+        reviews: { id: true, rate: true },
         services: { id: true, enName: true, arName: true, icone: true},
       },
     });
@@ -812,7 +812,6 @@ export class UsersService {
     const { password, ...result } = updatedUser;
     return result;
   }
-
   
   async saveTechnicalProfile(technician: TechnicalProfileEntity) {
     return this.technicalProfileRepo.save(technician);

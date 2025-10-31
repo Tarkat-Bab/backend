@@ -37,4 +37,10 @@ export const AdminPermissions = {
     type: UsersTypes.ADMIN,
   },
     
+  REMOVE_REQUESTS:{
+    enModule: 'Requests',
+    arModule: 'الطلبات',
+    key: PermissionTypes.DELETE,
+    type: UsersTypes.ADMIN,
+  }
 };

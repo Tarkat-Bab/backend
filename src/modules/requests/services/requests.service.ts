@@ -185,100 +185,146 @@ export class RequestsService {
     return this.paginatorService.makePaginate(mappedResult || result, total, take, page);
   }
 
-  async findRequestById(id: number, lang: LanguagesEnum, userId?: number, dashboard?:boolean){
+  async findRequestById(
+    id: number,
+    lang: LanguagesEnum,
+    userId?: number,
+    dashboard?: boolean
+  ) {
     const addressField = lang === LanguagesEnum.ARABIC ? 'arAddress' : 'enAddress';
     const serviceNameField = lang === LanguagesEnum.ARABIC ? 'arName' : 'enName';
 
-    // load entity with relations (avoid raw selects that cause alias/from issues)
-    const requestEntity = await this.serviceRequestsRepository.createQueryBuilder('request')
+    const requestEntity = await this.serviceRequestsRepository
+      .createQueryBuilder('request')
       .leftJoinAndSelect('request.user', 'user')
       .leftJoinAndSelect('request.technician', 'technician')
+      .leftJoinAndSelect('technician.technicalProfile', 'technicalProfile')
+      .leftJoinAndSelect('technicalProfile.reviews', 'techReviews')
+
       .leftJoinAndSelect('request.offers', 'offers')
       .leftJoinAndSelect('offers.technician', 'offerTechnician')
-      // ensure the technician's user relation is loaded so .technician.user.username exists
       .leftJoinAndSelect('offerTechnician.user', 'offerTechnicianUser')
+      .leftJoinAndSelect('offerTechnician.reviews', 'offerTechReviews') 
       .leftJoinAndSelect('request.media', 'media')
       .leftJoinAndSelect('request.service', 'service')
       .where('request.id = :id', { id })
       .andWhere('request.deleted = false')
       .andWhere('user.deleted = false')
       .andWhere('user.status = :status', { status: 'active' })
-      // .andWhere('(technician.id IS NULL OR (technician.deleted = false AND technician.status = :techStatus))', { techStatus: 'active' })
       .getOne();
-      
+
     if (!requestEntity) {
-      if(lang === LanguagesEnum.ARABIC){
+      if (lang === LanguagesEnum.ARABIC) {
         throw new NotFoundException(`هذا الطلب غير موجود`);
-      }else{
+      } else {
         throw new NotFoundException(`Request not found`);
       }
     }
 
-    if(requestEntity.status === RequestStatus.COMPLETED && requestEntity.completedAt){
-      const warrantyDays = requestEntity.remainingWarrantyDays;
-      requestEntity.remainingWarrantyDays = this.calculateRemainingWarrantyDays(requestEntity.completedAt, warrantyDays);
-      await this.serviceRequestsRepository.save(requestEntity);
-    }
- 
-    // build DTO safely from the entity
-    let offers = (requestEntity.offers || []).map(o => ({
-      id: o.id,
-      price: typeof o.price === 'number' ? o.price : Number(o.price),
-      createdAt: o.createdAt,
-      technician: o.technician ? {
-         id: o.technician.id,
-         username: o.technician?.user?.username ?? null,
-         image: o.technician?.user?.image,
-         avgRating: (o.technician as any)?.avgRating ?? null,
-         address: lang === LanguagesEnum.ARABIC ? o.technician?.user?.arAddress : o.technician?.user?.enAddress
-      } : null,
-      needsDelivery: (o as any).needsDelivery,
-      description: (o as any).description,
-      accepted : (o as any).accepted,
-    }));
-
-    if(requestEntity.status === RequestStatus.COMPLETED || requestEntity.status === RequestStatus.IN_PROGRESS){
-      offers = offers.filter(o => o.accepted === true);
+    if (
+      requestEntity.status === RequestStatus.COMPLETED &&
+      requestEntity.completedAt
+    ) {
+      requestEntity.remainingWarrantyDays = this.calculateRemainingWarrantyDays(
+        requestEntity.completedAt,
+        requestEntity.remainingWarrantyDays
+      );
     }
 
-    const media = (requestEntity.media || []).map(m => ({
+    let offers = (requestEntity.offers || []).map((o) => {
+      const reviews = o.technician?.reviews || [];
+      return {
+        id: o.id,
+        price: typeof o.price === 'number' ? o.price : Number(o.price),
+        createdAt: o.createdAt,
+        technician: o.technician
+          ? {
+              id: o.technician?.user?.id,
+              username: o.technician?.user?.username ?? null,
+              image: o.technician?.user?.image ?? null,
+              avgRating: o.technician?.avgRating ?? 0,
+              totalReviews: o.technician?.reviews?.length ?? 0,
+              address:
+                lang === LanguagesEnum.ARABIC
+                  ? o.technician?.user?.arAddress
+                  : o.technician?.user?.enAddress,
+            }
+          : null,
+        needsDelivery: (o as any).needsDelivery,
+        description: (o as any).description,
+        accepted: (o as any).accepted,
+      };
+    });
+
+    if (
+      requestEntity.status === RequestStatus.COMPLETED ||
+      requestEntity.status === RequestStatus.IN_PROGRESS
+    ) {
+      offers = offers.filter((o) => o.accepted === true);
+    }
+
+    const media = (requestEntity.media || []).map((m) => ({
       id: m.id,
       media: m.media,
     }));
 
-    const requestData = {
+    let requestData = {
       id: requestEntity.id,
       title: requestEntity.title,
       description: requestEntity.description,
       address: (requestEntity as any)[addressField],
       status: requestEntity.status,
-      price: typeof requestEntity.price === 'number' ? requestEntity.price : Number(requestEntity.price),
+      price:
+        typeof requestEntity.price === 'number'
+          ? requestEntity.price
+          : Number(requestEntity.price),
       requestNumber: requestEntity.requestNumber,
       offersCount: offers.length,
-      user: { 
+      user: {
         id: requestEntity.user.id,
         username: requestEntity.user.username,
         image: requestEntity.user.image,
-        address: lang === LanguagesEnum.ARABIC ? requestEntity.arAddress : requestEntity.enAddress
-        },
-      service: { id: requestEntity.service?.id ?? null, name: requestEntity.service ? (requestEntity.service as any)[serviceNameField] : null },
-      technician: requestEntity.technician ? { id: requestEntity.technician.id } : null,
+        address:
+          lang === LanguagesEnum.ARABIC
+            ? requestEntity.arAddress
+            : requestEntity.enAddress,
+      },
+      service: requestEntity.service
+        ? {
+            id: requestEntity.service.id,
+            name: (requestEntity.service as any)[serviceNameField],
+          }
+        : null,
+        technician: requestEntity.technician
+          ? {
+              id: requestEntity.technician.id,
+              username: requestEntity.technician?.username ?? null,
+              image: requestEntity.technician?.image ?? null,
+              avgRating: requestEntity.technician.technicalProfile.avgRating,
+              totalReviews: requestEntity.technician?.technicalProfile?.reviews?.length ?? 0,
+              address:
+                lang === LanguagesEnum.ARABIC
+                  ? requestEntity.technician?.arAddress
+                  : requestEntity.technician?.enAddress,
+            }
+          : null,
       media,
       offers,
       remainingWarrantyDays: requestEntity.remainingWarrantyDays,
       createdAt: requestEntity.createdAt,
     };
 
-    // hide price/offers prices from non-owner callers when not dashboard
     if (!dashboard && userId && requestEntity.user.id !== userId) {
-      requestData.price = null;
-      requestData.offers = requestData.offers.map(o => ({ ...o, price: null }));
+      requestData = {
+        ...requestData,
+        price: null,
+        offers: requestData.offers.map((o) => ({ ...o, price: null })),
+      };
     }
 
     return requestData;
   }
-  
-  //user
+
   async removeServiceRequest(id: number): Promise<void> {
     const result = await this.serviceRequestsRepository.delete(id);
     if (result.affected === 0) {
@@ -413,6 +459,15 @@ export class RequestsService {
     request.completedAt = new Date();
     request.remainingWarrantyDays = 20;
     return this.serviceRequestsRepository.save(request);
+  }
+
+  async reviewedRequest(id: number, lang?: LanguagesEnum): Promise<void> {
+    const request = await this.serviceRequestsRepository.findOne({ where: { id } });  
+    if(request.reviewed){
+      throw new BadRequestException(lang === LanguagesEnum.ARABIC ? 'تمت تقيم الطلب مسبقًا' : 'The request has already been reviewed');
+    }
+    request.reviewed = true;
+    await this.serviceRequestsRepository.save(request);
   }
 
 private calculateRemainingWarrantyDays(completedAt: Date, warrantyDays: number): number {
