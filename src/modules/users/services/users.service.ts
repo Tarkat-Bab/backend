@@ -329,7 +329,7 @@ export class UsersService {
     let query = this.usersRepo
       .createQueryBuilder('u')
       .leftJoin('u.serviceRequests', 'serviceRequests')
-      .leftJoin('u.reportedReports', 'reportedReports')  // Changed from reports to reportedReports
+      .leftJoin('u.reportedReports', 'reportedReports') 
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere('u.id = :id', { id })
       .select([
