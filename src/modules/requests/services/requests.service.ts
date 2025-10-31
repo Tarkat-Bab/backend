@@ -14,6 +14,8 @@ import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { MediaDir } from '../../../common/files/media-dir-.enum';
 import { ServicesService } from 'src/modules/services/services.service';
 import { join } from 'path';
+import { CloudflareService } from 'src/common/files/cloudflare.service';
+import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
 
 @Injectable()
 export class RequestsService {
@@ -26,6 +28,7 @@ export class RequestsService {
     private readonly filesService: FilesService,
     private readonly locationService: LocationService,
     private readonly paginatorService: PaginatorService,
+    private readonly cloudflareService: CloudflareService,
   ) {}
 
   async save(request){
@@ -43,8 +46,8 @@ export class RequestsService {
     if (media && media.length > 0) {
       await Promise.all(
         media.map(async (file) => {
-          const filePath = await this.filesService.saveFile(file, MediaDir.REQUESTS);
-          imagesPath.push(filePath.path);
+          const uploadedFile = await this.cloudflareService.uploadFile(file);
+          imagesPath.push(uploadedFile.url);
         })
       );
     }
@@ -111,6 +114,7 @@ export class RequestsService {
 
         'user.id',
         'user.username',
+        'user.image',
 
         'service.id',
         'service.arName',
@@ -447,10 +451,41 @@ export class RequestsService {
     };
   }
 
-  async changeRequestStatus(id: number, status: RequestStatus): Promise<ServiceRequestsEntity> {
-    const request = await this.findRequestById(id, LanguagesEnum.ENGLISH);
-    request.status = status;
+  async updateRequest(id: number, updateData: UpdateServiceRequestDto, images: Express.Multer.File[], lang: LanguagesEnum, userId?: number){
+    const request = await this.serviceRequestsRepository.findOne({ where: { id, user: { id: userId ? userId : undefined } } });
+    if(!request){
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC ? `طلب الخدمة غير موجود` : `Service request not found`
+      );
+    }
+    
+    let imagesPath = request.media ? request.media.map(m => m.media) : [];
+    if (images && images.length > 0) {
+      if(request.media && request.media.length > 0){
+        // Delete existing images from Cloudflare
+        // await Promise.all(
+        //   request.media.map(async (media) => {
+        //     const fileUrl = media.media;
+        //     await this.cloudflareService.deleteFile(fileUrl);
+        //   })
+        // );
+      }
+
+      await Promise.all(
+        images.map(async (file) => {
+          const uploadedFile = await this.cloudflareService.uploadFile(file);
+          imagesPath.push(uploadedFile.url);
+        })
+      );
+    }
+    Object.assign(request, {
+      ...updateData,
+      media: imagesPath.map((image) => {
+        return { media: image };
+      }),
+    });
     return this.serviceRequestsRepository.save(request);
+
   }
 
   async requestCompleted(id: number, lang: LanguagesEnum): Promise<ServiceRequestsEntity> {

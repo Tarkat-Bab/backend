@@ -11,8 +11,7 @@ import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { FilterReportsDto } from './dtos/filter-type.dto';
 import { ReportsRepliesEntity } from './entities/reports_replies.entity'; // Updated import
 import { CreateReplyDto } from './dtos/create-replay.dto';
-import { MediaDir } from 'src/common/files/media-dir-.enum';
-import { join } from 'path';
+import { CloudflareService } from 'src/common/files/cloudflare.service';
 
 @Injectable()
 export class ReportsService {
@@ -26,6 +25,7 @@ export class ReportsService {
         private readonly usersService: UsersService,
         private readonly requestsService: RequestsService,
         private readonly paginatorService: PaginatorService,
+        private readonly cloudflareService: CloudflareService,
     ){}
 
     async createReport(createReportDto: CreateReportDto, userId: number,lang: LanguagesEnum, files?: Express.Multer.File[]) {
@@ -57,16 +57,17 @@ export class ReportsService {
     
         let reportMedia = [];
         if(files && files.length > 0){
-            // reportMedia = await Promise.all(images.map(async (image) => {
-            //     const savedImage = await this.cloudflareService.uploadFileToCloudflare(image.path);
-            //     return {
-            //         url: savedImage.url,
-            //         id: savedImage.id,
-            //     };
-            // }));
+            reportMedia = await Promise.all(
+                files.map(async(file) => {
+                    const uploadedFile =  await this.cloudflareService.uploadFile(file);
+                    return {
+                        media: uploadedFile.url,
+                    };
+                })
+            );
         }
 
-        console.log(reporter, reported);
+        // console.log(reporter, reported);
         const report = this.reportsRepo.create({
             ...rest,
             reportNumber: `RPT-${Date.now()}`,
@@ -83,7 +84,7 @@ export class ReportsService {
     async findReportById(id: number, lang: LanguagesEnum) {
         const report = await  this.reportsRepo.findOne({
             where: { id, deleted: false, reporter: { deleted: false } , reported: {deleted: false}, request: { deleted: false } },
-            relations: ['reporter', 'reported', 'request', 'request.service'],
+            relations: ['reporter', 'reported', 'request', 'request.service', 'replies'],
             select: {
                 id: true,
                 reportNumber: true,
@@ -118,15 +119,21 @@ export class ReportsService {
                     phone: true,
                     enAddress: true,
                     arAddress: true,
+                },
+
+                replies:{
+                    id: true,
+                    content: true,
+                    createdAt: true,
                 }
             },
         });
 
         if(!report){
             if(lang === LanguagesEnum.ARABIC){
-                throw new Error('الابلاغ غير موجود');
+                throw new NotFoundException('الابلاغ غير موجود');
             } else {
-                throw new Error('Report not found');
+                throw new NotFoundException('Report not found');
             }
         }
 
@@ -140,12 +147,17 @@ export class ReportsService {
                 { deleted: false, reported: { id: userId, deleted: false } },
             ],
             order: { createdAt: 'DESC' },
+            relations: {request: true},
             select:{
                 id: true,
                 reportNumber: true,
                 message: true,
                 resolved: true,
                 createdAt: true,
+                request:{
+                    id: true,
+                    title: true,
+                }
             }
         });
     }
@@ -169,6 +181,7 @@ export class ReportsService {
             'report.message',
             'report.type',
             'report.createdAt',
+            'report.reason',
 
             'reported.id',
             'reported.username',
@@ -177,6 +190,8 @@ export class ReportsService {
             'reporter.id',
             'reporter.image',
             'reporter.username',
+            'request.id',
+            'request.title',
             ]);
 
         q.skip((page - 1) * limit).take(limit);

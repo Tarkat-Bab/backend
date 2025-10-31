@@ -9,6 +9,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { FilterRequestByServiceDto, FilterRequestByStatusDto, FilterRequestDto } from '../dto/filter-request.dto';
+import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
 
 @ApiBearerAuth()
 @ApiTags('requests')
@@ -116,10 +117,46 @@ export class RequestsController {
     required: false,
     enum: LanguagesEnum
   })
-  @ApiOperation({ summary: 'Clinet mark request as completed' })
+  @ApiOperation({ summary: 'Client mark request as completed' })
   @ApiBearerAuth()  async requestCompleted(
+    @CurrentUser() user: any,
     @Param('id') id: number,
     @Language() lang: LanguagesEnum) {
-    return this.requestsService.requestCompleted(id, lang);
+    return this.requestsService.changeRequestStatus(id, RequestStatus.COMPLETED, lang, user.id)
+  }
+
+  @Patch('client/cancel/:id')
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Language preference',
+    required: false,
+    enum: LanguagesEnum
+  })
+  @ApiOperation({ summary: 'Client cancel the request' })
+  @ApiBearerAuth()  async cancelRequest(
+    @CurrentUser() user: any,
+    @Param('id') id: number,
+    @Language() lang: LanguagesEnum) {
+    return this.requestsService.changeRequestStatus(id, RequestStatus.CANCELLED, lang, user.id);
+  }
+
+  @Patch(':id')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Update a service request' })
+  @UseInterceptors(FilesInterceptor('images'))
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Language preference',
+    required: false,
+    enum: LanguagesEnum
+  })
+  async updateRequest(
+    @CurrentUser() user: any,
+    @Param('id') id: number,
+    @Body() updateData: UpdateServiceRequestDto,
+    @Language() lang: LanguagesEnum,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    return this.requestsService.updateRequest(id, updateData, images, lang, user.id);
   }
 }
