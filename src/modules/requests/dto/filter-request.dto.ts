@@ -31,5 +31,4 @@ export class FilterRequestByServiceDto extends PaginatorInput{
     serviceId?: number;
 }
 
-export class FilterRequestByTechnicianDto extends PaginatorInput{
-}
+export class FilterRequestByTechnicianDto extends PaginatorInput{}

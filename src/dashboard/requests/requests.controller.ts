@@ -1,11 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Query } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { DashboardRequestsService } from './requests.service';
-import { FilterRequestByTechnicianDto, FilterRequestDto } from 'src/modules/requests/dto/filter-request.dto';
+import { FilterRequestDto } from 'src/modules/requests/dto/filter-request.dto';
 import { AdminPermissions } from 'src/common/permissions/admin.permissions';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
+import { PaginatorInput } from 'src/common/paginator/types/paginate.input';
 
 @ApiBearerAuth()
 @ApiTags('Dashboard')
@@ -51,9 +52,10 @@ export class DashboardRequestsController {
     @Permissions(AdminPermissions.VIEW_REQUESTS)
     async findServiceRequestsByUserId(
         @Param('id') id: number,
+        @Query() filterUser: PaginatorInput,
         @Language() lang: LanguagesEnum,
     ) {
-        return this.requestsService.findServiceRequestsByUserId(id, lang);
+        return this.requestsService.findServiceRequestsByUserId(id, filterUser, lang);
     }
 
 
@@ -66,7 +68,7 @@ export class DashboardRequestsController {
     @Get('/technician/:id')
     @Permissions(AdminPermissions.VIEW_REQUESTS)
     async findServiceRequestsByTechnicianId(
-        @Query() filterTechnician: FilterRequestByTechnicianDto,
+        @Query() filterTechnician: PaginatorInput,
         @Param('id') id: number,
         @Language() lang: LanguagesEnum,
     ) {
