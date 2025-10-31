@@ -16,13 +16,15 @@ import { ServicesService } from 'src/modules/services/services.service';
 import { join } from 'path';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
+import { RequestsMedia } from '../entities/request_media.entity';
 
 @Injectable()
 export class RequestsService {
   constructor(
     @InjectRepository(ServiceRequestsEntity)
     private serviceRequestsRepository: Repository<ServiceRequestsEntity>,
-
+    @InjectRepository(RequestsMedia)
+    private mediaRepository: Repository<RequestsMedia>,
     private readonly usersService: UsersService,
     private readonly servicesService: ServicesService,
     private readonly filesService: FilesService,
@@ -477,74 +479,9 @@ export class RequestsService {
   return this.paginatorService.makePaginate(mappedResult, total, limit, page);
 }
 
-
-  // async findServiceRequestsByTechnicianId(id: number, filterTechnician: FilterRequestByTechnicianDto, lang?: LanguagesEnum) {
-  //   const page = filterTechnician.page || 1;
-  //   const limit = filterTechnician.limit || 10;
-
-  //   let [result, total] = await this.serviceRequestsRepository.find({
-  //     where: { technician: { id }, status : RequestStatus.COMPLETED },
-  //     relations: ['user', 'technician', 'offers', 'offers.technician', 'media'],
-  //     select:{
-  //       id:true, 
-  //       requestNumber:true,
-  //       title:true,
-  //       description:true,
-  //       status:true,
-  //       createdAt:true,
-  //       service:{
-  //         id:true,
-  //         arName:true,
-  //         enName:true,
-  //         icone:true
-  //       },
-  //       user:{
-  //         id:true,
-  //         username:true,
-  //         image:true,
-  //         enAddress:true,
-  //         arAddress:true
-  //       },
-  //       offers:{ id:true},
-  //       media:{ id:true, media:true}
-  //     },
-  //     order: { createdAt: 'DESC' },
-  //     skip: (page - 1) * limit,
-  //     take: limit,
-  //   });
-    
-  //   let mappedResult = result.map(r => {
-  //       const address = lang === LanguagesEnum.ARABIC ? r.arAddress : r.enAddress;
-  //       const serviceName = r.service ? (lang === LanguagesEnum.ARABIC ? r.service.arName : r.service.enName) : null;
-  //       return {
-  //         id: r.id,
-  //         requestNumber: r.requestNumber,
-  //         title: r.title,
-  //         description: r.description,
-  //         status: r.status,
-  //         createdAt: r.createdAt,
-  //         service: r.service ? {
-  //           id: r.service.id,
-  //           name: serviceName,
-  //           icone: r.service.icone? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.SERVICES, r.service.icone)}` : null
-  //         } : null,
-  //         user: {
-  //           id: r.user.id,
-  //           username: r.user.username,
-  //           image: r.user.image,
-  //           address: address
-  //         },
-  //         offersCount: r.offers.length,
-  //         media: r.media
-  //       };
-  //     })
-    
-  //   return this.paginatorService.makePaginate(mappedResult || result, total, take, page);
-    
-  // }
-
   async updateRequest(id: number, updateData: UpdateServiceRequestDto, images: Express.Multer.File[], lang: LanguagesEnum, userId?: number){
-    const request = await this.serviceRequestsRepository.findOne({ where: { id, user: { id: userId ? userId : undefined } } });
+    const {location, ...rest} = updateData;
+    const request = await this.serviceRequestsRepository.findOne({ where: { id,  } });
     if(!request){
       throw new NotFoundException(
         lang === LanguagesEnum.ARABIC ? `طلب الخدمة غير موجود` : `Service request not found`
@@ -553,8 +490,9 @@ export class RequestsService {
     
     let imagesPath = request.media ? request.media.map(m => m.media) : [];
     if (images && images.length > 0) {
+      await this.mediaRepository.remove(request.media);
+      // Delete existing images from Cloudflare
       if(request.media && request.media.length > 0){
-        // Delete existing images from Cloudflare
         // await Promise.all(
         //   request.media.map(async (media) => {
         //     const fileUrl = media.media;
@@ -570,8 +508,34 @@ export class RequestsService {
         })
       );
     }
+
+
+     if (location) {
+      let parsedLocation = location as any;
+      if (typeof location === 'string') {
+        try {
+        parsedLocation = JSON.parse(location);
+      } catch {
+        throw new BadRequestException('Invalid location format');
+      }
+      }
+      const { latitude, longitude, address } = parsedLocation;
+      
+      let saveLocation = null;
+      if(address){
+          saveLocation = await this.locationService.getLatLongFromText(address, lang);
+        }else{
+          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
+      }
+
+      request.latitude  = saveLocation.latitude;
+      request.longitude = saveLocation.longitude;
+      request.arAddress = saveLocation.ar_address;
+      request.enAddress = saveLocation.en_address;
+    }
+
     Object.assign(request, {
-      ...updateData,
+      ...rest,
       media: imagesPath.map((image) => {
         return { media: image };
       }),
