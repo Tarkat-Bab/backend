@@ -345,10 +345,9 @@ export class RequestsService {
     const limit = filterUser.limit || 10;
     const offset = (page - 1) * limit;
 
-    const addressField =
-      lang === LanguagesEnum.ARABIC ? 'user.arAdd`ress' : 'user.enAddress';
-    const serviceNameField =
-      lang === LanguagesEnum.ARABIC ? 'service.arName' : 'service.enName';
+    // Fix address field selection by removing the backtick
+    const addressField = lang === LanguagesEnum.ARABIC ? 'user.arAddress' : 'user.enAddress';
+    const serviceNameField = lang === LanguagesEnum.ARABIC ? 'service.arName' : 'service.enName';
 
     const query = this.serviceRequestsRepository
       .createQueryBuilder('request')
@@ -384,8 +383,8 @@ export class RequestsService {
       .addGroupBy(`${serviceNameField}`)
       .addGroupBy(`${addressField}`)
       .orderBy('request.createdAt', 'DESC')
-      .skip(offset)
-      .take(limit);
+      .offset(offset)
+      .limit(limit);
 
     const [rawResult, total] = await Promise.all([
       query.getRawMany(),
