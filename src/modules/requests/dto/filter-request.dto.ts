@@ -30,3 +30,6 @@ export class FilterRequestByServiceDto extends PaginatorInput{
     @IsNotEmpty()
     serviceId?: number;
 }
+
+export class FilterRequestByTechnicianDto extends PaginatorInput{
+}

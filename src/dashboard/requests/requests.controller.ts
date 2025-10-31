@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { DashboardRequestsService } from './requests.service';
-import { FilterRequestDto } from 'src/modules/requests/dto/filter-request.dto';
+import { FilterRequestByTechnicianDto, FilterRequestDto } from 'src/modules/requests/dto/filter-request.dto';
 import { AdminPermissions } from 'src/common/permissions/admin.permissions';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
@@ -66,10 +66,11 @@ export class DashboardRequestsController {
     @Get('/technician/:id')
     @Permissions(AdminPermissions.VIEW_REQUESTS)
     async findServiceRequestsByTechnicianId(
+        @Query() filterTechnician: FilterRequestByTechnicianDto,
         @Param('id') id: number,
         @Language() lang: LanguagesEnum,
     ) {
-        return this.requestsService.findServiceRequestsByTechnicianId(id, lang);
+        return this.requestsService.findServiceRequestsByTechnicianId(id, filterTechnician, lang);
     }
 
 

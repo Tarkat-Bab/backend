@@ -9,7 +9,7 @@ import { UsersService } from '../../users/services/users.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { FilesService } from 'src/common/files/files.services';
 import { LocationService } from 'src/modules/locations/location.service';
-import { FilterRequestDto } from '../dto/filter-request.dto';
+import { FilterRequestByTechnicianDto, FilterRequestDto } from '../dto/filter-request.dto';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { MediaDir } from '../../../common/files/media-dir-.enum';
 import { ServicesService } from 'src/modules/services/services.service';
@@ -394,62 +394,154 @@ export class RequestsService {
     };
   }
 
-  async findServiceRequestsByTechnicianId(technicianId: number, lang?: LanguagesEnum) {
-    let requests = await this.serviceRequestsRepository.find({
-      where: { technician: { id: technicianId }, status : RequestStatus.COMPLETED },
-      relations: ['user', 'technician', 'offers', 'offers.technician', 'media'],
-      select:{
-        id:true, 
-        requestNumber:true,
-        title:true,
-        description:true,
-        status:true,
-        createdAt:true,
-        service:{
-          id:true,
-          arName:true,
-          enName:true,
-          icone:true
-        },
-        user:{
-          id:true,
-          username:true,
-          image:true,
-          enAddress:true,
-          arAddress:true
-        },
-        offers:{ id:true},
-        media:{ id:true, media:true}
-      }
-    });
-      return {
-      requests: requests.map(r => {
-        const address = lang === LanguagesEnum.ARABIC ? r.arAddress : r.enAddress;
-        const serviceName = r.service ? (lang === LanguagesEnum.ARABIC ? r.service.arName : r.service.enName) : null;
-        return {
-          id: r.id,
-          requestNumber: r.requestNumber,
-          title: r.title,
-          description: r.description,
-          status: r.status,
-          createdAt: r.createdAt,
-          service: r.service ? {
-            id: r.service.id,
-            name: serviceName,
-            icone: r.service.icone? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.SERVICES, r.service.icone)}` : null
-          } : null,
-          user: {
-            id: r.user.id,
-            username: r.user.username,
-            image: r.user.image,
-            address: address
-          },
-          offersCount: r.offers.length,
-          media: r.media
-        };
-      })
-    };
-  }
+  async findServiceRequestsByTechnicianId(
+  id: number,
+  filterTechnician: FilterRequestByTechnicianDto,
+  lang?: LanguagesEnum
+) {
+  const page = filterTechnician.page || 1;
+  const limit = filterTechnician.limit || 10;
+
+  const offset = (page - 1) * limit;
+  const addressField =
+    lang === LanguagesEnum.ARABIC ? 'user.arAddress' : 'user.enAddress';
+  const serviceNameField =
+    lang === LanguagesEnum.ARABIC ? 'service.arName' : 'service.enName';
+
+  const query = this.serviceRequestsRepository
+    .createQueryBuilder('request')
+    .leftJoinAndSelect('request.user', 'user')
+    .leftJoinAndSelect('request.technician', 'technician')
+    .leftJoinAndSelect('request.service', 'service')
+    .leftJoinAndSelect('request.media', 'media')
+    .leftJoinAndSelect('request.offers', 'offers')
+     .where('technician.id = :id', { id })
+    .andWhere('request.status = :status', { status: RequestStatus.COMPLETED })
+    .andWhere('request.deleted = false')
+    .orderBy('request.createdAt', 'DESC')
+    .skip(offset)
+    .take(limit)
+    .select([
+      'request.id AS id',
+      'request.requestNumber AS requestNumber',
+      'request.title AS title',
+      'request.description AS description',
+      'request.status AS status',
+      'request.createdAt AS createdAt',
+      'service.id AS serviceId',
+      `${serviceNameField} AS serviceName`,
+      'service.icone AS serviceIcone',
+      'user.id AS userId',
+      'user.username AS username',
+      'user.image AS userImage',
+      `${addressField} AS userAddress`,
+      'COUNT(DISTINCT offers.id) AS offersCount',
+    ])
+    .groupBy('request.id')
+    .addGroupBy('service.id')
+    .addGroupBy('user.id')
+    .addGroupBy('media.id')
+    .addGroupBy('service.icone')
+    .addGroupBy(`${serviceNameField}`)
+    .addGroupBy(`${addressField}`);
+
+  const [rawResult, total] = await Promise.all([
+    query.getRawMany(),
+    query.getCount(),
+  ]);
+
+  const mappedResult = rawResult.map((r) => ({
+    id: r.id,
+    requestNumber: r.requestnumber,
+    title: r.title,
+    description: r.description,
+    status: r.status,
+    createdAt: r.createdat,
+    service: r.serviceid
+      ? {
+          id: r.serviceid,
+          name: r.servicename,
+          icone: r.serviceicone
+        }
+      : null,
+    user: {
+      id: r.userid,
+      username: r.username,
+      image: r.userimage,
+      address: r.useraddress,
+    },
+    offersCount: Number(r.offerscount ?? 0),
+    media: r.media ? r.media.map((m) => ({ id: m.id, media: m.media })) : [],
+  }));
+
+  return this.paginatorService.makePaginate(mappedResult, total, limit, page);
+}
+
+
+  // async findServiceRequestsByTechnicianId(id: number, filterTechnician: FilterRequestByTechnicianDto, lang?: LanguagesEnum) {
+  //   const page = filterTechnician.page || 1;
+  //   const limit = filterTechnician.limit || 10;
+
+  //   let [result, total] = await this.serviceRequestsRepository.find({
+  //     where: { technician: { id }, status : RequestStatus.COMPLETED },
+  //     relations: ['user', 'technician', 'offers', 'offers.technician', 'media'],
+  //     select:{
+  //       id:true, 
+  //       requestNumber:true,
+  //       title:true,
+  //       description:true,
+  //       status:true,
+  //       createdAt:true,
+  //       service:{
+  //         id:true,
+  //         arName:true,
+  //         enName:true,
+  //         icone:true
+  //       },
+  //       user:{
+  //         id:true,
+  //         username:true,
+  //         image:true,
+  //         enAddress:true,
+  //         arAddress:true
+  //       },
+  //       offers:{ id:true},
+  //       media:{ id:true, media:true}
+  //     },
+  //     order: { createdAt: 'DESC' },
+  //     skip: (page - 1) * limit,
+  //     take: limit,
+  //   });
+    
+  //   let mappedResult = result.map(r => {
+  //       const address = lang === LanguagesEnum.ARABIC ? r.arAddress : r.enAddress;
+  //       const serviceName = r.service ? (lang === LanguagesEnum.ARABIC ? r.service.arName : r.service.enName) : null;
+  //       return {
+  //         id: r.id,
+  //         requestNumber: r.requestNumber,
+  //         title: r.title,
+  //         description: r.description,
+  //         status: r.status,
+  //         createdAt: r.createdAt,
+  //         service: r.service ? {
+  //           id: r.service.id,
+  //           name: serviceName,
+  //           icone: r.service.icone? `${process.env.APP_URL}/${join(process.env.MEDIA_DIR, MediaDir.SERVICES, r.service.icone)}` : null
+  //         } : null,
+  //         user: {
+  //           id: r.user.id,
+  //           username: r.user.username,
+  //           image: r.user.image,
+  //           address: address
+  //         },
+  //         offersCount: r.offers.length,
+  //         media: r.media
+  //       };
+  //     })
+    
+  //   return this.paginatorService.makePaginate(mappedResult || result, total, take, page);
+    
+  // }
 
   async updateRequest(id: number, updateData: UpdateServiceRequestDto, images: Express.Multer.File[], lang: LanguagesEnum, userId?: number){
     const request = await this.serviceRequestsRepository.findOne({ where: { id, user: { id: userId ? userId : undefined } } });
