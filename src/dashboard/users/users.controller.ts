@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DashboardUsersService } from './users.service';
 import { FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
@@ -51,5 +51,14 @@ export class DashboardUsersController {
         @Param('id') userId: number,
     ) {
         return this.usersService.changeUserStatus(userId, UserStatus.BLOCKED);
+    }
+
+    @Delete(':id')
+    @Permissions(AdminPermissions.DELETE_USER) 
+    removeUser(
+        @Param('id') userId: number,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.usersService.removeUser(userId, lang);
     }
 }

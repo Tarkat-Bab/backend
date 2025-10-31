@@ -36,7 +36,15 @@ export class UsersService {
     private readonly nationalityService: NationaltiesService,
     private readonly serviceService: ServicesService,
   ) {}
-  
+
+  async removeUser(id: number, lang: LanguagesEnum) {
+    const user = await this.usersRepo.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(lang? 'المستخدم غير موجود.' : 'User not found.');
+    }
+    await this.usersRepo.remove(user);
+  }
+
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
     await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type }, lang);
     

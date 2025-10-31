@@ -8,7 +8,12 @@ export const AdminPermissions = {
     key: PermissionTypes.CREATE,
     type: UsersTypes.ADMIN,
   },
-
+DELETE_USER: {
+    enModule: 'Users',
+    arModule: 'المستخدمين',
+    key: PermissionTypes.DELETE,
+    type: UsersTypes.ADMIN,
+  },
   UPDATE_USER: {
     enModule: 'Users',
     arModule: 'المستخدمين',
