@@ -209,6 +209,7 @@ export class RequestsService {
 
       .leftJoinAndSelect('request.offers', 'offers')
       .leftJoinAndSelect('offers.technician', 'offerTechnician')
+      .leftJoinAndSelect('offerTechnician.services', 'techService')
       .leftJoinAndSelect('offerTechnician.user', 'offerTechnicianUser')
       .leftJoinAndSelect('offerTechnician.reviews', 'offerTechReviews') 
       .leftJoinAndSelect('request.media', 'media')
@@ -236,7 +237,7 @@ export class RequestsService {
         requestEntity.remainingWarrantyDays
       );
     }
-
+      
     let offers = (requestEntity.offers || []).map((o) => {
       const reviews = o.technician?.reviews || [];
       return {
