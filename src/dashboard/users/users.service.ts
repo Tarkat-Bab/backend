@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
+import { UserStatus } from 'src/common/enums/users.enum';
 import { FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
 import { UsersService } from 'src/modules/users/services/users.service';
 
@@ -15,5 +16,9 @@ export class DashboardUsersService {
 
     async getUserById(id: number, lang: LanguagesEnum) {
         return this.usersService.findById(id, lang);
+    }
+
+    async changeUserStatus(userId: number, status: UserStatus){
+        return await this.usersService.changeUserStatus(userId, status);
     }
 }
