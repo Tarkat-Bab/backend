@@ -358,7 +358,6 @@ export class RequestsService {
       .leftJoin('request.offers', 'offers')
       .where('user.id = :userId', { userId })
       .andWhere('request.deleted = false')
-      .andWhere('request.status = :RequestStatus', { RequestStatus: RequestStatus.PENDING })
       .select([
         'request.id AS id',
         'request.requestNumber AS requestNumber',
@@ -438,7 +437,6 @@ export class RequestsService {
       .leftJoinAndSelect('request.media', 'media')
       .leftJoinAndSelect('request.offers', 'offers')
        .where('technician.id = :id', { id })
-      .andWhere('request.status = :status', { status: RequestStatus.COMPLETED })
       .andWhere('request.deleted = false')
       .orderBy('request.createdAt', 'DESC')
       .skip(offset)
