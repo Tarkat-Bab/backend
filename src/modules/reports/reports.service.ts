@@ -91,6 +91,7 @@ export class ReportsService {
                 message: true,
                 type: true,
                 resolved: true,
+                reason: true,
                 createdAt: true,
                 request:{
                     id: true,
