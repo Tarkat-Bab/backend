@@ -346,7 +346,7 @@ export class RequestsService {
     const offset = (page - 1) * limit;
 
     const addressField =
-      lang === LanguagesEnum.ARABIC ? 'user.arAddress' : 'user.enAddress';
+      lang === LanguagesEnum.ARABIC ? 'user.arAdd`ress' : 'user.enAddress';
     const serviceNameField =
       lang === LanguagesEnum.ARABIC ? 'service.arName' : 'service.enName';
 
