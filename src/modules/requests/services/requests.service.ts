@@ -488,11 +488,15 @@ export class RequestsService {
 
   }
 
-  async requestCompleted(id: number, lang: LanguagesEnum): Promise<ServiceRequestsEntity> {
-    const request = await this.serviceRequestsRepository.findOne({ where: { id } });
-    request.status = RequestStatus.COMPLETED;
-    request.completedAt = new Date();
-    request.remainingWarrantyDays = 20;
+  async changeRequestStatus(id: number, status: RequestStatus, lang: LanguagesEnum, userId?: number): Promise<ServiceRequestsEntity> {
+    const request = await this.serviceRequestsRepository.findOne({ where: { id, user: { id: userId ? userId : undefined } } });
+    if(!request){
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC ? `طلب الخدمة غير موجود` : `Service request not found`
+      );
+    }
+
+    request.status = status;
     return this.serviceRequestsRepository.save(request);
   }
 
