@@ -202,18 +202,11 @@ export class RequestOffersService {
         throw new NotFoundException(`You cannot accept an offer that is not for your request`);
       }
     }
-    const request = await this.requestService.findRequestById(offer.request.id, lang);
-    
-    // assign a technician object matching the Request.technician type 
-    request.technician = {
-      id: offer.technician.id,
-      username: offer.technician.user?.username ?? '',
-      image: (offer.technician as any).image ?? '',
-      avgRating: offer.technician.avgRating ?? 0,
-      totalReviews: (offer.technician as any).totalReviews ?? 0,
-      address: (offer.technician as any).address ?? '',
-      description: (offer.technician as any).description ?? '',
-    };
+
+    const request = await this.requestService.getRequest(offer.request.id, lang);
+    const tech    = await this.usersService.findById(offer.technician.user.id, lang);
+
+    request.technician = tech;
     request.status = RequestStatus.IN_PROGRESS;
     offer.accepted = true;
     
