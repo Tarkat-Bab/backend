@@ -7,8 +7,20 @@ export class PaymentsEntity {
    @PrimaryGeneratedColumn()
     id: number;
 
+    @Column({ type: 'varchar', unique: true })
+    paymentTabbyId: string;
+
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     amount: number;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    technicianAmount: number;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    platformAmount: number;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+    taxAmount: number;
 
     @Column({ type: 'varchar' })
     currency: string;
