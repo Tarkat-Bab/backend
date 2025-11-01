@@ -63,7 +63,6 @@ export class ServiceRequestsEntity extends BaseEntity {
     @OneToMany(() => RequestOffersEntity, offer => offer.request)
     offers: RequestOffersEntity[];
 
-    @OneToOne(() => PaymentsEntity, payment => payment.request, { cascade: true, eager: true })
-    // @JoinColumn({ name: 'payment_id' })
+    @OneToOne(() => PaymentsEntity, payment => payment.request)
     payment: PaymentsEntity;
 }

@@ -35,6 +35,7 @@ export class RequestsService {
   ) {}
 
   async save(request){
+    console.log('Saving request:', request);
     return await this.serviceRequestsRepository.save(request);
   }
 
@@ -588,6 +589,16 @@ export class RequestsService {
     await this.serviceRequestsRepository.save(request);
   }
 
+  async getRequest(reqId: number, lang: LanguagesEnum){
+    const request = await this.serviceRequestsRepository.findOne({ 
+      where: { id: reqId },
+      relations: ['user','technician', 'offers'],
+     });
+    if(!request){
+      throw new NotFoundException( lang === LanguagesEnum.ARABIC ? 'طلب الخدمة غير موجود' : 'Service request not found' );
+    }
+    return request;
+  }
 private calculateRemainingWarrantyDays(completedAt: Date, warrantyDays: number): number {
   const currentDate = new Date();
   const passedDays = Math.floor((currentDate.getTime() - completedAt.getTime()) / (1000 * 3600 * 24));

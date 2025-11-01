@@ -37,7 +37,7 @@ export class PaymentsEntity {
     @ManyToOne(() => UserEntity, (user) => user.payments)
     user: UserEntity;
 
-    @OneToOne(() => ServiceRequestsEntity, (request) => request.payment)
+    @OneToOne(() => ServiceRequestsEntity, (request) => request.payment, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'request_id' })
     request: ServiceRequestsEntity;
 }
