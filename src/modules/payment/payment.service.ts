@@ -34,7 +34,7 @@ export class PaymentService {
             )
         } 
 
-        const { platformAmount, technicianAmount, taxAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
+        const { platformAmount, technicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
         const payload = {
           payment: {
             amount: totalClientAmount,
@@ -76,7 +76,7 @@ export class PaymentService {
         totalClientAmount,
         platformAmount,
         technicianAmount,
-        taxAmount        
+        taxAmount :0       
       }, lang);
 
       return {
@@ -200,26 +200,46 @@ export class PaymentService {
       return this.paginationService.makePaginate(payments, total, limit, page);
     }
 
-    private async calculateAmounts(requestAmount: number) {
+    // private async calculateAmounts(offerPrice: number) {
+    //     const { platformPercentage, taxPercentage, technicianPercentage } = await this.settingsService.getSetting();
+    //     let platformAmount = (offerPrice * platformPercentage) / 100;
+    //     if(platformAmount > 3) platformAmount = 3;
+
+    //     const taxAmount         = (offerPrice * taxPercentage) / 100;
+    //     const technicianAmount  = (offerPrice * technicianPercentage) / 100;
+    //     const totalClientAmount = platformAmount + taxAmount + offerPrice;
+
+    //     console.log("Request Amount:", offerPrice);
+    //     console.log("Technician percentage:", technicianPercentage);
+    //     console.log("Platform percentage for client:", platformPercentage);
+    //     console.log("Technician Amount:", technicianAmount);
+    //     console.log("Tax Amount:", taxAmount);
+    //     console.log("Total Client Amount:", totalClientAmount);
+    //     return {
+    //         taxAmount,
+    //         platformAmount,
+    //         technicianAmount,
+    //         totalClientAmount
+    //     };
+    // }
+
+    private async calculateAmounts(offerPrice: number) {
         const { platformPercentage, taxPercentage, technicianPercentage } = await this.settingsService.getSetting();
-        let platformAmount = (requestAmount * platformPercentage) / 100;
-        if(platformAmount > 3) platformAmount = 3;
 
-        const taxAmount         = (requestAmount * taxPercentage) / 100;
-        const technicianAmount  = (requestAmount * technicianPercentage) / 100;
-        const totalClientAmount = platformAmount + taxAmount + requestAmount;
+      let platformAmount = (offerPrice * platformPercentage) / 100;
 
-        console.log("Request Amount:", requestAmount);
-        console.log("Technician percentage:", technicianPercentage);
-        console.log("Platform percentage for client:", platformPercentage);
-        console.log("Technician Amount:", technicianAmount);
-        console.log("Tax Amount:", taxAmount);
-        console.log("Total Client Amount:", totalClientAmount);
-        return {
-            taxAmount,
-            platformAmount,
-            technicianAmount,
-            totalClientAmount
-        };
-    }
+      if (platformAmount > 3) platformAmount = 3;
+
+      const technicianAmount = offerPrice - (offerPrice * technicianPercentage) / 100;
+      const totalClientAmount = offerPrice + platformAmount;
+
+      console.log("Technician Amount:", technicianAmount);
+      console.log("Total Client Amount:", totalClientAmount);
+
+      return {
+        technicianAmount,
+        platformAmount,
+        totalClientAmount
+      };
+  }   
 }
