@@ -38,7 +38,7 @@ export class PaymentService {
         console.log(`➡️ Payload totalClientAmount: ${totalClientAmount.toString()}`)
         const payload = {
           payment: {
-            amount: offer.price + platformAmount,
+            amount: '300',
             currency: "SAR",
             buyer: {
               name: user.username,
