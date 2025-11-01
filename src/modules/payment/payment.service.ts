@@ -48,12 +48,7 @@ export class PaymentService {
           },
           lang,
           merchant_code: process.env.TABBY_MERCHANT_CODE
-          // merchant_urls: {
-          //   success: "https://your-store/success",
-          //   cancel: "https://your-store/cancel",
-          //   failure: "https://your-store/failure",
-          // },
-    };
+      }
 
     // console.log("➡️ Checkout payload:", payload);
     try {
