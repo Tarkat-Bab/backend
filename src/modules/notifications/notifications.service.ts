@@ -24,9 +24,6 @@ export class NotificationsService {
 		private readonly usersService: UsersService,
 	) {}
 
-	/**
-	 * 🔥 Unified method to send manual or template-based notification
-	 */
 	async sendManualNotification(
 		dto: sendNotificationDto,
 		receiverIds?: number[],
@@ -36,7 +33,6 @@ export class NotificationsService {
 	) {
 		const { arTitle, enTitle, arBody, enBody } = this.prepareNotificationContent(dto, templateKey, templateData);
 
-		// 2️⃣ Create main notification record
 		const notification = this.notificationRepo.create({
 			arTitle,
 			enTitle,
@@ -46,7 +42,6 @@ export class NotificationsService {
 		});
 		const savedNotification = await this.notificationRepo.save(notification);
 
-		// 3️⃣ Determine receiver list
 		const finalReceiverIds = await this.resolveReceiverIds(dto.receiversType, receiverIds);
 
 		if (finalReceiverIds.length === 0) {
@@ -54,10 +49,8 @@ export class NotificationsService {
 			return { success: false, message: 'No receivers found', notification: savedNotification };
 		}
 
-		// 4️⃣ Link notification to users
 		await this.linkNotificationToUsers(savedNotification, finalReceiverIds);
 
-		// 5️⃣ Send FCM notification
 		const title = lang === LanguagesEnum.ARABIC ? arTitle : enTitle;
 		const body = lang === LanguagesEnum.ARABIC ? arBody : enBody;
 		const fcmResult = await this.sendFcm(finalReceiverIds, { title, body });
@@ -70,9 +63,6 @@ export class NotificationsService {
 		};
 	}
 
-	/**
-	 * 🧩 Prepare notification text from DTO or template
-	 */
 	private prepareNotificationContent(
 		dto: sendNotificationDto,
 		templateKey?: keyof typeof NotificationTemplates,
@@ -94,10 +84,6 @@ export class NotificationsService {
 			enBody: dto.enBody || '',
 		};
 	}
-
-	/**
-	 * 🎯 Resolve user IDs based on receiver type
-	 */
 	private async resolveReceiverIds(receiverType?: ReceiverTypes, receiverIds?: number[], lang?: LanguagesEnum) {
 		let users;
 		switch (receiverType) {
@@ -124,9 +110,7 @@ export class NotificationsService {
 		}
 	}
 
-	/**
-	 * 🗂️ Save UsersNotifications records
-	 */
+
 	private async linkNotificationToUsers(notification: NotificationsEntity, userIds: number[]) {
 		const userNotifications = userIds.map((userId) =>
 			this.usersNotificationsRepo.create({
@@ -138,9 +122,6 @@ export class NotificationsService {
 		await this.usersNotificationsRepo.save(userNotifications);
 	}
 
-	/**
-	 * 🚀 Send Firebase Cloud Messaging (FCM) push notification
-	 */
 	private async sendFcm(userIds: number[], { title, body }: { title: string; body: string }) {
 		const tokens = await this.usersService.getFcmTokensByUserIds(userIds);
 		if (!tokens.length) {
@@ -163,9 +144,6 @@ export class NotificationsService {
 		}
 	}
 
-	/**
-	 * 🔧 Replace template placeholders with actual values
-	 */
 	private replaceTemplate(text: string, data: Record<string, any> = {}): string {
 		return text.replace(/{{(.*?)}}/g, (_, key) => data[key.trim()] || '');
 	}

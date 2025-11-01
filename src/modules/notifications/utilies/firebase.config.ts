@@ -1,20 +1,29 @@
 import * as admin from 'firebase-admin';
-import * as path from 'path';
-import * as fs from 'fs';
+import * as dotenv from 'dotenv';
 
-// Get absolute path from project root
-const serviceAccountPath = path.resolve(process.cwd(), 'src/config/tarqat-bab-firebase-adminsdk-fbsvc-7895d73e89.json');
+// Load environment variables from .development.env
+dotenv.config({ path: '.development.env' });
 
-// Verify file exists
-if (!fs.existsSync(serviceAccountPath)) {
-    throw new Error(`Firebase service account file not found at: ${serviceAccountPath}`);
-}
+const ensureEnvVariable = (name: string): string => {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Environment variable ${name} is not set`);
+    }
+    return value;
+};
 
 try {
+    const serviceAccountString = ensureEnvVariable('FIREBASE_SERVICE_ACCOUNT');
+    const serviceAccount = JSON.parse(serviceAccountString);
+    
     admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+        credential: admin.credential.cert(serviceAccount),
     });
+    console.log('Firebase Admin initialized successfully');
 } catch (error) {
+    if (error instanceof SyntaxError) {
+        console.error('Invalid JSON format in FIREBASE_SERVICE_ACCOUNT');
+    }
     console.error('Failed to initialize Firebase Admin:', error);
     throw error;
 }
