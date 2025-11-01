@@ -29,8 +29,6 @@ import { LocationsModule }    from './modules/locations/locations.module';
 import { DashboardModule }    from './dashboard/dashboard.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
 import { PaymentModule } from './modules/payment/payment.module';
-import { PaymentController } from './modules/payment/payment.controller';
-import { PaymentService } from './modules/payment/payment.service';
 
 @Module({
   imports: [
@@ -75,7 +73,7 @@ import { PaymentService } from './modules/payment/payment.service';
     NationaltiesModule,
     PaymentModule,
   ],
-  controllers: [AppController, PaymentController],
+  controllers: [AppController],
   providers: [
     AppService,
     {
@@ -86,7 +84,6 @@ import { PaymentService } from './modules/payment/payment.service';
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
-    PaymentService,
   ],
 })
 export class AppModule {}
