@@ -35,10 +35,10 @@ export class PaymentService {
         } 
 
         const { platformAmount, technicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
-        console.log(`➡️ Payload totalClientAmount: ${totalClientAmount}`)
+        console.log(`➡️ Payload totalClientAmount: ${totalClientAmount.toFixed().toString()}`)
         const payload = {
           payment: {
-            amount: totalClientAmount,
+            amount: totalClientAmount.toFixed().toString(),
             currency: "SAR",
             buyer: {
               name: user.username,
