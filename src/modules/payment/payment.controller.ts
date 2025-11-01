@@ -7,7 +7,7 @@ import { ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { isPublic } from 'src/common/decorators/public.decorator';
 
 @ApiBearerAuth()
-@Controller('Payment')
+@Controller('payments')
 export class PaymentController {
     constructor(private readonly paymentService: PaymentService){}
 
