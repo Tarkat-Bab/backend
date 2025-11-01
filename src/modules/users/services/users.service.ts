@@ -19,6 +19,7 @@ import { ServicesService } from 'src/modules/services/services.service';
 import { FilterUsersDto } from '../dtos/filter-user-dto';
 import { join } from 'path/win32';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
+import { RequestStatus } from 'src/modules/requests/enums/requestStatus.enum';
 
 @Injectable()
 export class UsersService {
@@ -223,6 +224,7 @@ export class UsersService {
 
     const query = this.usersRepo
       .createQueryBuilder('u')
+      .leftJoin('u.serviceRequests', 'serviceRequests')
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere(type ? 'u.type = :type' : '1=1', { type }) // Conditional type filter
       .select([
@@ -234,16 +236,27 @@ export class UsersService {
         'u.status AS status',
         'u.phone AS phone',
         `${addressColumn} AS address`, 
-      ]);
+        `COUNT(DISTINCT serviceRequests.id) AS orderscount`,
+      ])
+      .groupBy('u.id');
 
-    if (type && type === UsersTypes.TECHNICAL) {
-      query
-        .leftJoin('u.technicalProfile', 'tech')
-        .addSelect([
-          'tech.id AS techId',
-          'tech.avgRating AS avgRating',
-        ]);
-    }
+      if (type && type === UsersTypes.TECHNICAL) {
+  query
+    .leftJoin('u.technicalProfile', 'tech')
+    .leftJoin('tech.requests', 'techRequests')
+    .leftJoin('tech.reviews', 'techReviews')
+    .addSelect([
+      'tech.id AS techId',
+      'tech.avgRating AS avgRating',
+      'COUNT(DISTINCT techRequests.id) FILTER (WHERE techRequests.status = :completedStatus) AS completedOrders',
+      'COUNT(DISTINCT techReviews.id) AS totalReviews',
+    ])
+    .setParameters({
+      completedStatus: RequestStatus.COMPLETED,
+    })
+    .groupBy('tech.id')
+    .addGroupBy('u.id');
+}
 
     if (username) {
       query.andWhere('u.username ILIKE :username', {
@@ -256,10 +269,10 @@ export class UsersService {
       .skip(skip)
       .orderBy('u.createdAt', 'ASC');
 
-    // ✅ Instead of getRawAndCount()
     const [rows, total] = await Promise.all([
       query.getRawMany(),
       query.getCount(),
+      
     ]);
 
 

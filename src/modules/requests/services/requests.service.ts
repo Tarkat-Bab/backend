@@ -285,6 +285,7 @@ export class RequestsService {
       description: requestEntity.description,
       address: (requestEntity as any)[addressField],
       status: requestEntity.status,
+      reviewed: requestEntity.reviewed,
       price:
         typeof requestEntity.price === 'number'
           ? requestEntity.price
@@ -313,6 +314,7 @@ export class RequestsService {
               image: requestEntity.technician?.image ?? null,
               avgRating: requestEntity.technician.technicalProfile.avgRating,
               totalReviews: requestEntity.technician?.technicalProfile?.reviews?.length ?? 0,
+              description: requestEntity.technician.technicalProfile.description,
               address:
                 lang === LanguagesEnum.ARABIC
                   ? requestEntity.technician?.arAddress
