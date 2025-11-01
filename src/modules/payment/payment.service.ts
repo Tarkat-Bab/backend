@@ -35,10 +35,10 @@ export class PaymentService {
         } 
 
         const { platformAmount, technicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
-        console.log(`➡️ Payload totalClientAmount: ${totalClientAmount}`)
+        console.log(`➡️ Payload totalClientAmount: ${totalClientAmount.toString()}`)
         const payload = {
           payment: {
-            amount: totalClientAmount,
+            amount: '300',
             currency: "SAR",
             buyer: {
               name: user.username,
@@ -48,12 +48,7 @@ export class PaymentService {
           },
           lang,
           merchant_code: process.env.TABBY_MERCHANT_CODE
-          // merchant_urls: {
-          //   success: "https://your-store/success",
-          //   cancel: "https://your-store/cancel",
-          //   failure: "https://your-store/failure",
-          // },
-    };
+      }
 
     // console.log("➡️ Checkout payload:", payload);
     try {
