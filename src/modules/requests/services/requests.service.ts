@@ -255,6 +255,7 @@ export class RequestsService {
               service: o.technician?.services.map((s) =>
                 s ? { id: s.id, name: (s as any)[serviceNameField], icone: s.icone } : null
               ),
+              description: o.technician?.description ?? null,
               address:
                 lang === LanguagesEnum.ARABIC
                   ? o.technician?.user?.arAddress
