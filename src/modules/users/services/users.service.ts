@@ -223,6 +223,7 @@ export class UsersService {
 
     const query = this.usersRepo
       .createQueryBuilder('u')
+      .leftJoin('u.serviceRequests', 'serviceRequests')
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere(type ? 'u.type = :type' : '1=1', { type }) // Conditional type filter
       .select([
@@ -234,7 +235,9 @@ export class UsersService {
         'u.status AS status',
         'u.phone AS phone',
         `${addressColumn} AS address`, 
-      ]);
+        `COUNT(DISTINCT serviceRequests.id) AS ordersCount`,
+      ])
+      .groupBy('u.id');
 
     if (type && type === UsersTypes.TECHNICAL) {
       query

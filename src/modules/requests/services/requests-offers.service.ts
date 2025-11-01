@@ -212,6 +212,7 @@ export class RequestOffersService {
       avgRating: offer.technician.avgRating ?? 0,
       totalReviews: (offer.technician as any).totalReviews ?? 0,
       address: (offer.technician as any).address ?? '',
+      description: (offer.technician as any).description ?? '',
     };
     request.status = RequestStatus.IN_PROGRESS;
     offer.accepted = true;
