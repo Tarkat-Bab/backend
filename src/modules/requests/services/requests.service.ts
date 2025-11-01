@@ -285,6 +285,7 @@ export class RequestsService {
       description: requestEntity.description,
       address: (requestEntity as any)[addressField],
       status: requestEntity.status,
+      reviewed: requestEntity.reviewed,
       price:
         typeof requestEntity.price === 'number'
           ? requestEntity.price
