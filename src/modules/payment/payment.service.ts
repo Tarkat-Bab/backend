@@ -45,7 +45,7 @@ export class PaymentService {
             },
           },
           lang,
-          merchant_code: "default",
+          merchant_code: process.env.TABBY_MERCHANT_CODE,
           merchant_urls: {
             success: "https://your-store/success",
             cancel: "https://your-store/cancel",
@@ -81,12 +81,66 @@ export class PaymentService {
       }, lang);
 
       return {
+            paymentTabbyId: response.data.payment.id,
             url: response.data.configuration.available_products.installments[0].web_url
         };
     } catch (error: any) {
       console.error("❌ Checkout error:", error.response?.data || error.message);
       throw error;
     }
+    }
+
+    async updatePaymentStatus(webhookData: any) {
+      const tabbyPaymentId = webhookData?.payment?.id;
+      const newStatus = webhookData?.payment?.status;
+      if (!tabbyPaymentId) return;
+
+      const payment = await this.paymentRepository.findOne({
+        where: { paymentTabbyId: tabbyPaymentId },
+        relations: ['request'],
+      });
+
+      if (!payment) {
+        console.warn('⚠️ Payment not found for Tabby ID:', tabbyPaymentId);
+        return;
+      }
+      console.log(`💰 Payment ${tabbyPaymentId} updated to status: ${newStatus}`);
+
+      payment.status = newStatus;
+      await this.paymentRepository.save(payment);
+    }
+
+    /**
+     * This method registers a webhook URL with Tabby to receive payment notifications.
+     * It runs once during the application startup.
+     * @returns The response from the Tabby API after registering the webhook.
+     */
+    async registerTabbyWebhook() {
+      try {
+        const response = await axios.post(
+          `${process.env.TABBY_API_URL}/webhooks`,
+          {
+            url: `${process.env.BASE_URL}/payments/webhook`,
+            header: {
+              title: "X-Tabby-Signature",          
+              value: process.env.TABBY_WEBHOOK_SECRET 
+            }
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.TABBY_SECRET_KEY}`,
+              "Content-Type": "application/json",
+              "X-Merchant-Code": process.env.TABBY_MERCHANT_CODE
+            }
+          }
+        );
+      
+        console.log("✅ Tabby webhook registered:", response.data);
+        return response.data;
+      } catch (error: any) {
+        console.error("❌ Failed to register Tabby webhook:", error.response?.data || error.message);
+        throw new InternalServerErrorException("Failed to register Tabby webhook");
+      }
     }
 
     async createPayment(userId: number, requestId: number, paymentDto: SavePaymentDto, lang: LanguagesEnum) {
@@ -142,7 +196,6 @@ export class PaymentService {
         
       return this.paginationService.makePaginate(payments, total, limit, page);
     }
-
 
     private async calculateAmounts(requestAmount: number) {
         const { platformPercentage, taxPercentage, technicianPercentage } = await this.settingsService.getSetting();
