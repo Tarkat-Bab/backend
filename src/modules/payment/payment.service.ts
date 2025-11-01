@@ -35,6 +35,7 @@ export class PaymentService {
         } 
 
         const { platformAmount, technicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
+        console.log(`➡️ Payload totalClientAmount: ${totalClientAmount}`)
         const payload = {
           payment: {
             amount: totalClientAmount,
@@ -206,22 +207,24 @@ export class PaymentService {
     }
 
     private async calculateAmounts(offerPrice: number) {
-        const { platformPercentage, taxPercentage, technicianPercentage } = await this.settingsService.getSetting();
+      let { platformPercentage, technicianPercentage, taxPercentage} = await this.settingsService.getSetting();
+      
+      if(!platformPercentage) platformPercentage = 3;
+      if(!technicianPercentage) technicianPercentage = 20;
 
       let platformAmount = (offerPrice * platformPercentage) / 100;
-
+      
       if (platformAmount > 3) platformAmount = 3;
 
       const technicianAmount = offerPrice - (offerPrice * technicianPercentage) / 100;
       const totalClientAmount = offerPrice + platformAmount;
 
-      console.log("Technician Amount:", technicianAmount);
-      console.log("Total Client Amount:", totalClientAmount);
-
+      // console.log("Technician Amount:", technicianAmount);
+      // console.log("Total Client Amount:", totalClientAmount);
       return {
         technicianAmount,
         platformAmount,
         totalClientAmount
       };
-  }   
+    }   
 }
