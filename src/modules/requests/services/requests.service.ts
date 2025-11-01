@@ -252,7 +252,6 @@ export class RequestsService {
               image: o.technician?.user?.image ?? null,
               avgRating: o.technician?.avgRating ?? 0,
               totalReviews: o.technician?.reviews?.length ?? 0,
-              description: o.technician?.description ?? null,
               service: o.technician?.services.map((s) =>
                 s ? { id: s.id, name: (s as any)[serviceNameField], icone: s.icone } : null
               ),
@@ -314,6 +313,7 @@ export class RequestsService {
               image: requestEntity.technician?.image ?? null,
               avgRating: requestEntity.technician.technicalProfile.avgRating,
               totalReviews: requestEntity.technician?.technicalProfile?.reviews?.length ?? 0,
+              description: requestEntity.technician.technicalProfile.description,
               address:
                 lang === LanguagesEnum.ARABIC
                   ? requestEntity.technician?.arAddress
