@@ -8,6 +8,8 @@ import { SavePaymentDto } from './dtos/save-payment.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import axios from 'axios';
 import { SettingsService } from 'src/dashboard/settings/settings.service';
+import { FilterPaymentsDto } from './dtos/filter-payments.dto';
+import { PaginatorService } from 'src/common/paginator/paginator.service';
 
 @Injectable()
 export class PaymentService {
@@ -17,7 +19,8 @@ export class PaymentService {
 
         private readonly userService: UsersService,
         private readonly requestService: RequestsService,
-        private readonly settingsService: SettingsService
+        private readonly settingsService: SettingsService,
+        private readonly paginationService: PaginatorService
 
     ) {}
 
@@ -84,7 +87,7 @@ export class PaymentService {
       console.error("❌ Checkout error:", error.response?.data || error.message);
       throw error;
     }
-  }
+    }
 
     async createPayment(userId: number, requestId: number, paymentDto: SavePaymentDto, lang: LanguagesEnum) {
         const user = await this.userService.findById(userId, lang);
@@ -111,6 +114,35 @@ export class PaymentService {
 
         return this.paymentRepository.save(payment);
     }
+
+    async listPayments(filterPaymentsDto: FilterPaymentsDto, lang: LanguagesEnum) {
+      const page = filterPaymentsDto.page || 1;
+      const limit = filterPaymentsDto.limit || 10;
+      const skip = (page - 1) * limit;
+        
+      const search = filterPaymentsDto.search ? `%${filterPaymentsDto.search}%` : '%%';
+        
+      const query = this.paymentRepository.createQueryBuilder('payment')
+        .leftJoinAndSelect('payment.user', 'user')
+        .leftJoinAndSelect('payment.request', 'request')
+        .leftJoinAndSelect('request.technician', 'technician')
+        .where('(user.username ILIKE :search OR request.title ILIKE :search)', { search })
+        .orderBy('payment.createdAt', 'DESC')
+        .select([
+            'payment.id', 'payment.createdAt', 'user.id', 'user.username',
+            'request.id', 'request.requestNumber', 'request.title',
+            'technician.id', 'technician.username',
+            'payment.amount', 'payment.technicianAmount', 'payment.platformAmount', 'payment.taxAmount',
+            'payment.status', 
+        ])
+        .skip(skip)
+        .take(limit);
+        
+      const [payments, total] = await query.getManyAndCount();
+        
+      return this.paginationService.makePaginate(payments, total, limit, page);
+    }
+
 
     private async calculateAmounts(requestAmount: number) {
         const { platformPercentage, taxPercentage, technicianPercentage } = await this.settingsService.getSetting();

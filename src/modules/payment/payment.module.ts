@@ -14,5 +14,6 @@ import { SettingsModule } from 'src/dashboard/settings/settings.module';
     ],
     controllers: [ PaymentController ],
     providers: [ PaymentService ],
+    exports: [ PaymentService ]
 })
 export class PaymentModule {}
