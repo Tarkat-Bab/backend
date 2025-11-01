@@ -1,4 +1,4 @@
-import { Controller, Param, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Headers, Param, Post, Req, UnauthorizedException } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -24,4 +24,24 @@ export class PaymentController {
     ) {
         return this.paymentService.checkoutPayment(user.id, requestId, lang);
     }
-}
+
+
+    @Post('webhook')
+    async handleTabbyWebhook(
+        @Headers('X-Tabby-Signature') signature: string,
+        @Body() body: any
+    ){
+        if (signature !== process.env.TABBY_WEBHOOK_SECRET) {
+          throw new UnauthorizedException('Invalid signature');
+        }
+        console.log('✅ Webhook received from Tabby:', body);
+
+        await this.paymentService.updatePaymentStatus(body);
+        return { status: 'ok' };
+    }
+
+    @Post('register-webhook')
+    async registerTabbyWebhook(){
+        return await this.paymentService.registerTabbyWebhook()
+    }
+} 
