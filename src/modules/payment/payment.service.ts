@@ -10,6 +10,7 @@ import axios from 'axios';
 import { SettingsService } from 'src/dashboard/settings/settings.service';
 import { FilterPaymentsDto } from './dtos/filter-payments.dto';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
+import { RequestOffersService } from '../requests/services/requests-offers.service';
 
 @Injectable()
 export class PaymentService {
@@ -18,22 +19,22 @@ export class PaymentService {
         private readonly paymentRepository: Repository<PaymentsEntity>,
 
         private readonly userService: UsersService,
-        private readonly requestService: RequestsService,
+        private readonly requestOfferService: RequestOffersService,
         private readonly settingsService: SettingsService,
         private readonly paginationService: PaginatorService
 
     ) {}
 
-    async checkoutPayment(userId: number, requestId: number, lang: LanguagesEnum) {
+    async checkoutPayment(userId: number, offertId: number, lang: LanguagesEnum) {
         const user = await this.userService.findById(userId, lang);
-        const request = await this.requestService.findRequestById(requestId, lang);
-        if(request.price <= 0){
+        const offer = await this.requestOfferService.findOne(offertId, lang)
+        if(offer.price <= 0){
             throw new BadRequestException(
                 lang === LanguagesEnum.ARABIC ? "السعر غير صالح للدفع" : "Invalid price for payment"
             )
         } 
 
-        const { platformAmount, technicianAmount, taxAmount, totalClientAmount } = await this.calculateAmounts(request.price);
+        const { platformAmount, technicianAmount, taxAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
         const payload = {
           payment: {
             amount: totalClientAmount,
@@ -46,12 +47,7 @@ export class PaymentService {
           },
           lang,
           merchant_code: process.env.TABBY_MERCHANT_CODE,
-          merchant_urls: {
-            success: "https://your-store/success",
-            cancel: "https://your-store/cancel",
-            failure: "https://your-store/failure",
-          },
-     };
+    };
 
     // console.log("➡️ Checkout payload:", payload);
     try {
@@ -68,7 +64,10 @@ export class PaymentService {
         );
       }
 
-      await this.createPayment(userId, requestId, {
+      await this.createPayment(
+        userId,
+        offer.id,
+        {
         paymentTabbyId: response.data.payment.id,
         amount: response.data.payment.amount,
         currency: response.data.payment.currency,
@@ -81,8 +80,8 @@ export class PaymentService {
       }, lang);
 
       return {
-            paymentTabbyId: response.data.payment.id,
-            url: response.data.configuration.available_products.installments[0].web_url
+          paymentTabbyId: response.data.payment.id,
+          url: response.data.configuration.available_products.installments[0].web_url
         };
     } catch (error: any) {
       console.error("❌ Checkout error:", error.response?.data || error.message);
@@ -101,13 +100,15 @@ export class PaymentService {
       });
 
       if (!payment) {
-        console.warn('⚠️ Payment not found for Tabby ID:', tabbyPaymentId);
         return;
       }
-      console.log(`💰 Payment ${tabbyPaymentId} updated to status: ${newStatus}`);
 
       payment.status = newStatus;
       await this.paymentRepository.save(payment);
+
+      if(newStatus === 'authorized'){
+        await this.requestOfferService.acceptOffer(payment.user.id, payment.offer.id)
+      }
     }
 
     /**
@@ -143,13 +144,14 @@ export class PaymentService {
       }
     }
 
-    async createPayment(userId: number, requestId: number, paymentDto: SavePaymentDto, lang: LanguagesEnum) {
+    async createPayment(userId: number, offerId: number, paymentDto: SavePaymentDto, lang: LanguagesEnum) {
         const user = await this.userService.findById(userId, lang);
-        const request = await this.requestService.findRequestById(requestId, lang);
-        const paymentExists = await this.paymentRepository.findOne({ where: { request: { id: requestId } } });
+        const offer = await this.requestOfferService.findOne(offerId, lang);
+
+        const paymentExists = await this.paymentRepository.findOne({ where: { offer: { id: offer.id } } });
         if(paymentExists){
             throw new BadRequestException(
-                lang === LanguagesEnum.ARABIC ? "تم تسجيل الدفع لهذا الطلب مسبقاً" : "Payment for this request already exists"
+                lang === LanguagesEnum.ARABIC ? "تم تسجيل الدفع لهذا العرض مسبقاً" : "Payment for this offer already exists"
             );
         }
 
@@ -162,8 +164,8 @@ export class PaymentService {
             currency: paymentDto.currency,
             status: paymentDto.status,
             createdAt: new Date(paymentDto.createdAt),
-            user: user,
-            request: request
+            offer,
+            user
         });
 
         return this.paymentRepository.save(payment);
@@ -178,7 +180,8 @@ export class PaymentService {
         
       const query = this.paymentRepository.createQueryBuilder('payment')
         .leftJoinAndSelect('payment.user', 'user')
-        .leftJoinAndSelect('payment.request', 'request')
+        .leftJoinAndSelect('payment.offer', 'offer')
+        .leftJoinAndSelect('offer.request', 'request')
         .leftJoinAndSelect('request.technician', 'technician')
         .where('(user.username ILIKE :search OR request.title ILIKE :search)', { search })
         .orderBy('payment.createdAt', 'DESC')

@@ -182,7 +182,7 @@ export class RequestOffersService {
     }
   }
 
-  async acceptOffer(userId: number, offerId: number, lang: LanguagesEnum) {
+  async acceptOffer(userId: number, offerId: number, lang?: LanguagesEnum) {
     const offer = await this.requestOffersRepository.findOne({
       where: { id: offerId },
       relations: ['request', 'request.user', 'technician', 'technician.user'],
@@ -212,5 +212,20 @@ export class RequestOffersService {
     
     await this.requestOffersRepository.save(offer);
     return this.requestService.save(request);
+  }
+
+  async findOne(offerId:number, lang: LanguagesEnum){
+    const offer = await this.requestOffersRepository.findOne({
+      where:{id: offerId},
+      relations:{request: true}
+    })
+    
+    if(!offer){
+        throw new NotFoundException(
+          lang === LanguagesEnum.ARABIC ?
+           `هذا العرض غير موجود` : 'This offer not found.'
+        )   
+    }
+    return offer;
   }
 }

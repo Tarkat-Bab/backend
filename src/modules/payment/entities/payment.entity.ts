@@ -1,3 +1,4 @@
+import { RequestOffersEntity } from "src/modules/requests/entities/request_offers.entity";
 import { ServiceRequestsEntity } from "src/modules/requests/entities/service_requests.entity";
 import { UserEntity } from "src/modules/users/entities/users.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
@@ -12,7 +13,7 @@ export class PaymentsEntity {
 
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     amount: number;
-
+    
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     technicianAmount: number;
 
@@ -37,7 +38,7 @@ export class PaymentsEntity {
     @ManyToOne(() => UserEntity, (user) => user.payments)
     user: UserEntity;
 
-    @OneToOne(() => ServiceRequestsEntity, (request) => request.payment, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'request_id' })
-    request: ServiceRequestsEntity;
+    @OneToOne(() => RequestOffersEntity, (offer) => offer.payment, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'offer_id' })
+    offer: RequestOffersEntity;
 }
