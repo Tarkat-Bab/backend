@@ -27,8 +27,7 @@ jobs:
 
             let dokployComment;
             let tries = 0;
-            const maxTries = 10; // 10 * 10s = 100s max wait
-
+            const maxTries = 30; // 10 * 10s = 100s max wait
             while (tries < maxTries) {
               const { data: comments } = await github.rest.issues.listComments({
                 owner, repo, issue_number: pr,
