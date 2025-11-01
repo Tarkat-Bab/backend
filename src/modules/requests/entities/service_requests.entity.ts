@@ -1,10 +1,11 @@
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
-import { AfterLoad, Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany } from "typeorm";
+import { AfterLoad, Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, OneToOne } from "typeorm";
 import { RequestStatus } from "../enums/requestStatus.enum";
 import { ServiceEntity } from "src/modules/services/entities/service.entity";
 import { UserEntity } from "src/modules/users/entities/users.entity";
 import { RequestOffersEntity } from "./request_offers.entity";
 import { RequestsMedia } from "./request_media.entity";
+import { PaymentsEntity } from "src/modules/payment/entities/payment.entity";
 
 @Entity("service_requests")
 export class ServiceRequestsEntity extends BaseEntity {
@@ -48,6 +49,9 @@ export class ServiceRequestsEntity extends BaseEntity {
     @JoinColumn({ name: 'service_id' })
     service: ServiceEntity;
 
+    @Column({ type: 'boolean', default: false })
+    reviewed: boolean;
+
     @ManyToOne(() => UserEntity, user => user.serviceRequests, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'user_id' })
     user: UserEntity;
@@ -58,4 +62,8 @@ export class ServiceRequestsEntity extends BaseEntity {
 
     @OneToMany(() => RequestOffersEntity, offer => offer.request)
     offers: RequestOffersEntity[];
+
+    @OneToOne(() => PaymentsEntity, payment => payment.request, { cascade: true, eager: true })
+    // @JoinColumn({ name: 'payment_id' })
+    payment: PaymentsEntity;
 }

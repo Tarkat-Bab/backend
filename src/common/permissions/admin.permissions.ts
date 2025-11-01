@@ -8,7 +8,12 @@ export const AdminPermissions = {
     key: PermissionTypes.CREATE,
     type: UsersTypes.ADMIN,
   },
-
+DELETE_USER: {
+    enModule: 'Users',
+    arModule: 'المستخدمين',
+    key: PermissionTypes.DELETE,
+    type: UsersTypes.ADMIN,
+  },
   UPDATE_USER: {
     enModule: 'Users',
     arModule: 'المستخدمين',
@@ -37,4 +42,10 @@ export const AdminPermissions = {
     type: UsersTypes.ADMIN,
   },
     
+  REMOVE_REQUESTS:{
+    enModule: 'Requests',
+    arModule: 'الطلبات',
+    key: PermissionTypes.DELETE,
+    type: UsersTypes.ADMIN,
+  }
 };

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RequestOffersEntity } from '../entities/request_offers.entity';
@@ -9,6 +9,7 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { RequestStatus } from '../enums/requestStatus.enum';
 import { RequestsService } from './requests.service';
 import { LocationService } from 'src/modules/locations/location.service';
+import { UsersTypes } from 'src/common/enums/users.enum';
 
 @Injectable()
 export class RequestOffersService {
@@ -70,12 +71,23 @@ export class RequestOffersService {
     }
     
     const user = await this.usersService.findById(technicianId, lang);
-    // if(user.type !== UsersTypes.TECHNICAL){
-    //   if(lang === LanguagesEnum.ARABIC){
-    //     throw new UnauthorizedException('المستخدم ليس فني');
-    //   }
-    //   throw new UnauthorizedException('User is not a technician');
-    // }
+    if(user.type !== UsersTypes.TECHNICAL){
+      if(lang === LanguagesEnum.ARABIC){
+        throw new UnauthorizedException('المستخدم ليس فني');
+      }
+      throw new UnauthorizedException('User is not a technician');
+    }
+
+    // Get the technical profile using the techId from user
+    const technicalProfile = await this.usersService.findTechnicianById(user.technicalProfile?.id, lang);
+    if (!technicalProfile) {
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC
+          ? 'الملف الفني غير موجود'
+          : 'Technical profile not found'
+      );
+    }
+
     const offer = this.requestOffersRepository.create({
       latitude: dataToUpdate.latitude,
       longitude: dataToUpdate.longitude,
@@ -85,11 +97,11 @@ export class RequestOffersService {
       needsDelivery: createRequestOfferDto.needsDelivery,
       description: createRequestOfferDto.description,
       request,
-      technician: { id: user.technicalProfile.id },
+      technician: technicalProfile, // Use the technical profile entity
     });
-    // console.log('Created Offer:', offer);
+
     await this.requestOffersRepository.save(offer);
-    return this.findRequestOfferById(user.technicalProfile.id, offer.id, lang, true);
+    return this.findRequestOfferById(user.id, offer.id, lang, true);
   }
 
   async findAllRequestOffers(): Promise<RequestOffersEntity[]> {
@@ -146,6 +158,17 @@ export class RequestOffersService {
     return offer;
   }
 
+  async removeOffer(offerId: number, lang: LanguagesEnum) {
+    const offer = await this.requestOffersRepository.findOne({where:{id:offerId}});
+    if (!offer) {
+      if(lang === LanguagesEnum.ARABIC){
+        throw new NotFoundException('العرض غير موجود');
+      }
+      throw new NotFoundException(`Offer not found`);
+    }
+    await this.requestOffersRepository.remove(offer);
+  }
+
   async updateRequestOffer(userId:number, id: number, updateRequestOfferDto: UpdateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
     const offer = await this.findRequestOfferById(userId, id, lang);
     Object.assign(offer, updateRequestOfferDto);
@@ -181,7 +204,16 @@ export class RequestOffersService {
     }
     const request = await this.requestService.findRequestById(offer.request.id, lang);
     
-    request.technician = offer.technician.user;
+    // assign a technician object matching the Request.technician type 
+    request.technician = {
+      id: offer.technician.id,
+      username: offer.technician.user?.username ?? '',
+      image: (offer.technician as any).image ?? '',
+      avgRating: offer.technician.avgRating ?? 0,
+      totalReviews: (offer.technician as any).totalReviews ?? 0,
+      address: (offer.technician as any).address ?? '',
+      description: (offer.technician as any).description ?? '',
+    };
     request.status = RequestStatus.IN_PROGRESS;
     offer.accepted = true;
     

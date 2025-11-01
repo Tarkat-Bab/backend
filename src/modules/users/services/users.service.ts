@@ -6,7 +6,7 @@ import { TechnicalProfileEntity } from '../entities/technical_profile.entity';
 import { In, Repository } from 'typeorm';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { FilesService } from 'src/common/files/files.services';
-import { RegisterDto, TechnicalRegisterDto, UserRegisterDto } from '../../auth/dtos/register.dto';
+import { TechnicalRegisterDto, UserRegisterDto } from '../../auth/dtos/register.dto';
 import { AdminLoginDto, LoginDto } from '../../auth/dtos/login.dto';
 import { compare, genSalt, hash } from 'bcrypt';
 import { UpdateProfileDto } from '../dtos/UpdateProfileDto';
@@ -17,9 +17,9 @@ import { MediaDir } from 'src/common/files/media-dir-.enum';
 import { NationaltiesService } from 'src/modules/nationalties/nationalties.service';
 import { ServicesService } from 'src/modules/services/services.service';
 import { FilterUsersDto } from '../dtos/filter-user-dto';
-import { join } from 'path/win32';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UserFcmTokenEntity } from '../entities/user-fcm-token.entity';
+import { RequestStatus } from 'src/modules/requests/enums/requestStatus.enum';
 
 @Injectable()
 export class UsersService {
@@ -40,7 +40,15 @@ export class UsersService {
     private readonly nationalityService: NationaltiesService,
     private readonly serviceService: ServicesService,
   ) {}
-  
+
+  async removeUser(id: number, lang: LanguagesEnum) {
+    const user = await this.usersRepo.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(lang? 'المستخدم غير موجود.' : 'User not found.');
+    }
+    await this.usersRepo.remove(user);
+  }
+
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
     await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type }, lang);
     
@@ -203,6 +211,7 @@ export class UsersService {
     if (image) {
       const savedImage = await this.cloudflareService.uploadFile(image);
       dataToUpdate.image = savedImage.url;
+      // dataToUpdate.imageId = savedImage.id;
     }
     await this.usersRepo.update({ id: existUser.id }, dataToUpdate);
     return await this.findById(existUser.id);
@@ -218,6 +227,7 @@ export class UsersService {
 
     const query = this.usersRepo
       .createQueryBuilder('u')
+      .leftJoin('u.serviceRequests', 'serviceRequests')
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere(type ? 'u.type = :type' : '1=1', { type }) // Conditional type filter
       .select([
@@ -229,16 +239,27 @@ export class UsersService {
         'u.status AS status',
         'u.phone AS phone',
         `${addressColumn} AS address`, 
-      ]);
+        `COUNT(DISTINCT serviceRequests.id) AS orderscount`,
+      ])
+      .groupBy('u.id');
 
-    if (type && type === UsersTypes.TECHNICAL) {
-      query
-        .leftJoin('u.technicalProfile', 'tech')
-        .addSelect([
-          'tech.id AS techId',
-          'tech.avgRating AS avgRating',
-        ]);
-    }
+      if (type && type === UsersTypes.TECHNICAL) {
+  query
+    .leftJoin('u.technicalProfile', 'tech')
+    .leftJoin('tech.requests', 'techRequests')
+    .leftJoin('tech.reviews', 'techReviews')
+    .addSelect([
+      'tech.id AS techId',
+      'tech.avgRating AS avgRating',
+      'COUNT(DISTINCT techRequests.id) FILTER (WHERE techRequests.status = :completedStatus) AS completedOrders',
+      'COUNT(DISTINCT techReviews.id) AS totalReviews',
+    ])
+    .setParameters({
+      completedStatus: RequestStatus.COMPLETED,
+    })
+    .groupBy('tech.id')
+    .addGroupBy('u.id');
+}
 
     if (username) {
       query.andWhere('u.username ILIKE :username', {
@@ -251,10 +272,10 @@ export class UsersService {
       .skip(skip)
       .orderBy('u.createdAt', 'ASC');
 
-    // ✅ Instead of getRawAndCount()
     const [rows, total] = await Promise.all([
       query.getRawMany(),
       query.getCount(),
+      
     ]);
 
 
@@ -324,7 +345,7 @@ export class UsersService {
     let query = this.usersRepo
       .createQueryBuilder('u')
       .leftJoin('u.serviceRequests', 'serviceRequests')
-      .leftJoin('u.reportedReports', 'reportedReports')  // Changed from reports to reportedReports
+      .leftJoin('u.reportedReports', 'reportedReports') 
       .where('u.deleted = :deleted', { deleted: false })
       .andWhere('u.id = :id', { id })
       .select([
@@ -338,6 +359,7 @@ export class UsersService {
         `${addressColumn} AS address`,
         'COUNT(DISTINCT serviceRequests.id) AS ordersCount',
         'COUNT(DISTINCT reportedReports.id) AS reportsSubmitted',
+        `COUNT(DISTINCT CASE WHEN serviceRequests.status = 'completed' THEN serviceRequests.id END) AS completedOrders`,
       ])
       .groupBy('u.id');
 
@@ -676,8 +698,10 @@ export class UsersService {
       }
       
       try {
+        // Pass the entire image object to the service
         const savedImage = await this.cloudflareService.uploadFile(image);
         user.image = savedImage.url;
+        // user.imageId = savedImage.id;
       } catch (error) {
         console.error('Error uploading image to Cloudflare:', error);
         throw new Error(`Failed to upload profile image: ${error.message}`);
@@ -764,8 +788,8 @@ export class UsersService {
     let identityPath: string | undefined;
 
     if(image){
-      const savedImage = await this.cloudflareService.uploadFile(image);
-      imagePath = savedImage.url;
+      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
+      imagePath = savedImage.path;
     }
 
     if (identityImage) {

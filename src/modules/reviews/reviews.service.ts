@@ -8,6 +8,7 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { FilterReviewDto } from './dtos/filter-review.dto';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { TechnicalProfileEntity } from '../users/entities/technical_profile.entity';
+import { RequestsService } from '../requests/services/requests.service';
 
 @Injectable()
 export class ReviewsService {
@@ -15,6 +16,7 @@ export class ReviewsService {
         @InjectRepository(ReviewsEntity)
         private reviewsRepository: Repository<ReviewsEntity>,
         private readonly usersService: UsersService,
+        private readonly requestsService: RequestsService,
         private readonly paginatorService: PaginatorService,
     ){}
 
@@ -32,6 +34,7 @@ export class ReviewsService {
         technicianProfile.avgRating = avgRating;
         await this.usersService.saveTechnicalProfile(technicianProfile);
 
+        await this.requestsService.reviewedRequest(createReviewDto.requestId, lang);
         const review = this.reviewsRepository.create({
             rate,
             comment,
@@ -80,8 +83,8 @@ export class ReviewsService {
             return newRating;
         }
         const total = reviews.reduce((acc, review) => acc + review.rate, 0);
-        console.log('Total rating from existing reviews:', total);
-        console.log('Number of existing reviews:', reviews.length);
-        return total / reviews.length;
+        const average = total / reviews.length;
+
+        return parseFloat(average.toFixed(1));
     }
 }
