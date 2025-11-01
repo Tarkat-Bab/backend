@@ -62,7 +62,4 @@ export class ServiceRequestsEntity extends BaseEntity {
 
     @OneToMany(() => RequestOffersEntity, offer => offer.request)
     offers: RequestOffersEntity[];
-
-    @OneToOne(() => PaymentsEntity, payment => payment.request)
-    payment: PaymentsEntity;
 }
