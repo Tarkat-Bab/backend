@@ -46,7 +46,12 @@ export class PaymentService {
             },
           },
           lang,
-          merchant_code: process.env.TABBY_MERCHANT_CODE,
+          merchant_code: process.env.TABBY_MERCHANT_CODE
+          // merchant_urls: {
+          //   success: "https://your-store/success",
+          //   cancel: "https://your-store/cancel",
+          //   failure: "https://your-store/failure",
+          // },
     };
 
     // console.log("➡️ Checkout payload:", payload);
@@ -199,29 +204,6 @@ export class PaymentService {
         
       return this.paginationService.makePaginate(payments, total, limit, page);
     }
-
-    // private async calculateAmounts(offerPrice: number) {
-    //     const { platformPercentage, taxPercentage, technicianPercentage } = await this.settingsService.getSetting();
-    //     let platformAmount = (offerPrice * platformPercentage) / 100;
-    //     if(platformAmount > 3) platformAmount = 3;
-
-    //     const taxAmount         = (offerPrice * taxPercentage) / 100;
-    //     const technicianAmount  = (offerPrice * technicianPercentage) / 100;
-    //     const totalClientAmount = platformAmount + taxAmount + offerPrice;
-
-    //     console.log("Request Amount:", offerPrice);
-    //     console.log("Technician percentage:", technicianPercentage);
-    //     console.log("Platform percentage for client:", platformPercentage);
-    //     console.log("Technician Amount:", technicianAmount);
-    //     console.log("Tax Amount:", taxAmount);
-    //     console.log("Total Client Amount:", totalClientAmount);
-    //     return {
-    //         taxAmount,
-    //         platformAmount,
-    //         technicianAmount,
-    //         totalClientAmount
-    //     };
-    // }
 
     private async calculateAmounts(offerPrice: number) {
         const { platformPercentage, taxPercentage, technicianPercentage } = await this.settingsService.getSetting();
