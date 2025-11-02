@@ -8,10 +8,14 @@ import { DashboardRequestsModule } from './requests/requests.module';
 import { DashboardReportsModule } from './reports/reports.module';
 import { SettingsModule } from './settings/settings.module';
 import { DashboardPaymentsModule } from './payments/payments.module';
+import { DashboardNotificationModule } from './notifications/norifications.module';
 
 
 @Module({
-  imports: [DashboardAuthModule, AuthModule, DashboardUsersModule, DashboardRequestsModule, DashboardReportsModule, SettingsModule, DashboardPaymentsModule],
+  imports: [
+    DashboardAuthModule, AuthModule, DashboardUsersModule, DashboardRequestsModule, 
+    DashboardReportsModule, SettingsModule, DashboardPaymentsModule, DashboardNotificationModule
+  ],
   controllers: [DashboardController],
   providers: [DashboardService],
 })
