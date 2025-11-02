@@ -30,8 +30,6 @@ import { DashboardModule }    from './dashboard/dashboard.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentModule } from './modules/payment/payment.module';
-import { PaymentController } from './modules/payment/payment.controller';
-import { PaymentService } from './modules/payment/payment.service';
 
 @Module({
   imports: [
@@ -77,7 +75,7 @@ import { PaymentService } from './modules/payment/payment.service';
     NotificationsModule,
     PaymentModule,
   ],
-  controllers: [AppController, PaymentController],
+  controllers: [AppController],
   providers: [
     AppService,
     {
@@ -88,7 +86,6 @@ import { PaymentService } from './modules/payment/payment.service';
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
-    PaymentService,
   ],
 })
 export class AppModule {}

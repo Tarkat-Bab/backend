@@ -9,13 +9,32 @@ import { RequestStatus } from "src/modules/requests/enums/requestStatus.enum";
 import { ReportsEntity } from "src/modules/reports/entities/reports.entity";
 import { ReportReason } from "src/modules/reports/enums/reports.enum";
 import { RequestOffersEntity } from "../../modules/requests/entities/request_offers.entity";
+import { SettingEntity } from "src/dashboard/settings/setting.entity";
 
 export const seedData = async (manager: EntityManager) => {
+    await seedSetting(manager);
     await seedNationalities(manager);
     await seedServices(manager);
     await seedUsers(manager);
     await seedServiceRequests(manager);
     await seedReports(manager);
+}
+
+async function seedSetting(manager: EntityManager){
+    const existingSettings = await manager.find(SettingEntity);
+    if(existingSettings.length > 0){
+        return;
+    }
+    
+    const createSettings =  manager.create(SettingEntity,{
+        clientPercentage: 3,
+        technicianPercentage: 20,
+        taxPercentage: 0
+    });
+
+    await manager.save(createSettings);
+    console.log('Settings seeded successfully');
+   
 }
 
 async function seedNationalities(manager: EntityManager) {
@@ -88,7 +107,6 @@ async function seedServices(manager: EntityManager) {
         console.log('Services seeded successfully');
     }
 }
-
 
 async function  seedUsers(manager: EntityManager) {
     const users = [
@@ -203,6 +221,7 @@ async function  seedUsers(manager: EntityManager) {
         console.log('Users seeded successfully');
     }
 }
+
 
 async function seedServiceRequests(manager: EntityManager) {
     const existingRequests = await manager.find(ServiceRequestsEntity);
@@ -420,7 +439,6 @@ async function seedServiceRequests(manager: EntityManager) {
     console.log('Service requests seeded successfully');
 }
 
-// New: seed reports
 async function seedReports(manager: EntityManager) {
     const existingReports = await manager.find(ReportsEntity);
     if (existingReports.length > 0) {

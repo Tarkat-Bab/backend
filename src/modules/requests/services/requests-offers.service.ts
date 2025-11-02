@@ -182,7 +182,7 @@ export class RequestOffersService {
     }
   }
 
-  async acceptOffer(userId: number, offerId: number, lang: LanguagesEnum) {
+  async acceptOffer(userId: number, offerId: number, lang?: LanguagesEnum) {
     const offer = await this.requestOffersRepository.findOne({
       where: { id: offerId },
       relations: ['request', 'request.user', 'technician', 'technician.user'],
@@ -202,22 +202,30 @@ export class RequestOffersService {
         throw new NotFoundException(`You cannot accept an offer that is not for your request`);
       }
     }
-    const request = await this.requestService.findRequestById(offer.request.id, lang);
-    
-    // assign a technician object matching the Request.technician type 
-    request.technician = {
-      id: offer.technician.id,
-      username: offer.technician.user?.username ?? '',
-      image: (offer.technician as any).image ?? '',
-      avgRating: offer.technician.avgRating ?? 0,
-      totalReviews: (offer.technician as any).totalReviews ?? 0,
-      address: (offer.technician as any).address ?? '',
-      description: (offer.technician as any).description ?? '',
-    };
+
+    const request = await this.requestService.getRequest(offer.request.id, lang);
+    const tech    = await this.usersService.findById(offer.technician.user.id, lang);
+
+    request.technician = tech;
     request.status = RequestStatus.IN_PROGRESS;
     offer.accepted = true;
     
     await this.requestOffersRepository.save(offer);
     return this.requestService.save(request);
+  }
+
+  async findOne(offerId:number, lang: LanguagesEnum){
+    const offer = await this.requestOffersRepository.findOne({
+      where:{id: offerId},
+      relations:{request: true}
+    })
+    
+    if(!offer){
+        throw new NotFoundException(
+          lang === LanguagesEnum.ARABIC ?
+           `هذا العرض غير موجود` : 'This offer not found.'
+        )   
+    }
+    return offer;
   }
 }
