@@ -50,6 +50,7 @@ export class UsersService {
   }
 
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
+    console.log(`login dto; `, loginDto)
     await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type }, lang);
     
     // Prepare user data
@@ -62,7 +63,12 @@ export class UsersService {
       lastLoginAt: new Date(),
       status: UserStatus.UNVERIFIED
     };
-    const newUser = this.usersRepo.create(userData);
+
+    console.log("FCM Token: ", loginDto.fcm_token)
+    const newUser = this.usersRepo.create({
+      ...userData,
+       fcmTokens: [{fcm_token: loginDto.fcm_token}],
+    });
     
     try {
       const savedUser = await this.usersRepo.save(newUser);
@@ -118,7 +124,7 @@ export class UsersService {
   }
 
   async publicLogin(loginDto: LoginDto, lang: LanguagesEnum) {
-    const { phone, type } = loginDto;
+    const { phone, type, fcm_token } = loginDto;
     const existUser = await this.usersRepo.findOne({
       where: {
         phone,
@@ -136,7 +142,7 @@ export class UsersService {
 
     if (!existUser){
       return {
-        user: await this.createUser({ phone, type }, lang),
+        user: await this.createUser({ phone, type, fcm_token }, lang),
         newUser: true
       }
     }
@@ -154,6 +160,15 @@ export class UsersService {
       { lastLoginAt: new Date() },
     );
 
+    const existingToken = await this.userFcmTokenRepo.findOne({where: {fcm_token}})
+    if(!existingToken){
+      const fcmToken = this.userFcmTokenRepo.create({
+        user: existUser,
+        fcm_token
+      })
+      await this.userFcmTokenRepo.save(fcmToken);
+    }
+    
     return {
       user: existUser,
       newUser: false

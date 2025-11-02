@@ -14,6 +14,8 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+tarqat-bab-firebase-adminsdk-fbsvc-5fc707a202.json
+
 # OS
 .DS_Store
 

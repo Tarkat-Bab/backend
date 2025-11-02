@@ -1,31 +1,14 @@
 import * as admin from 'firebase-admin';
-import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 
-// Load environment variables from .development.env
-dotenv.config({ path: '.development.env' });
+const serviceAccount = JSON.parse(
+  fs.readFileSync('tarqat-bab-firebase-adminsdk-fbsvc-5fc707a202.json', 'utf8')
+);
 
-const ensureEnvVariable = (name: string): string => {
-    const value = process.env[name];
-    if (!value) {
-        throw new Error(`Environment variable ${name} is not set`);
-    }
-    return value;
-};
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
-try {
-    const serviceAccountString = ensureEnvVariable('FIREBASE_SERVICE_ACCOUNT');
-    const serviceAccount = JSON.parse(serviceAccountString);
-    
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-    });
-    console.log('Firebase Admin initialized successfully');
-} catch (error) {
-    if (error instanceof SyntaxError) {
-        console.error('Invalid JSON format in FIREBASE_SERVICE_ACCOUNT');
-    }
-    console.error('Failed to initialize Firebase Admin:', error);
-    throw error;
-}
+console.log('Firebase Admin initialized successfully');
 
 export { admin };

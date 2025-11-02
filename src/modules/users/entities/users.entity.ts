@@ -19,6 +19,7 @@ import { ServiceRequestsEntity } from 'src/modules/requests/entities/service_req
 import { ReportsEntity } from 'src/modules/reports/entities/reports.entity';
 import { NotificationsEntity } from 'src/modules/notifications/entities/notification.entity';
 import { UsersNotifications } from 'src/modules/notifications/entities/usersNotifications.entity';
+import { PaymentEntity } from 'src/modules/payment/entities/payment.entity';
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
@@ -82,10 +83,12 @@ export class UserEntity extends BaseEntity {
 
   @OneToMany(() => ReportsEntity, report => report.reported)
   receivedReports: ReportsEntity[];
-
   
   @OneToMany(() => UsersNotifications, (notification) => notification.notification)
   notifications: UsersNotifications[];
+
+  @OneToMany(() => PaymentEntity, payment => payment.user)
+  payments: PaymentEntity[];
 
   @BeforeInsert()
   async hashPassword() {
