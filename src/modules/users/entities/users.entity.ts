@@ -17,7 +17,7 @@ import { TechnicalProfileEntity } from './technical_profile.entity';
 import { UserFcmTokenEntity } from './user-fcm-token.entity';
 import { ServiceRequestsEntity } from 'src/modules/requests/entities/service_requests.entity';
 import { ReportsEntity } from 'src/modules/reports/entities/reports.entity';
-import { PaymentsEntity } from 'src/modules/payment/entities/payment.entity';
+import { PaymentEntity } from 'src/modules/payment/entities/payment.entity';
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
@@ -82,8 +82,8 @@ export class UserEntity extends BaseEntity {
   @OneToMany(() => ReportsEntity, report => report.reported)
   receivedReports: ReportsEntity[];
 
-  @OneToMany(() => PaymentsEntity, payment => payment.user)
-  payments: PaymentsEntity[];
+  @OneToMany(() => PaymentEntity, payment => payment.user)
+  payments: PaymentEntity[];
 
   @BeforeInsert()
   async hashPassword() {

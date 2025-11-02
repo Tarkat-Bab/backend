@@ -2,13 +2,12 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty } from "class-validator";
 
 export class SavePaymentDto {
-
     @ApiProperty({
         description:"Payment ID from Tabby",
         example: "pay_1234567890",
     })
     @IsNotEmpty()
-    paymentTabbyId: string;
+    tabbyPaymentId: string;
 
     @ApiProperty({
         description:"Amount to be paid",
@@ -39,25 +38,25 @@ export class SavePaymentDto {
     createdAt: string;
 
     @ApiProperty({
-        description:"Total amount charged to the client",
-        example: 115.50,
-    })
-    @IsNotEmpty()
-    totalClientAmount: number;
-
-    @ApiProperty({
-        description:"Amount allocated to the platform",
+        description:"Amount allocated to the platform takes from technician",
         example: 5.00,
     })
     @IsNotEmpty()
-    platformAmount: number;
+    platformAmountFromTech: number;
+
+    @ApiProperty({
+        description:"Amount allocated to the platform takes from client",
+        example: 5.00,
+    })
+    @IsNotEmpty()
+    platformAmountFromClient: number;
 
     @ApiProperty({
         description:"Amount allocated to the technician",
         example: 90.00,
     })
     @IsNotEmpty()
-    technicianAmount: number;
+    totalTechnicianAmount: number;
 
     @ApiProperty({
         description:"Amount allocated to taxes",

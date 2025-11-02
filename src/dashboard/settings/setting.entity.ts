@@ -5,12 +5,27 @@ export class SettingEntity {
    @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: 'decimal', precision: 5, scale: 2 })    
-    platformPercentage: number;
+    @Column({ type: 'decimal', precision: 5, scale: 2,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value)
+        }
+    })    
+    clientPercentage: number;
 
-    @Column({ type: 'decimal', precision: 5, scale: 2 })    
+    @Column({ type: 'decimal', precision: 5, scale: 2,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value)
+        }
+     })    
     taxPercentage: number;
 
-    @Column({ type: 'decimal', precision: 5, scale: 2, default: 20 })
+    @Column({ type: 'decimal', precision: 5, scale: 2, default: 20,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value)
+        }
+     })
     technicianPercentage: number;
 }

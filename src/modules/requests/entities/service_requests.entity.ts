@@ -5,7 +5,7 @@ import { ServiceEntity } from "src/modules/services/entities/service.entity";
 import { UserEntity } from "src/modules/users/entities/users.entity";
 import { RequestOffersEntity } from "./request_offers.entity";
 import { RequestsMedia } from "./request_media.entity";
-import { PaymentsEntity } from "src/modules/payment/entities/payment.entity";
+import { PaymentEntity } from "src/modules/payment/entities/payment.entity";
 
 @Entity("service_requests")
 export class ServiceRequestsEntity extends BaseEntity {
