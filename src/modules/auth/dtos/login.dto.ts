@@ -23,7 +23,8 @@ export class LoginDto {
     example: 'fcm_token'
   })
   @IsString()
-  fcm_token?: string;
+  @IsNotEmpty()
+  fcm_token: string;
 
   @ApiProperty({
     required: true,

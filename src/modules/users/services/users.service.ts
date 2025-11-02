@@ -6,7 +6,7 @@ import { TechnicalProfileEntity } from '../entities/technical_profile.entity';
 import { In, Repository } from 'typeorm';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { FilesService } from 'src/common/files/files.services';
-import { RegisterDto, TechnicalRegisterDto, UserRegisterDto } from '../../auth/dtos/register.dto';
+import { TechnicalRegisterDto, UserRegisterDto } from '../../auth/dtos/register.dto';
 import { AdminLoginDto, LoginDto } from '../../auth/dtos/login.dto';
 import { compare, genSalt, hash } from 'bcrypt';
 import { UpdateProfileDto } from '../dtos/UpdateProfileDto';
@@ -17,8 +17,8 @@ import { MediaDir } from 'src/common/files/media-dir-.enum';
 import { NationaltiesService } from 'src/modules/nationalties/nationalties.service';
 import { ServicesService } from 'src/modules/services/services.service';
 import { FilterUsersDto } from '../dtos/filter-user-dto';
-import { join } from 'path/win32';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
+import { UserFcmTokenEntity } from '../entities/user-fcm-token.entity';
 import { RequestStatus } from 'src/modules/requests/enums/requestStatus.enum';
 
 @Injectable()
@@ -29,6 +29,9 @@ export class UsersService {
 
     @InjectRepository(TechnicalProfileEntity)
     private readonly technicalProfileRepo: Repository<TechnicalProfileEntity>,
+
+    @InjectRepository(UserFcmTokenEntity)
+    private readonly userFcmTokenRepo: Repository<UserFcmTokenEntity>,
 
     private readonly paginatorService: PaginatorService,
     private readonly fileService: FilesService,
@@ -47,6 +50,7 @@ export class UsersService {
   }
 
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
+    console.log(`login dto; `, loginDto)
     await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type }, lang);
     
     // Prepare user data
@@ -59,7 +63,12 @@ export class UsersService {
       lastLoginAt: new Date(),
       status: UserStatus.UNVERIFIED
     };
-    const newUser = this.usersRepo.create(userData);
+
+    console.log("FCM Token: ", loginDto.fcm_token)
+    const newUser = this.usersRepo.create({
+      ...userData,
+       fcmTokens: [{fcm_token: loginDto.fcm_token}],
+    });
     
     try {
       const savedUser = await this.usersRepo.save(newUser);
@@ -115,7 +124,7 @@ export class UsersService {
   }
 
   async publicLogin(loginDto: LoginDto, lang: LanguagesEnum) {
-    const { phone, type } = loginDto;
+    const { phone, type, fcm_token } = loginDto;
     const existUser = await this.usersRepo.findOne({
       where: {
         phone,
@@ -133,7 +142,7 @@ export class UsersService {
 
     if (!existUser){
       return {
-        user: await this.createUser({ phone, type }, lang),
+        user: await this.createUser({ phone, type, fcm_token }, lang),
         newUser: true
       }
     }
@@ -151,6 +160,15 @@ export class UsersService {
       { lastLoginAt: new Date() },
     );
 
+    const existingToken = await this.userFcmTokenRepo.findOne({where: {fcm_token}})
+    if(!existingToken){
+      const fcmToken = this.userFcmTokenRepo.create({
+        user: existUser,
+        fcm_token
+      })
+      await this.userFcmTokenRepo.save(fcmToken);
+    }
+    
     return {
       user: existUser,
       newUser: false
@@ -838,5 +856,19 @@ export class UsersService {
   
   async saveTechnicalProfile(technician: TechnicalProfileEntity) {
     return this.technicalProfileRepo.save(technician);
+  }
+
+  async getFcmTokensByUserIds(userIds: number[], lang?: LanguagesEnum) {
+    const users = await this.userFcmTokenRepo.find({
+      where: { user:{ id:  In(userIds) } },
+      relations: ['user'],
+      select: {
+        id: true,
+        fcm_token: true,
+        user: { id: true  }
+      },
+    })
+
+    return users;
   }
 }

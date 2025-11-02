@@ -28,6 +28,7 @@ import { EmailModule     }    from './modules/mailer/mailer.module';
 import { LocationsModule }    from './modules/locations/locations.module';
 import { DashboardModule }    from './dashboard/dashboard.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
@@ -71,6 +72,7 @@ import { PaymentModule } from './modules/payment/payment.module';
     ReportsModule,
     ReviewsModule,
     NationaltiesModule,
+    NotificationsModule,
     PaymentModule,
   ],
   controllers: [AppController],

@@ -570,6 +570,12 @@ export class RequestsService {
 
   async changeRequestStatus(id: number, status: RequestStatus, lang: LanguagesEnum, userId?: number): Promise<ServiceRequestsEntity> {
     const request = await this.serviceRequestsRepository.findOne({ where: { id, user: { id: userId ? userId : undefined } } });
+    if(status == RequestStatus.CANCELLED && request.status === RequestStatus.COMPLETED){
+      throw new BadRequestException(
+        lang === LanguagesEnum.ARABIC ? `لا يمكن الغاء الطلب` : `Can't cancel the request.`
+      )
+    }
+
     if(!request){
       throw new NotFoundException(
         lang === LanguagesEnum.ARABIC ? `طلب الخدمة غير موجود` : `Service request not found`
