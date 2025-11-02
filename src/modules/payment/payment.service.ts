@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { PaymentsEntity } from './entities/payment.entity';
+import { PaymentEntity } from './entities/payment.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersService } from '../users/services/users.service';
 import { RequestsService } from '../requests/services/requests.service';
@@ -15,8 +15,8 @@ import { RequestOffersService } from '../requests/services/requests-offers.servi
 @Injectable()
 export class PaymentService {
     constructor(
-        @InjectRepository(PaymentsEntity)
-        private readonly paymentRepository: Repository<PaymentsEntity>,
+        @InjectRepository(PaymentEntity)
+        private readonly paymentRepository: Repository<PaymentEntity>,
 
         private readonly userService: UsersService,
         private readonly requestOfferService: RequestOffersService,
@@ -34,11 +34,10 @@ export class PaymentService {
             )
         } 
 
-        const { platformAmount, technicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
-        console.log(`➡️ Payload totalClientAmount: ${totalClientAmount.toString()}`)
+        const { platformAmountFromTech, platformAmountFromClient, totalTechnicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
         const payload = {
           payment: {
-            amount: '300',
+            amount: totalClientAmount.toString(),
             currency: "SAR",
             buyer: {
               name: user.username,
@@ -49,7 +48,6 @@ export class PaymentService {
           lang,
           merchant_code: process.env.TABBY_MERCHANT_CODE
       }
-
     // console.log("➡️ Checkout payload:", payload);
     try {
       const response = await axios.post(process.env.TABBY_CHECKOUT_URL, payload, {
@@ -69,19 +67,19 @@ export class PaymentService {
         userId,
         offer.id,
         {
-        paymentTabbyId: response.data.payment.id,
-        amount: response.data.payment.amount,
+        tabbyPaymentId: response.data.payment.id,
         currency: response.data.payment.currency,
         status:  response.data.payment.status,
         createdAt:  response.data.payment.created_at,
-        totalClientAmount,
-        platformAmount,
-        technicianAmount,
+        amount: totalClientAmount,
+        platformAmountFromTech,
+        platformAmountFromClient,
+        totalTechnicianAmount,
         taxAmount :0       
       }, lang);
 
       return {
-          paymentTabbyId: response.data.payment.id,
+          tabbyPaymentId: response.data.payment.id,
           url: response.data.configuration.available_products.installments[0].web_url
         };
     } catch (error: any) {
@@ -96,7 +94,7 @@ export class PaymentService {
       if (!tabbyPaymentId) return;
 
       const payment = await this.paymentRepository.findOne({
-        where: { paymentTabbyId: tabbyPaymentId },
+        where: { tabbyPaymentId: tabbyPaymentId },
         relations: ['request'],
       });
 
@@ -157,10 +155,11 @@ export class PaymentService {
         }
 
         const payment = this.paymentRepository.create({
-            paymentTabbyId: paymentDto.paymentTabbyId,
-            amount: paymentDto.totalClientAmount,
-            technicianAmount: paymentDto.technicianAmount,
-            platformAmount : paymentDto.platformAmount,
+            tabbyPaymentId: paymentDto.tabbyPaymentId,
+            totalClientAmount: paymentDto.amount,
+            totalTechnicianAmount: paymentDto.totalTechnicianAmount,
+            platformAmountFromTech : paymentDto.platformAmountFromTech,
+            platformAmountFromClient : paymentDto.platformAmountFromClient,
             taxAmount : paymentDto.taxAmount,
             currency: paymentDto.currency,
             status: paymentDto.status,
@@ -187,39 +186,82 @@ export class PaymentService {
         .where('(user.username ILIKE :search OR request.title ILIKE :search)', { search })
         .orderBy('payment.createdAt', 'DESC')
         .select([
-            'payment.id', 'payment.createdAt', 'user.id', 'user.username',
-            'request.id', 'request.requestNumber', 'request.title',
-            'technician.id', 'technician.username',
-            'payment.amount', 'payment.technicianAmount', 'payment.platformAmount', 'payment.taxAmount',
-            'payment.status', 
+          'payment.id',
+          'payment.createdAt',
+          'payment.totalClientAmount',
+          'payment.totalTechnicianAmount',
+          'payment.platformAmountFromTech',
+          'payment.taxAmount',
+          'payment.status',
+
+          'user.id',
+          'user.username',
+          'offer.id',
+
+          'request.id',
+          'request.requestNumber',
+          'request.title',
+          'request.status',
+
+          'technician.id',
+          'technician.username',
         ])
         .skip(skip)
         .take(limit);
         
       const [payments, total] = await query.getManyAndCount();
-        
-      return this.paginationService.makePaginate(payments, total, limit, page);
+      const mappedPayments = payments.map((pay)=>{
+        return{
+          id: pay.id,
+          username: pay.user.username,
+          technicianName: pay.offer.request.technician.username,
+          requestTitle: pay.offer.request.title,
+          requestNumber: pay.offer.request.requestNumber,
+          totalClientAmount: pay.totalClientAmount,
+          totalTechnicianAmount: pay.totalTechnicianAmount,
+          taxAmount: pay.taxAmount,
+          platformAmountFromTech: pay.platformAmountFromTech,
+          platformAmountFromClient: pay.platformAmountFromClient,
+          paymentStatus: pay.status,
+          requestStatus: pay.offer.request.status,
+          offerId: pay.offer.id,
+          requestId: pay.offer.request.id,
+          }
+      })
+      return this.paginationService.makePaginate(mappedPayments, total, limit, page);
     }
 
     private async calculateAmounts(offerPrice: number) {
-      let { platformPercentage, technicianPercentage, taxPercentage} = await this.settingsService.getSetting();
-      
-      if(!platformPercentage) platformPercentage = 3;
-      if(!technicianPercentage) technicianPercentage = 20;
+      let { clientPercentage, technicianPercentage, taxPercentage } = await this.settingsService.getSetting();
 
-      let platformAmount = (offerPrice * platformPercentage) / 100;
-      
-      if (platformAmount > 3) platformAmount = 3;
+      offerPrice = Number(offerPrice);
+      clientPercentage = Number(clientPercentage) || 3;
+      technicianPercentage = Number(technicianPercentage) || 20;
 
-      const technicianAmount = offerPrice - (offerPrice * technicianPercentage) / 100;
-      const totalClientAmount = offerPrice + platformAmount;
+      let platformAmountFromClient = (offerPrice * clientPercentage) / 100;
+      let platformAmountFromTech = (offerPrice * technicianPercentage) / 100;
 
-      // console.log("Technician Amount:", technicianAmount);
-      // console.log("Total Client Amount:", totalClientAmount);
+      if (platformAmountFromClient > 3) platformAmountFromClient = 3;
+
+      platformAmountFromClient = Number(platformAmountFromClient.toFixed(2));
+      platformAmountFromTech = Number(platformAmountFromTech.toFixed(2));
+
+      const totalTechnicianAmount = Number((offerPrice - platformAmountFromTech).toFixed(2));
+      const totalClientAmount = Number((offerPrice + platformAmountFromClient).toFixed(2));
+
+      // console.log({
+      //   offerPrice,
+      //   clientPercentage,
+      //   platformAmountFromClient,
+      //   totalClientAmount
+      // });
+    
       return {
-        technicianAmount,
-        platformAmount,
+        platformAmountFromTech,
+        platformAmountFromClient,
+        totalTechnicianAmount,
         totalClientAmount
       };
-    }   
-}
+    }
+
+ }
