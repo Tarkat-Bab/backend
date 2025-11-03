@@ -6,6 +6,13 @@ export const NotificationTemplates = {
         enBody: '{{technicianName}} has submitted an offer for your request "{{requestTitle}}". Tap to view details.',
     },
 
+    ACCEPTED_OFFER: {
+        arTitle: 'تم قبول عرضك',
+        enTitle: 'Offer Accepted',
+        arBody: 'تم قبول عرضك المقدم لطلب "{{requestTitle}}". يمكنك متابعة حالة الطلب من صفحة الطلبات.',
+        enBody: 'Your offer for the request "{{requestTitle}}" has been accepted. You can track the request status from the orders page.',
+    },
+
     REQUEST_COMPLETE_ORDER: {
         arTitle: 'طلب تسليم الخدمة',
         enTitle: 'Service Completion Request',
