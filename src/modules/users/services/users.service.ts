@@ -872,16 +872,25 @@ export class UsersService {
     return users;
   }
 
-  async findUsersForFcm(type: UsersTypes){
-    return await this.usersRepo
+  async findUsersForFcm(type?: UsersTypes, userId?: number) {
+    const query = this.usersRepo
       .createQueryBuilder('user')
       .leftJoin('user.fcmTokens', 'fcmToken')
       .where('user.deleted = false')
       .andWhere('user.status = :status', { status: UserStatus.ACTIVE })
-      .andWhere('user.type = :type', { type })
-      .andWhere('fcmToken.id IS NOT NULL')
-      .getMany();
+      .andWhere('fcmToken.id IS NOT NULL');
+  
+    if (type) {
+      query.andWhere('user.type = :type', { type });
+    }
+  
+    if (userId) {
+      query.andWhere('user.id = :id', { id: userId });
+    }
+  
+    return await query.getMany();
   }
+
 
    async findAllIds( userType: UsersTypes) {
     const whereClause = userType ? { type: userType } : {}
