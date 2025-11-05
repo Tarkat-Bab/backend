@@ -44,7 +44,11 @@ export class NotificationsService {
     const savedNotification = await this.createNotification(content, finalReceiverIds);
     const localized = this.localizeContent(content, lang);
 
-    const fcmResult = await this.sendFcm(finalReceiverIds, localized);
+    const fcmResult = await this.sendFcm(finalReceiverIds,  {
+        ...localized,
+      data: templateData || {},
+    }
+  );
 
     return { success: true, savedNotification, fcmResult, receiversCount: finalReceiverIds.length };
   }
@@ -60,7 +64,10 @@ export class NotificationsService {
     const savedNotification = await this.createNotification(content, [receiverId]);
     const localized = this.localizeContent(content, lang);
 
-    await this.sendFcm([receiverId], localized);
+    await this.sendFcm([receiverId], {
+      ...localized,
+      data: templateData || {}
+    });
     return { success: true, savedNotification };
   }
 
@@ -184,7 +191,7 @@ export class NotificationsService {
   /** 📱 Send notification to FCM */
   private async sendFcm(
     userIds: number[],
-    { title, body }: { title: string; body: string },
+    { title, body, data }: { title: string; body: string,  data: Record<string, any> },
   ) {
     const tokens = await this.usersService.getFcmTokensByUserIds(userIds);
     if (!tokens.length) {
@@ -195,6 +202,7 @@ export class NotificationsService {
     try {
       const response = await admin.messaging().sendEachForMulticast({
         notification: { title, body },
+        data,
         tokens: tokens.map((t) => t.fcm_token),
       });
 

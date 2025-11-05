@@ -105,7 +105,7 @@ export class RequestOffersService {
 
     await this.requestOffersRepository.save(offer);
     
-    await this.notificationService.autoNotification(request.user.id, 'RECEIVED_OFFER', {technicianName: technicalProfile.user.username, requestTitle: request.title});
+    await this.notificationService.autoNotification(request.user.id, 'RECEIVED_OFFER', { id: request.id});
 
     return this.findRequestOfferById(user.id, offer.id, lang, true);
   }
@@ -217,7 +217,7 @@ export class RequestOffersService {
     offer.accepted = true;
     
     await this.requestOffersRepository.save(offer);
-    await this.notificationService.autoNotification(request.user.id, 'ACCEPTED_OFFER', {requestTitle: request.title});
+    await this.notificationService.autoNotification(request.user.id, 'ACCEPTED_OFFER', {id: request.id});
     return this.requestService.save(request);
   }
 
