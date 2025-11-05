@@ -1,33 +1,29 @@
 export const NotificationTemplates = {
-    RECEIVED_OFFER: {
-        arTitle: 'تم استلام عرض جديد',
-        enTitle: 'New Offer Received',
-        arBody: 'قام {{technicianName}} بتقديم عرض على طلبك "{{requestTitle}}". اضغط لعرض التفاصيل.',
-        enBody: '{{technicianName}} has submitted an offer for your request "{{requestTitle}}". Tap to view details.',
-    },
+  RECEIVED_OFFER: {
+    arTitle: 'تم استلام عرض جديد',
+    enTitle: 'New Offer Received',
+    arBody: 'قام فني بتقديم عرض على طلبك. اضغط لعرض التفاصيل.',
+    enBody: 'A technician has submitted an offer for your request. Tap to view details.',
+  },
 
-    ACCEPTED_OFFER: {
-        arTitle: 'تم قبول عرضك',
-        enTitle: 'Offer Accepted',
-        arBody: 'تم قبول عرضك المقدم لطلب "{{requestTitle}}". يمكنك متابعة حالة الطلب من صفحة الطلبات.',
-        enBody: 'Your offer for the request "{{requestTitle}}" has been accepted. You can track the request status from the orders page.',
-    },
+  ACCEPTED_OFFER: {
+    arTitle: 'تم قبول عرضك',
+    enTitle: 'Offer Accepted',
+    arBody: 'تم قبول عرضك. يمكنك متابعة حالة الطلب من صفحة الطلبات.',
+    enBody: 'Your offer has been accepted. You can track the request status from the orders page.',
+  },
 
-    REQUEST_COMPLETE_ORDER: {
-        arTitle: 'طلب تسليم الخدمة',
-        enTitle: 'Service Completion Request',
-        arBody: `قام {{technicianName}} بانجاز طلبك "{{requestTitle}}".
-            نأمل أن تكون التجربة عند حسن ظنك، يرجى تأكيد استلام الخدمة ولا تنسَ تقييم الخدمة!`,
-        enBody: `{{technicianName}} has completed your request "{{requestTitle}}".
-            We hope the experience met your expectations. Please confirm receipt of the service and don't forget to rate it!`
-    },
+  REQUEST_COMPLETE_ORDER: {
+    arTitle: 'تم إنجاز الطلب',
+    enTitle: 'Request Completed',
+    arBody: 'تم إنجاز طلبك. نأمل أن تكون التجربة عند حسن ظنك. يرجى تأكيد استلام الخدمة ولا تنسَ تقييمها!',
+    enBody: 'Your request has been completed. We hope the experience met your expectations. Please confirm receipt of the service and don’t forget to rate it!',
+  },
 
-    REPORT_REPLIED: {
-        arTitle: 'تم مراجعة بلاغك',
-        enTitle: 'New Offer Received',
-        arBody: 'قام {{technicianName}} بتقديم عرض على طلبك "{{requestTitle}}". اضغط لعرض التفاصيل.',
-        enBody: '{{technicianName}} has submitted an offer for your request "{{requestTitle}}". Tap to view details.',
-    },
-
+  REPORT_REPLIED: {
+    arTitle: 'تم مراجعة البلاغ',
+    enTitle: 'Report Reviewed',
+    arBody: 'تم مراجعة البلاغ الخاص بك. يمكنك عرض التفاصيل الآن.',
+    enBody: 'Your report has been reviewed. You can view the details now.',
+  },
 };
-
