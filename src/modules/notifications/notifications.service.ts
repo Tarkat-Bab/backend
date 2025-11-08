@@ -57,13 +57,14 @@ export class NotificationsService {
   async autoNotification(
     receiverId: number,
     templateKey: keyof typeof NotificationTemplates,
-    templateData: Record<string, any>,
+    templateData?: Record<string, any>,
     lang: LanguagesEnum = LanguagesEnum.ENGLISH,
   ) {
     const content = this.prepareNotificationContent(null, templateKey, templateData);
     const savedNotification = await this.createNotification(content, [receiverId]);
     const localized = this.localizeContent(content, lang);
 
+    console.log("Sending notifications...")
     await this.sendFcm([receiverId], {
       ...localized,
       data: templateData || {}

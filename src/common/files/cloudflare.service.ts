@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class CloudflareService {
@@ -46,5 +46,20 @@ export class CloudflareService {
     await this.s3.send(new PutObjectCommand(params));
     const publicUrl = `https://${process.env.APP_URL}/${fileKey}`;
     return { url: publicUrl };
+  }
+
+  async deleteFile(fileUrl: string) {
+    if (!fileUrl) throw new Error('File URL is required');
+    
+    const url = new URL(fileUrl);
+    const fileKey = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
+    
+    const params = {
+      Bucket: this.bucketName,
+      Key: fileKey,
+    };
+  
+    await this.s3.send(new DeleteObjectCommand(params));
+    return { success: true, key: fileKey };
   }
 }

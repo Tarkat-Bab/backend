@@ -20,6 +20,7 @@ import { FilterUsersDto } from '../dtos/filter-user-dto';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UserFcmTokenEntity } from '../entities/user-fcm-token.entity';
 import { RequestStatus } from 'src/modules/requests/enums/requestStatus.enum';
+import { NotificationsService } from 'src/modules/notifications/notifications.service';
 
 @Injectable()
 export class UsersService {
@@ -224,6 +225,9 @@ export class UsersService {
     }
 
     if (image) {
+      if(existUser.image){
+        await this.cloudflareService.deleteFile(existUser.image);
+      }
       const savedImage = await this.cloudflareService.uploadFile(image);
       dataToUpdate.image = savedImage.url;
       // dataToUpdate.imageId = savedImage.id;
@@ -597,6 +601,25 @@ export class UsersService {
     await this.usersRepo.update(user.id, { status })
   }
 
+  async warnUser(id:number, lang: LanguagesEnum){
+    const user = await this.usersRepo.findOne({where: {id}})
+    if(!user){
+      throw new NotFoundException(
+        lang == LanguagesEnum.ARABIC ? `المستخدم غير موجود` : 'User not found'
+      )
+    }
+    user.warningCount += 1;
+    const updatedUser = await this.usersRepo.save(user);
+
+    if(updatedUser.warningCount >= 5){
+      await this.changeUserStatus(id, UserStatus.BLOCKED);
+      return{ blocked: true}
+    }
+
+    return{ blocked: false, userStatus: user.status}
+
+  }
+
   async userProfile(userID: number, lang: LanguagesEnum) {
     let user: any;
     try{
@@ -704,19 +727,12 @@ export class UsersService {
     }
     
     if (image) {      
-      if(user.imageId) {
-        try {
-          // await this.cloudflareService.deleteFileFromCloudflare(user.imageId);
-        } catch (error) {
-          console.error('Error deleting old image from Cloudflare:', error);
-        }
+      if(user.image) {
+        await this.cloudflareService.deleteFile(user.image);
       }
-      
       try {
-        // Pass the entire image object to the service
         const savedImage = await this.cloudflareService.uploadFile(image);
         user.image = savedImage.url;
-        // user.imageId = savedImage.id;
       } catch (error) {
         console.error('Error uploading image to Cloudflare:', error);
         throw new Error(`Failed to upload profile image: ${error.message}`);
@@ -890,7 +906,6 @@ export class UsersService {
   
     return await query.getMany();
   }
-
 
    async findAllIds( userType: UsersTypes) {
     const whereClause = userType ? { type: userType } : {}

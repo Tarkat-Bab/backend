@@ -53,6 +53,29 @@ export class DashboardUsersController {
         return this.usersService.changeUserStatus(userId, UserStatus.BLOCKED);
     }
 
+    @Patch('activate/:id')
+    @Permissions(AdminPermissions.UPDATE_USER) 
+    activateUser(
+        @Param('id') userId: number,
+    ) {
+        return this.usersService.changeUserStatus(userId, UserStatus.ACTIVE);
+    }
+
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Language for the response (e.g., ar, en)',
+        required: false,
+    })   
+    @Patch('warning/:id')
+    @Permissions(AdminPermissions.UPDATE_USER) 
+    async warnUser(
+        @Param('id') userId: number,
+        @Language() lang: LanguagesEnum,
+
+    ){
+        return this.usersService.warnUser(userId, lang);
+    }
+
     @Delete(':id')
     @Permissions(AdminPermissions.DELETE_USER) 
     removeUser(
