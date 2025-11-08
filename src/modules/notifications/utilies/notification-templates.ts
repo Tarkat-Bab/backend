@@ -26,4 +26,18 @@ export const NotificationTemplates = {
     arBody: 'تم مراجعة البلاغ الخاص بك. يمكنك عرض التفاصيل الآن.',
     enBody: 'Your report has been reviewed. You can view the details now.',
   },
+
+  WARNING_USER: {
+    arTitle: 'تنبيه هام',
+    enTitle: 'Important Notice',
+    arBody: 'لقد تم إصدار تنبيه بشأن حسابك بسبب مخالفة سياسات المنصة. يُرجى مراجعة التفاصيل واتخاذ الإجراءات اللازمة.',
+    enBody: 'A notice has been issued regarding your account due to a policy violation. Please review the details and take the necessary actions.',
+  },
+
+  BLOCKED_USER: {
+    arTitle: 'تم حظر الحساب',
+    enTitle: 'Account Blocked',
+    arBody: 'تم حظر حسابك بسبب تكرار المخالفات أو انتهاك سياسات المنصة. يُرجى التواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.',
+    enBody: 'Your account has been blocked due to repeated violations or policy breaches. Please contact support if you believe this is a mistake.',
+  }
 };

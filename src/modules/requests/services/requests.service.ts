@@ -521,34 +521,13 @@ export class RequestsService {
         lang === LanguagesEnum.ARABIC ? `طلب الخدمة غير موجود` : `Service request not found`
       );
     }
-    
-    // let imagesPath = request.media ? request.media.map(m => m.media) : [];
-    // if (images && images.length > 0) {
-    //   await this.mediaRepository.remove(request.media);
-    //   // Delete existing images from Cloudflare
-    //   if(request.media && request.media.length > 0){
-    //     // await Promise.all(
-    //     //   request.media.map(async (media) => {
-    //     //     const fileUrl = media.media;
-    //     //     await this.cloudflareService.deleteFile(fileUrl);
-    //     //   })
-    //     // );
-    //   }
-
-    //   await Promise.all(
-    //     images.map(async (file) => {
-    //       const uploadedFile = await this.cloudflareService.uploadFile(file);
-    //       imagesPath.push(uploadedFile.url);
-    //     })
-    //   );
-    // }
 
     if (images && images.length > 0) {
         if (request.media && request.media.length > 0) {
           await Promise.all(
             request.media.map(async (media) => {
               try {
-                // await this.cloudflareService.deleteFile(media.media);
+                await this.cloudflareService.deleteFile(media.media);
               } catch (err) {
                 console.error(`❌ Failed to delete file: ${media.media}`, err);
               }

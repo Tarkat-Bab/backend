@@ -65,6 +65,9 @@ export class UserEntity extends BaseEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   enAddress: string;
+
+  @Column({type: 'int', default:0})
+  warningCount: number;
   
   @OneToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.user, { cascade: true })
   technicalProfile: TechnicalProfileEntity;
