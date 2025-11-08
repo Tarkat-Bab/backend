@@ -164,43 +164,84 @@ export class ReportsService {
     }
 
     async findAllReports(filterReportsDto: FilterReportsDto, lang: LanguagesEnum) {
-        const page = filterReportsDto.page || 1;
-        const limit = filterReportsDto.limit || 10;
-        
-        const q = this.reportsRepo.createQueryBuilder('report')
-            .leftJoinAndSelect('report.request', 'request')
-            .leftJoinAndSelect('report.reported', 'reported')
-            .leftJoinAndSelect('report.reporter', 'reporter')
-            .leftJoinAndSelect('report.media', 'media')
-            .where('report.deleted = :deleted', { deleted: false })
-            .andWhere('report.type = :type', { type: filterReportsDto.type })
-            .andWhere('report.resolved = :resolved', { resolved: false })
-            .orderBy('report.createdAt', 'DESC')
-            .select([
-            'report.id',
-            'report.reportNumber',
-            'report.message',
-            'report.type',
-            'report.createdAt',
-            'report.reason',
+      const page = filterReportsDto.page || 1;
+      const limit = filterReportsDto.limit || 10;
 
-            'reported.id',
-            'reported.username',
-            'reported.image',
+      const q = this.reportsRepo.createQueryBuilder('report')
+        .leftJoinAndSelect('report.request', 'request')
+        .leftJoinAndSelect('report.reported', 'reported')
+        .leftJoinAndSelect('report.reporter', 'reporter')
+        .leftJoinAndSelect('report.media', 'media')
+        .where('report.deleted = :deleted', { deleted: false })
+        .andWhere('report.resolved = :resolved', { resolved: false })
+        .orderBy('report.createdAt', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit)
+        .select([
+          'report.id',
+          'report.reportNumber',
+          'report.message',
+          'report.type',
+          'report.createdAt',
+          'report.reason',
 
-            'reporter.id',
-            'reporter.image',
-            'reporter.username',
-            'request.id',
-            'request.title',
-            ]);
+          'reported.id',
+          'reported.username',
+          'reported.image',
 
-        q.skip((page - 1) * limit).take(limit);
-        const [reports, total] = await q.getManyAndCount();
-        
-        return this.paginatorService.makePaginate(reports, total, limit, page);
-            
+          'reporter.id',
+          'reporter.image',
+          'reporter.username',
+
+          'request.id',
+          'request.title',
+        ]);
+
+
+      q.leftJoinAndSelect('reported.technicalProfile', 'reportedTech')
+        .addSelect('COALESCE(reportedTech.avgRating, 0)', 'reported_avg_rating')
+        .addSelect(subQuery => {
+          return subQuery
+            .select('COALESCE(COUNT(r.id),0)')
+            .from('reviews', 'r')
+            .where('r.technician_id = reportedTech.id'); 
+        }, 'reported_total_reviews');
+
+      q.leftJoinAndSelect('reporter.technicalProfile', 'reporterTech')
+        .addSelect('COALESCE(reporterTech.avgRating, 0)', 'reporter_avg_rating')
+        .addSelect(subQuery => {
+          return subQuery
+            .select('COALESCE(COUNT(r.id),0)')
+            .from('reviews', 'r')
+            .where('r.technician_id = reporterTech.id'); 
+        }, 'reporter_total_reviews');
+
+    
+      const [reports, total] = await q.getManyAndCount();
+      const raw = await q.getRawMany();
+
+      const data = reports.map((report, index) => {
+        const rawRow = raw[index] || {};
+        return {
+          ...report,
+          reported: {
+            ...report.reported,
+            avgRating: Number(rawRow.reported_avg_rating) || 0,
+            totalReviews: Number(rawRow.reported_total_reviews) || 0,
+          },
+          reporter: {
+            ...report.reporter,
+            avgRating: Number(rawRow.reporter_avg_rating) || 0,
+            totalReviews: Number(rawRow.reporter_total_reviews) || 0,
+          },
+        };
+      });
+
+      return this.paginatorService.makePaginate(data, total, limit, page);
     }
+
+
+
 
     async createReply(reportId: number, createReplyDto: CreateReplyDto, lang: LanguagesEnum) {
         const report = await this.reportsRepo.findOne({ where: { id: reportId } });
