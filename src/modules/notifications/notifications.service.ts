@@ -202,7 +202,7 @@ export class NotificationsService {
     try {
       const response = await admin.messaging().sendEachForMulticast({
         notification: { title, body },
-        data,
+        data: Object.entries(data).reduce((acc, [k, v]) => ({ ...acc, [k]: String(v) }), {}),
         tokens: tokens.map((t) => t.fcm_token),
       });
 
