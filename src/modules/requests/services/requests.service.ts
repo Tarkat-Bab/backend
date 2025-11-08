@@ -139,7 +139,7 @@ export class RequestsService {
 
     if (filter.search) {
       query.andWhere(
-        '(user.username ILIKE :search OR request.arAddress ILIKE :search OR request.enAddress ILIKE :search)',
+        '(user.username ILIKE :search OR request.arAddress ILIKE :search OR request.title ILIKE :search)',
         { search: `%${filter.search}%` }
       );
     }
