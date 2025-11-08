@@ -382,10 +382,12 @@ export class RequestsService {
         `${addressField} AS userAddress`,
 
         'COUNT(DISTINCT offers.id) AS offersCount',
+        `COALESCE(json_agg(DISTINCT jsonb_build_object('id', media.id, 'media', media.media)) FILTER (WHERE media.id IS NOT NULL), '[]') AS media`
       ])
       .groupBy('request.id')
       .addGroupBy('service.id')
       .addGroupBy('user.id')
+      .addGroupBy('media.id')
       .addGroupBy('service.icone')
       .addGroupBy(`${serviceNameField}`)
       .addGroupBy(`${addressField}`)
@@ -419,13 +421,14 @@ export class RequestsService {
         address: r.useraddress,
       },
       offersCount: Number(r.offerscount ?? 0),
+      media: r.media ? r.media.map((m) => ({ id: m.id, media: m.media })) : [],
     }));
 
     return this.paginatorService.makePaginate(mappedResult, total, limit, page);
   }
 
 
-  async findServiceRequestsByTechnicianId( id: number, filterTechnician: PaginatorInput, lang?: LanguagesEnum) {
+  async findServiceRequestsByTechnicianId( id: number, filterTechnician: PaginatorInput, lang?: LanguagesEnum, dashboard?:boolean) {
     const page = filterTechnician.page || 1;
     const limit = filterTechnician.limit || 10;
 
@@ -462,14 +465,21 @@ export class RequestsService {
         'user.image AS userImage',
         `${addressField} AS userAddress`,
         'COUNT(DISTINCT offers.id) AS offersCount',
+        `COALESCE(json_agg(DISTINCT jsonb_build_object('id', media.id, 'media', media.media)) FILTER (WHERE media.id IS NOT NULL), '[]') AS media`
       ])
       .groupBy('request.id')
-      .addGroupBy('service.id')
       .addGroupBy('user.id')
-      .addGroupBy('media.id')
+      .addGroupBy('service.id')
       .addGroupBy('service.icone')
       .addGroupBy(`${serviceNameField}`)
       .addGroupBy(`${addressField}`);
+
+     if (dashboard) {
+        query.andWhere("request.status = :requestStatus", {
+          requestStatus: RequestStatus.COMPLETED,
+       });
+    }
+
 
     const [rawResult, total] = await Promise.all([
       query.getRawMany(),
@@ -497,7 +507,7 @@ export class RequestsService {
         address: r.useraddress,
       },
       offersCount: Number(r.offerscount ?? 0),
-      media: r.media ? r.media.map((m) => ({ id: m.id, media: m.media })) : [],
+      media: r.media || []
     }));
 
     return this.paginatorService.makePaginate(mappedResult, total, limit, page);
@@ -625,6 +635,7 @@ export class RequestsService {
     }
     return request;
   }
+
 private calculateRemainingWarrantyDays(completedAt: Date, warrantyDays: number): number {
   const currentDate = new Date();
   const passedDays = Math.floor((currentDate.getTime() - completedAt.getTime()) / (1000 * 3600 * 24));
