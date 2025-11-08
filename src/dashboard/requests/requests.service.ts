@@ -25,7 +25,7 @@ export class DashboardRequestsService {
     }
 
     async findServiceRequestsByTechnicianId(id: number, filterTechnician: PaginatorInput, lang: LanguagesEnum) {
-        return this.requestsService.findServiceRequestsByTechnicianId(id, filterTechnician, lang);
+        return this.requestsService.findServiceRequestsByTechnicianId(id, filterTechnician, lang, true);
     }
 
     async removeOffer(offerId: number, lang: LanguagesEnum) {
