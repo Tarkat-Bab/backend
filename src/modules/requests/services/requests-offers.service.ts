@@ -10,6 +10,8 @@ import { RequestStatus } from '../enums/requestStatus.enum';
 import { RequestsService } from './requests.service';
 import { LocationService } from 'src/modules/locations/location.service';
 import { UsersTypes } from 'src/common/enums/users.enum';
+import { NotificationsService } from 'src/modules/notifications/notifications.service';
+import { NotificationTemplates } from 'src/modules/notifications/utilies/notification-templates';
 
 @Injectable()
 export class RequestOffersService {
@@ -20,6 +22,7 @@ export class RequestOffersService {
     private requestService: RequestsService,
     private usersService: UsersService,
     private readonly locationService: LocationService,
+    private readonly notificationService: NotificationsService
   ) {}
 
   async createRequestOffer(technicianId: number, requestId: number, createRequestOfferDto: CreateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
@@ -101,6 +104,9 @@ export class RequestOffersService {
     });
 
     await this.requestOffersRepository.save(offer);
+    
+    await this.notificationService.autoNotification(request.user.id, 'RECEIVED_OFFER', { id: request.id});
+
     return this.findRequestOfferById(user.id, offer.id, lang, true);
   }
 
@@ -211,6 +217,7 @@ export class RequestOffersService {
     offer.accepted = true;
     
     await this.requestOffersRepository.save(offer);
+    await this.notificationService.autoNotification(request.user.id, 'ACCEPTED_OFFER', {id: request.id});
     return this.requestService.save(request);
   }
 

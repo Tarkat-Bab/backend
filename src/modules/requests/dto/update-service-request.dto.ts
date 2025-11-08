@@ -4,13 +4,13 @@ import { IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min } from 'cla
 import { CreateLocationDto } from 'src/modules/locations/createLocation.dto';
 
 export class UpdateServiceRequestDto {
-  @ApiProperty({ description: 'Title of the service request' })
+  @ApiProperty({ description: 'Title of the service request', required: false })
   @IsNotEmpty()
   @IsString()
   @IsOptional()
   title?: string;
 
-  @ApiProperty({ description: 'Description of the service request' })
+  @ApiProperty({ description: 'Description of the service request', required: false })
   @IsNotEmpty()
   @IsString()
   @IsOptional()
@@ -25,7 +25,7 @@ export class UpdateServiceRequestDto {
   @Type(() => CreateLocationDto)
   location?: CreateLocationDto;
 
-  @ApiProperty({ description: 'Price for the service request' })
+  @ApiProperty({ description: 'Price for the service request', required: false })
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
@@ -37,7 +37,7 @@ export class UpdateServiceRequestDto {
   @IsOptional()
   images?: Express.Multer.File[];
 
-  @ApiProperty({ description: 'ID of the service being requested' })
+  @ApiProperty({ description: 'ID of the service being requested', required: false })
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)

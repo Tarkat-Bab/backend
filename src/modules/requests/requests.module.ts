@@ -13,6 +13,7 @@ import { LocationsModule } from '../locations/locations.module';
 import { PaginatorModule } from 'src/common/paginator/paginator.module';
 import { ServicesModule } from '../services/services.module';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { CloudflareService } from 'src/common/files/cloudflare.service';
         ServicesModule,
         LocationsModule,
         PaginatorModule,
+        NotificationsModule,
         TypeOrmModule.forFeature([ServiceRequestsEntity, RequestOffersEntity, RequestsMedia])
     ],
     controllers: [RequestsController, RequestOffersController],

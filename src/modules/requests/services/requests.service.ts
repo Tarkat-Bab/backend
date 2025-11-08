@@ -522,26 +522,51 @@ export class RequestsService {
       );
     }
     
-    let imagesPath = request.media ? request.media.map(m => m.media) : [];
-    if (images && images.length > 0) {
-      await this.mediaRepository.remove(request.media);
-      // Delete existing images from Cloudflare
-      if(request.media && request.media.length > 0){
-        // await Promise.all(
-        //   request.media.map(async (media) => {
-        //     const fileUrl = media.media;
-        //     await this.cloudflareService.deleteFile(fileUrl);
-        //   })
-        // );
-      }
+    // let imagesPath = request.media ? request.media.map(m => m.media) : [];
+    // if (images && images.length > 0) {
+    //   await this.mediaRepository.remove(request.media);
+    //   // Delete existing images from Cloudflare
+    //   if(request.media && request.media.length > 0){
+    //     // await Promise.all(
+    //     //   request.media.map(async (media) => {
+    //     //     const fileUrl = media.media;
+    //     //     await this.cloudflareService.deleteFile(fileUrl);
+    //     //   })
+    //     // );
+    //   }
 
-      await Promise.all(
-        images.map(async (file) => {
-          const uploadedFile = await this.cloudflareService.uploadFile(file);
-          imagesPath.push(uploadedFile.url);
-        })
-      );
-    }
+    //   await Promise.all(
+    //     images.map(async (file) => {
+    //       const uploadedFile = await this.cloudflareService.uploadFile(file);
+    //       imagesPath.push(uploadedFile.url);
+    //     })
+    //   );
+    // }
+
+    if (images && images.length > 0) {
+        if (request.media && request.media.length > 0) {
+          await Promise.all(
+            request.media.map(async (media) => {
+              try {
+                // await this.cloudflareService.deleteFile(media.media);
+              } catch (err) {
+                console.error(`❌ Failed to delete file: ${media.media}`, err);
+              }
+            })
+          );
+          await this.mediaRepository.remove(request.media);
+        }
+      
+
+        const uploadedMedia = await Promise.all(
+          images.map(async (file) => {
+            const uploadedFile = await this.cloudflareService.uploadFile(file);
+            return this.mediaRepository.create({ media: uploadedFile.url });
+          })
+        );
+      
+        request.media = uploadedMedia;
+      }
 
 
      if (location) {
@@ -568,12 +593,7 @@ export class RequestsService {
       request.enAddress = saveLocation.en_address;
     }
 
-    Object.assign(request, {
-      ...rest,
-      media: imagesPath.map((image) => {
-        return { media: image };
-      }),
-    });
+    Object.assign(request, rest);
     return this.serviceRequestsRepository.save(request);
 
   }
