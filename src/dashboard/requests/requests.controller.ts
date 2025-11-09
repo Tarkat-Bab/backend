@@ -90,7 +90,7 @@ export class DashboardRequestsController {
         return this.requestsService.removeOffer(id, lang);
     }
 
-    @Delete('/request/:id')
+    @Delete('/:id')
     @Permissions(AdminPermissions.REMOVE_REQUESTS)
     @ApiHeader({
         name:'accept-language',
