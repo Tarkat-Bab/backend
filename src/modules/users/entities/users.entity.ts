@@ -103,12 +103,12 @@ export class UserEntity extends BaseEntity {
 
 
 
-  @BeforeInsert()
-  @BeforeUpdate()
-  async MediaUrl() {
-    if (typeof this.image === 'string' && process.env.APP_URL) {
-      const fullPath = join(process.env.MEDIA_DIR, MediaDir.PROFILES, this.image);
-      this.image = `${process.env.APP_URL}/${fullPath}`;
-    }
-  }
+  // @BeforeInsert()
+  // @BeforeUpdate()
+  // async MediaUrl() {
+  //   if (typeof this.image === 'string' && process.env.APP_URL) {
+  //     const fullPath = join(process.env.MEDIA_DIR, MediaDir.PROFILES, this.image);
+  //     this.image = `${process.env.APP_URL}/${fullPath}`;
+  //   }
+  // }
 }
