@@ -298,6 +298,7 @@ export class RequestsService {
         id: requestEntity.user.id,
         username: requestEntity.user.username,
         image: requestEntity.user.image,
+        status: requestEntity.user.status,
         address:
           lang === LanguagesEnum.ARABIC
             ? requestEntity.arAddress
@@ -313,6 +314,7 @@ export class RequestsService {
           ? {
               id: requestEntity.technician.id,
               username: requestEntity.technician?.username ?? null,
+              status: requestEntity.technician?.status ?? null,
               image: requestEntity.technician?.image ?? null,
               avgRating: requestEntity.technician.technicalProfile.avgRating,
               totalReviews: requestEntity.technician?.technicalProfile?.reviews?.length ?? 0,
@@ -341,7 +343,7 @@ export class RequestsService {
   }
 
   async removeServiceRequest(id: number, lang: LanguagesEnum): Promise<void> {
-    const req = await this.serviceRequestsRepository.findOne({where:{id}});
+    const req = await this.serviceRequestsRepository.findOne({where:{id}, relations: ['offers']});
     if(!req){
       throw new NotFoundException(
         lang == LanguagesEnum.ARABIC ? 'الطلب غير موجود' : 'Request not found'
@@ -349,6 +351,7 @@ export class RequestsService {
     }
 
     req.deleted = true;
+    req.offers.map((offer)=> offer.deleted = true)
     await this.serviceRequestsRepository.save(req);
   }
 
