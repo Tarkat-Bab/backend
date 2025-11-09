@@ -32,8 +32,8 @@ export class DashboardRequestsService {
         return this.requestOffersService.removeOffer(offerId, lang);
     }
     
-    async removeRequest(id:number){
-        return this.requestsService.removeServiceRequest(id);
+    async removeRequest(id:number, lang: LanguagesEnum){
+        return this.requestsService.removeServiceRequest(id, lang);
     }
 
 }

@@ -101,6 +101,6 @@ export class DashboardRequestsController {
         @Param('id') id: number,
         @Language() lang: LanguagesEnum,
     ) {
-        return this.requestsService.removeRequest(id);
+        return this.requestsService.removeRequest(id, lang);
     }
 }

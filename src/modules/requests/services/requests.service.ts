@@ -340,11 +340,16 @@ export class RequestsService {
     return requestData;
   }
 
-  async removeServiceRequest(id: number): Promise<void> {
-    const result = await this.serviceRequestsRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Service request with ID ${id} not found`);
+  async removeServiceRequest(id: number, lang: LanguagesEnum): Promise<void> {
+    const req = await this.serviceRequestsRepository.findOne({where:{id}});
+    if(!req){
+      throw new NotFoundException(
+        lang == LanguagesEnum.ARABIC ? 'الطلب غير موجود' : 'Request not found'
+      )
     }
+
+    req.deleted = true;
+    await this.serviceRequestsRepository.save(req);
   }
 
   async findServiceRequestsByUserId(userId: number, filterUser: PaginatorInput, lang?: LanguagesEnum) {
