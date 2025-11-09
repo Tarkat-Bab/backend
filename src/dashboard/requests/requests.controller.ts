@@ -89,4 +89,18 @@ export class DashboardRequestsController {
     ) {
         return this.requestsService.removeOffer(id, lang);
     }
+
+    @Delete('/request/:id')
+    @Permissions(AdminPermissions.REMOVE_REQUESTS)
+    @ApiHeader({
+        name:'accept-language',
+        description:'Language',
+        required:false
+    })  
+    async removeRequest(
+        @Param('id') id: number,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.requestsService.removeRequest(id);
+    }
 }
