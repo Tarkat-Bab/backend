@@ -89,7 +89,6 @@ export class NotificationsService {
     dto: Partial<sendNotificationDto | sendMessageDto>,
     receiverIds: number[],
   ) {
-    console.log(dto)
     const notification = this.notificationRepo.create(dto);
     const savedNotification = await this.notificationRepo.save(notification);
 
@@ -101,7 +100,6 @@ export class NotificationsService {
     );
 
     const savedUserNotification = await this.usersNotificationsRepo.save(userNotifications);
-    console.log('saved: ' ,savedUserNotification)
     return savedNotification;
   }
 
@@ -183,6 +181,7 @@ export class NotificationsService {
 
   /** Language selector helper */
   private localizeContent(content, lang: LanguagesEnum) {
+    console.log("Lang: ", lang)
     return {
       title: lang === LanguagesEnum.ARABIC ? content.arTitle : content.enTitle,
       body: lang === LanguagesEnum.ARABIC ? content.arBody : content.enBody,

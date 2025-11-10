@@ -17,6 +17,7 @@ import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
 import { RequestsMedia } from '../entities/request_media.entity';
 import { PaginatorInput } from 'src/common/paginator/types/paginate.input';
 import { RequestOffersService } from './requests-offers.service';
+import { NotificationsService } from 'src/modules/notifications/notifications.service';
 
 @Injectable()
 export class RequestsService {
@@ -30,6 +31,7 @@ export class RequestsService {
     private readonly locationService  : LocationService,
     private readonly paginatorService : PaginatorService,
     private readonly cloudflareService: CloudflareService,
+    private readonly notificationsService:NotificationsService,
   ) {}
 
   async save(request: ServiceRequestsEntity){
@@ -339,8 +341,8 @@ export class RequestsService {
   }
 
   async removeServiceRequest(id: number, lang: LanguagesEnum): Promise<void> {
-    const req = await this.serviceRequestsRepository.findOne({where:{id}, relations: ['offers']});
-    if(!req){
+    const req = await this.serviceRequestsRepository.findOne({where:{id}, relations: ['offers', 'user']});
+    if(!req || req.deleted){
       throw new NotFoundException(
         lang == LanguagesEnum.ARABIC ? 'الطلب غير موجود' : 'Request not found'
       )
@@ -348,6 +350,7 @@ export class RequestsService {
 
     req.deleted = true;
     req.offers.forEach((offer) => (offer.deleted = true));
+    await this.notificationsService.autoNotification(req.user.id, 'REQUEST_DELETED', {id}, lang)
     await this.serviceRequestsRepository.save(req);
   }
 
