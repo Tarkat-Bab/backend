@@ -40,17 +40,4 @@ export class TechnicalProfileEntity extends BaseEntity {
 
     @OneToMany(() => ServiceRequestsEntity, request => request.technician)
     requests: ServiceRequestsEntity[];
-
-    @BeforeInsert()
-    @BeforeUpdate()   
-    async MediaUrl() {
-        if (typeof this.workLicenseImage === 'string' && process.env.APP_URL) {
-            const fullPath = join(process.env.MEDIA_DIR, MediaDir.WORKLICENSE, this.workLicenseImage);
-            this.workLicenseImage = `${process.env.APP_URL}/${fullPath}`;
-        }
-        if (typeof this.identityImage === 'string' && process.env.APP_URL) {
-            const fullPath = join(process.env.MEDIA_DIR, MediaDir.IDENTITY, this.identityImage);
-            this.identityImage = `${process.env.APP_URL}/${fullPath}`;
-        }
-    }
 }

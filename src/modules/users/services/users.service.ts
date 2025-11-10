@@ -762,112 +762,75 @@ export class UsersService {
     return await this.usersRepo.save(user);
   }
 
-  async updateTechnical( registerDto: TechnicalRegisterDto,
-    lang: LanguagesEnum = LanguagesEnum.ENGLISH,
-    image?: Express.Multer.File,
-    workLicenseImage?: Express.Multer.File,
-    identityImage?: Express.Multer.File
-  ) {
-    // Verify the user exists and is a technical user
-    const { phone, location, ...rest } = registerDto;
-    const dataToUpdate: any = { ...rest };
+async updateTechnical(
+  registerDto: TechnicalRegisterDto,
+  lang: LanguagesEnum = LanguagesEnum.ENGLISH,
+  image?: Express.Multer.File,
+  workLicenseImage?: Express.Multer.File,
+  identityImage?: Express.Multer.File
+) {
+  const { phone, location, ...rest } = registerDto;
 
-    const user = await this.usersRepo.findOne({
-      where: { 
-        phone,
-        deleted: false, 
-        type: UsersTypes.TECHNICAL 
-      },
-      relations: ['technicalProfile']
-    });
+  const user = await this.usersRepo.findOne({
+    where: { phone, deleted: false, type: UsersTypes.TECHNICAL },
+    relations: ['technicalProfile', 'technicalProfile.services']
+  });
 
-    if (!user) {
-      throw new NotFoundException(
-        lang === LanguagesEnum.ENGLISH 
-          ? 'Technical user not found' 
-          : 'المستخدم الفني غير موجود'
-      );
-    }
-
-    if (location) {
-      let parsedLocation = location as any;
-      if (typeof location === 'string') {
-        try {
-        parsedLocation = JSON.parse(location);
-      } catch {
-        throw new BadRequestException('Invalid location format');
-      }
-      }
-      const { latitude, longitude, address } = parsedLocation;
-      
-      let saveLocation = null;
-      if(address){
-          saveLocation = await this.locationService.getLatLongFromText(address, lang);
-        }else{
-          saveLocation = await this.locationService.geolocationAddress(latitude, longitude);
-      }
-
-      dataToUpdate.latitude  = saveLocation.latitude;
-      dataToUpdate.longitude = saveLocation.longitude;
-      dataToUpdate.arAddress = saveLocation.ar_address;
-      dataToUpdate.enAddress = saveLocation.en_address;
-    }
-
-    // Process the profile image if provided
-    let imagePath: string | undefined;
-    let workLicensePath: string | undefined;
-    let identityPath: string | undefined;
-
-    if(image){
-      const savedImage = await this.fileService.saveFile(image, MediaDir.PROFILES);
-      imagePath = savedImage.path;
-    }
-
-    if (identityImage) {
-      const savedImage = await this.fileService.saveFile(identityImage, MediaDir.IDENTITY);
-      identityPath = savedImage.path;
-    }
-
-    if (workLicenseImage) {
-      const savedWorkLicense = await this.fileService.saveFile(workLicenseImage, MediaDir.WORKLICENSE);
-      workLicensePath = savedWorkLicense.path;
-    }
-
-    // Update basic user data
-    if (user.username) user.username = user.username;
-    if (user.phone) user.phone = user.phone;
-    if (imagePath) user.image = imagePath;
-
-    const nationality = await this.nationalityService.findOne(registerDto.nationalityId, lang);
-    user.technicalProfile.nationality = nationality;
-
-    const service = await this.serviceService.findOne(registerDto.serviceId, lang);
-    if (!user.technicalProfile.services) {
-      user.technicalProfile.services = [];
-    }
-    user.technicalProfile.services.push(service);
-
-    user.technicalProfile.workLicenseImage = workLicensePath;
-    user.technicalProfile.identityImage = identityPath;
-
-    // Update location if provided
-    if (registerDto.location) {
-      const { latitude, longitude } = registerDto.location;
-      if (latitude && longitude) {
-        user.latitude = latitude;
-        user.longitude = longitude;
-      }
-    }
-
-    const updatedUser = await this.usersRepo.save(user);
-
-    if (updatedUser.technicalProfile) {
-      updatedUser.technicalProfile.user = undefined;
-    }
-
-    const { password, ...result } = updatedUser;
-    return result;
+  if (!user) {
+    throw new NotFoundException(
+      lang === LanguagesEnum.ENGLISH ? 'Technical user not found' : 'المستخدم الفني غير موجود'
+    );
   }
+
+  Object.assign(user, rest);
+
+  if (image) {
+    // if (user.image)  await this.cloudflareService.deleteFile(user.image);
+      
+    const saved = await this.cloudflareService.uploadFile(image);
+    user.image = saved.url;
+  }
+
+  if (identityImage) {
+    const saved = await this.cloudflareService.uploadFile(identityImage);
+    user.technicalProfile.identityImage = saved.url;
+  }
+
+  if (workLicenseImage) {
+    const saved = await this.cloudflareService.uploadFile(workLicenseImage);
+    user.technicalProfile.workLicenseImage = saved.url;
+  }
+
+  if (location) {
+    let parsed = typeof location === 'string' ? JSON.parse(location) : location;
+    const { latitude, longitude, address } = parsed;
+    const geo =
+      address
+        ? await this.locationService.getLatLongFromText(address, lang)
+        : await this.locationService.geolocationAddress(latitude, longitude);
+
+    user.latitude = geo.latitude;
+    user.longitude = geo.longitude;
+    user.arAddress = geo.ar_address;
+    user.enAddress = geo.en_address;
+  }
+
+  const nationality = await this.nationalityService.findOne(registerDto.nationalityId, lang);
+  user.technicalProfile.nationality = nationality;
+
+  const service = await this.serviceService.findOne(registerDto.serviceId, lang);
+  if (!user.technicalProfile.services) user.technicalProfile.services = [];
+  if (!user.technicalProfile.services.some(s => s.id === service.id)) {
+    user.technicalProfile.services.push(service);
+  }
+
+  user.status = UserStatus.ACTIVE;
+  const updatedUser = await this.usersRepo.save(user);
+  if (updatedUser.technicalProfile) updatedUser.technicalProfile.user = undefined;
+
+  const { password, ...result } = updatedUser;
+  return result;
+}
 
   
   async saveTechnicalProfile(technician: TechnicalProfileEntity) {
