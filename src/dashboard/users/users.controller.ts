@@ -8,6 +8,7 @@ import { isPublic } from 'src/common/decorators/public.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { AdminPermissions } from 'src/common/permissions/admin.permissions';
 import { UserStatus } from 'src/common/enums/users.enum';
+import { sendMessageDto, sendNotificationDto } from 'src/modules/notifications/dtos/send-notification.dto';
 
 @ApiBearerAuth()
 @ApiTags('Dashboard')
@@ -49,8 +50,9 @@ export class DashboardUsersController {
     @Permissions(AdminPermissions.UPDATE_USER) 
     changeUserStatus(
         @Param('id') userId: number,
+        @Body() body: sendMessageDto,
     ) {
-        return this.usersService.changeUserStatus(userId, UserStatus.BLOCKED);
+        return this.usersService.changeUserStatus(userId, UserStatus.BLOCKED, body);
     }
 
     @Patch('activate/:id')
@@ -70,10 +72,11 @@ export class DashboardUsersController {
     @Permissions(AdminPermissions.UPDATE_USER) 
     async warnUser(
         @Param('id') userId: number,
+        @Body() body: sendMessageDto,
         @Language() lang: LanguagesEnum,
 
     ){
-        return this.usersService.warnUser(userId, lang);
+        return this.usersService.warnUser(userId, body, lang);
     }
 
     @Delete(':id')

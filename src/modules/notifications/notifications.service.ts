@@ -5,7 +5,7 @@ import { NotificationsEntity } from './entities/notification.entity';
 import { UsersNotifications } from './entities/usersNotifications.entity';
 import { UsersService } from '../users/services/users.service';
 import { admin } from './utilies/firebase.config';
-import { sendNotificationDto } from './dtos/send-notification.dto';
+import { sendMessageDto, sendNotificationDto } from './dtos/send-notification.dto';
 import { NotificationTemplates } from './utilies/notification-templates';
 import { ReceiverTypes } from './enums/receiverTypes.enum';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
@@ -60,23 +60,36 @@ export class NotificationsService {
     templateData?: Record<string, any>,
     lang: LanguagesEnum = LanguagesEnum.ENGLISH,
   ) {
-    const content = this.prepareNotificationContent(null, templateKey, templateData);
+    
+    const baseTemplate = NotificationTemplates[templateKey];
+    const content = {
+      arTitle: templateData?.arTitle ?? baseTemplate.arTitle,
+      enTitle: templateData?.enTitle ?? baseTemplate.enTitle,
+      arBody: templateData?.arBody ?? baseTemplate.arBody,
+      enBody: templateData?.enBody ?? baseTemplate.enBody,
+    };
+
+    // const content = this.prepareNotificationContent(null, templateKey, templateData);
     const savedNotification = await this.createNotification(content, [receiverId]);
     const localized = this.localizeContent(content, lang);
 
     console.log("Sending notifications...")
+
+    const extraData = templateData ? { ...templateData } : {};
+
     await this.sendFcm([receiverId], {
       ...localized,
-      data: templateData || {}
+      data: extraData,
     });
     return { success: true, savedNotification };
   }
 
   /** Create notification + user relations */
   private async createNotification(
-    dto: Partial<sendNotificationDto>,
+    dto: Partial<sendNotificationDto | sendMessageDto>,
     receiverIds: number[],
   ) {
+    console.log(dto)
     const notification = this.notificationRepo.create(dto);
     const savedNotification = await this.notificationRepo.save(notification);
 
@@ -87,7 +100,8 @@ export class NotificationsService {
       }),
     );
 
-    await this.usersNotificationsRepo.save(userNotifications);
+    const savedUserNotification = await this.usersNotificationsRepo.save(userNotifications);
+    console.log('saved: ' ,savedUserNotification)
     return savedNotification;
   }
 
@@ -144,7 +158,7 @@ export class NotificationsService {
 
   /** Template & custom content handler */
   private prepareNotificationContent(
-    dto?: sendNotificationDto | null,
+    dto?: sendNotificationDto | sendMessageDto | null,
     templateKey?: keyof typeof NotificationTemplates,
     templateData: Record<string, any> = {},
   ) {
@@ -157,10 +171,11 @@ export class NotificationsService {
         enBody: this.replaceTemplate(t.enBody, templateData),
       };
     }
+    const hasTitle = (dto as sendNotificationDto)?.arTitle !== undefined;
 
     return {
-      arTitle: dto?.arTitle ?? '',
-      enTitle: dto?.enTitle ?? '',
+      arTitle: hasTitle ? (dto as sendNotificationDto).arTitle ?? '' : '',
+      enTitle: hasTitle ? (dto as sendNotificationDto).enTitle ?? '' : '',
       arBody: dto?.arBody ?? '',
       enBody: dto?.enBody ?? '',
     };
@@ -189,7 +204,7 @@ export class NotificationsService {
     return users.map((u) => u.id);
   }
 
-  /** 📱 Send notification to FCM */
+  /** Send notification to FCM */
   private async sendFcm(
     userIds: number[],
     { title, body, data }: { title: string; body: string,  data: Record<string, any> },
@@ -215,7 +230,7 @@ export class NotificationsService {
     }
   }
 
-  /** 🪄 Replace template placeholders */
+  /** Replace template placeholders */
   private replaceTemplate(text: string, data: Record<string, any> = {}): string {
     return text.replace(/{{(.*?)}}/g, (_, key) => data[key.trim()] || '');
   }

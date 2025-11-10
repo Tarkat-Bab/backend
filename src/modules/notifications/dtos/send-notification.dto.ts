@@ -29,3 +29,15 @@ export class sendNotificationDto {
 	@IsEnum(ReceiverTypes)
 	receiversType?: ReceiverTypes;
 }
+
+export class sendMessageDto {
+	@ApiProperty({ description: 'Arabic body', required: false })
+	@IsOptional()
+	@IsString()
+	arBody?: string;
+
+	@ApiProperty({ description: 'English body', required: false })
+	@IsOptional()
+	@IsString()
+	enBody?: string;
+}
