@@ -9,9 +9,6 @@ export class RequestsMedia extends BaseEntity {
     @Column({ type: 'text' })
     media: string;
 
-    // @Column({ type: 'text', nullable: true })
-    // mediaId: string;
-
     @ManyToOne(() => ServiceRequestsEntity, request => request.media)
     @JoinColumn({ name: 'request_id' })
     request: ServiceRequestsEntity;

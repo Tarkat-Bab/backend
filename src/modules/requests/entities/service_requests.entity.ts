@@ -60,6 +60,8 @@ export class ServiceRequestsEntity extends BaseEntity {
     @JoinColumn({ name: 'technician_id' })
     technician: UserEntity;
 
-    @OneToMany(() => RequestOffersEntity, offer => offer.request)
+    @OneToMany(() => RequestOffersEntity, offer => offer.request, {
+        cascade: true
+    })
     offers: RequestOffersEntity[];
 }
