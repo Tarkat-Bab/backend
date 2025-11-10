@@ -20,6 +20,13 @@ export const NotificationTemplates = {
     enBody: 'Your request has been completed. We hope the experience met your expectations. Please confirm receipt of the service and don’t forget to rate it!',
   },
 
+  REQUEST_DELETED: {
+    arTitle: 'تم حذف الطلب',
+    enTitle: 'Request Deleted',
+    arBody: 'تم حذف طلبك من النظام. إذا كان لديك أي استفسار، يرجى التواصل مع الدعم.',
+    enBody: 'Your request has been deleted from the system. If you have any questions, please contact support.',
+  },
+
   REPORT_REPLIED: {
     arTitle: 'تم مراجعة البلاغ',
     enTitle: 'Report Reviewed',
