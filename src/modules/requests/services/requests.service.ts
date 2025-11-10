@@ -217,10 +217,11 @@ export class RequestsService {
       .where('request.id = :id', { id })
       .andWhere('request.deleted = false')
       .andWhere('user.deleted = false')
-      .andWhere('user.status = :status', { status: 'active' })
+      // .andWhere('user.status = :status', { status: 'active' })
       .getOne();
 
     if (!requestEntity) {
+      console.log(requestEntity)
       if (lang === LanguagesEnum.ARABIC) {
         throw new NotFoundException(`هذا الطلب غير موجود`);
       } else {
