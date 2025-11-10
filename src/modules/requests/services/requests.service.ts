@@ -11,13 +11,12 @@ import { FilesService } from 'src/common/files/files.services';
 import { LocationService } from 'src/modules/locations/location.service';
 import { FilterRequestDto } from '../dto/filter-request.dto';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
-import { MediaDir } from '../../../common/files/media-dir-.enum';
 import { ServicesService } from 'src/modules/services/services.service';
-import { join } from 'path';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
 import { RequestsMedia } from '../entities/request_media.entity';
 import { PaginatorInput } from 'src/common/paginator/types/paginate.input';
+import { RequestOffersService } from './requests-offers.service';
 
 @Injectable()
 export class RequestsService {
@@ -25,21 +24,18 @@ export class RequestsService {
     @InjectRepository(ServiceRequestsEntity)
     private serviceRequestsRepository: Repository<ServiceRequestsEntity>,
     @InjectRepository(RequestsMedia)
-    private mediaRepository: Repository<RequestsMedia>,
-    private readonly usersService: UsersService,
-    private readonly servicesService: ServicesService,
-    private readonly filesService: FilesService,
-    private readonly locationService: LocationService,
-    private readonly paginatorService: PaginatorService,
+    private readonly mediaRepository  : Repository<RequestsMedia>,
+    private readonly usersService     : UsersService,
+    private readonly servicesService  : ServicesService,
+    private readonly locationService  : LocationService,
+    private readonly paginatorService : PaginatorService,
     private readonly cloudflareService: CloudflareService,
   ) {}
 
-  async save(request){
-    console.log('Saving request:', request);
+  async save(request: ServiceRequestsEntity){
     return await this.serviceRequestsRepository.save(request);
   }
 
-  //User
   async createServiceRequest(createServiceRequestDto: CreateServiceRequestDto, userId: number, media: Express.Multer.File[], lang: LanguagesEnum){
     const user = await this.usersService.findById(userId);
     const service =  await this.servicesService.findOne(createServiceRequestDto.serviceId, lang);
@@ -351,7 +347,7 @@ export class RequestsService {
     }
 
     req.deleted = true;
-    req.offers.map((offer)=> offer.deleted = true)
+    req.offers.forEach((offer) => (offer.deleted = true));
     await this.serviceRequestsRepository.save(req);
   }
 

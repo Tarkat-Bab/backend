@@ -25,6 +25,9 @@ export class RequestOffersService {
     private readonly notificationService: NotificationsService
   ) {}
 
+  async save(offer: RequestOffersEntity){
+    return await this.requestOffersRepository.save(offer);
+  }
   async createRequestOffer(technicianId: number, requestId: number, createRequestOfferDto: CreateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
     const request = await this.requestService.findRequestById(requestId, lang);
     if(!request){
