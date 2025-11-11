@@ -1,5 +1,5 @@
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
-import { Column, Entity, ManyToOne } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 import { RegionEntity } from "./regions.entity";
 
 @Entity('cities')
@@ -20,5 +20,6 @@ export class CitiesEntity extends BaseEntity{
     @ManyToOne(() => RegionEntity, (region) => region.cities, {
         onDelete: 'CASCADE',
     })
+    @JoinColumn({ name: 'region_id' })
     region: RegionEntity;
 }
