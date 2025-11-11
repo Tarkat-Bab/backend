@@ -1,13 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RegionEntity } from './entities/Regions.entity';
-import { CitiesEntity } from './entities/cities.entity';
+import { RegionEntity } from '../regions/entities/Regions.entity';
+import { CitiesEntity } from '../regions/entities/cities.entity';
 import { LocationService } from 'src/modules/locations/location.service';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
-import { CreateRegionDto, FilterRegionDto } from './dtos/Regions.dto';
+import { CreateRegionDto, FilterRegionDto } from '../regions/dtos/Regions.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { CreateCityDto } from './dtos/cities.dto';
+import { CreateCityDto } from '../regions/dtos/cities.dto';
 
 @Injectable()
 export class RegionsService {
@@ -22,12 +22,24 @@ export class RegionsService {
   ) {}
 
   async createRegion(data: CreateRegionDto, lang: LanguagesEnum): Promise<RegionEntity> {
+    const checkRegion = await this.regionRepo.findOne({where:[
+      {arName: data.name},
+      {enName: data.name},
+    ]});
+
+    if(checkRegion){
+      throw new BadRequestException(
+        lang == LanguagesEnum.ARABIC ? `منطقة ${data.name} موجودة بالفعل` :  `${data.name} already exists.`
+      )
+    }
+
     let saveLocation = null;
     if(data.name){
       saveLocation = await this.locationService.getLatLongFromText(data.name, lang);
-    }else{
-      saveLocation = await this.locationService.geolocationAddress(data.latitude, data.longitude);
     }
+    // else{
+    //   saveLocation = await this.locationService.geolocationAddress(data.latitude, data.longitude);
+    // }
     const region = this.regionRepo.create({
       arName   : saveLocation.ar_address,
       enName   : saveLocation.en_address,
@@ -60,9 +72,23 @@ export class RegionsService {
     const limit = filterRegionDto.limit || 20;
     const skip = (page - 1) * limit;
 
+    const where: any[] = [];
+
+    if (filterRegionDto.search) {
+      where.push(
+        { arName: filterRegionDto.search },
+        { enName: filterRegionDto.search },
+      );
+    }
+
     const [result, count] = await this.regionRepo.findAndCount({
+      where: where.length ? where : {}, 
       relations: ['cities'],
       order: { createdAt: 'DESC' },
+      select:{
+          id:true, arName:true, enName:true, latitude:true, longitude:true, createdAt:true,
+          cities:{id:true, arName:true, enName:true, latitude:true, longitude:true,}
+      },
       skip,
       take: limit,
     });
@@ -70,10 +96,15 @@ export class RegionsService {
     return this.paginatorService.makePaginate(result, count, limit, page);
   }
 
+
   async findRegionById(id: number, lang: LanguagesEnum): Promise<RegionEntity> {
       const region = await this.regionRepo.findOne({
-        where: { id },
+        where: { id, deleted: false },
         relations: ['cities'],
+        select:{
+          id:true, arName:true, enName:true, latitude:true, longitude:true,
+          cities:{id:true, arName:true, enName:true, latitude:true, longitude:true,}
+        }
       });
           if (!region) {
         throw new NotFoundException(
@@ -101,6 +132,7 @@ export class RegionsService {
       enName   : saveLocation.en_address,
       latitude : saveLocation.latitude,
       longitude: saveLocation.longitude,
+      region
     });
     return this.cityRepo.save(city);
   }

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { DashboardRegionsController } from './Regions.controller';
-import { DashboardRegionsService } from './Regions.service';
-import { RegionsModule } from 'src/modules/Regions/Regions.module';
+import { DashboardRegionsController } from './regions.controller';
+import { DashboardRegionsService } from './regions.service';
+import { RegionsModule } from 'src/modules/regions/regions.module';
 
 @Module({
-    imports:[ RegionsModule ],
+    imports:[ RegionsModule],
     controllers: [DashboardRegionsController],
     providers: [DashboardRegionsService]
 })

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { RegionsService } from 'src/modules/Regions/Regions.service';
-import { CreateRegionDto, FilterRegionDto } from 'src/modules/Regions/dtos/Regions.dto';
-import { CreateCityDto } from 'src/modules/Regions/dtos/cities.dto';
+import { RegionsService } from 'src/modules/regions/regions.service';
+import { CreateRegionDto, FilterRegionDto } from 'src/modules/regions/dtos/regions.dto';
+import { CreateCityDto } from 'src/modules/regions/dtos/cities.dto';
 
 @Injectable()
 export class DashboardRegionsService {

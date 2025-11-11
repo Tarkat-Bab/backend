@@ -1,11 +1,12 @@
-import { ApiHeader, ApiTags } from '@nestjs/swagger';
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, ParseIntPipe } from '@nestjs/common';
-import { CreateRegionDto, FilterRegionDto } from 'src/modules/Regions/dtos/Regions.dto';
-import { CreateCityDto } from 'src/modules/Regions/dtos/cities.dto';
+import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Post, Delete, Param, Body, Query, ParseIntPipe, Patch } from '@nestjs/common';
+import { CreateRegionDto, FilterRegionDto } from 'src/modules/regions/dtos/Regions.dto';
+import { CreateCityDto } from 'src/modules/regions/dtos/cities.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { DashboardRegionsService } from 'src/dashboard/regions/Regions.service';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
+import { DashboardRegionsService } from './regions.service';
 
+@ApiBearerAuth()
 @ApiTags('Dashboard - Regions')
 @ApiHeader({
   name: 'Accept-Language',
@@ -42,7 +43,7 @@ export class DashboardRegionsController {
     return this.dashboardRegionsService.findRegionById(id, lang);
   }
 
-  @Put(':id')
+  @Patch(':id')
   async updateRegion(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: CreateRegionDto,

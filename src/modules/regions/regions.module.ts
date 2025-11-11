@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { RegionEntity } from './entities/Regions.entity';
-import { CitiesEntity } from './entities/cities.entity';
-import { RegionsController } from './Regions.controller';
+import { RegionEntity } from '../regions/entities/Regions.entity';
+import { CitiesEntity } from '../regions/entities/cities.entity';
+import { RegionsController } from './regions.controller';
 import { LocationService } from '../locations/location.service';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
-import { RegionsService } from './Regions.service';
+import { RegionsService } from './regions.service';
 
 @Module({
     imports:[

@@ -1,6 +1,6 @@
 import { BaseEntity } from "src/common/baseEntity/baseEntity";
 import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
-import { RegionEntity } from "./regions.entity";
+import { RegionEntity } from "./Regions.entity";
 
 @Entity('cities')
 export class CitiesEntity extends BaseEntity{

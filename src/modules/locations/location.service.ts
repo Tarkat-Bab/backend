@@ -47,16 +47,27 @@ export class LocationService {
     ar_address: string;
     en_address: string;
   }> {
-    const requestUrl = `${this.baseUrl}?address=${encodeURIComponent(address)}&key=${this.apiKey}&language=${lang}`;
+    const requestUrlAr = `${this.baseUrl}?address=${encodeURIComponent(address)}&key=${this.apiKey}&language=ar`;
+    const requestUrlEn = `${this.baseUrl}?address=${encodeURIComponent(address)}&key=${this.apiKey}&language=en`;
 
     try {
-      const { data } = await axios.get(requestUrl);
-      const result = data.results?.[0];
-      if (!result) throw new Error('No geocoding results found.');
+      const arResult  = await axios.get(requestUrlAr);
+      const enResult  = await axios.get(requestUrlEn);
 
-      const { lat: latitude, lng: longitude } = result.geometry.location;
+      const arFinal = arResult.data.results?.[0];
+      const enFinal = enResult.data.results?.[0];
+      if (!arFinal || !enFinal) throw new Error('No geocoding results found.');
 
-      return await this.geolocationAddress(latitude, longitude);
+      const { lat: latitude, lng: longitude } = enFinal.geometry.location;
+      const ar_address = arFinal.address_components[0].long_name;
+      const en_address = enFinal.address_components[0].long_name;
+      
+      return {
+        latitude,
+        longitude,
+        ar_address,
+        en_address
+      }
     } catch (error) {
       this.handleAxiosError(error, 'Error fetching coordinates from text');
     }
