@@ -2,13 +2,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateCityDto {
-  @ApiProperty({ example: 'الدرعية', description: 'اسم المدينة بالعربية' })
+  @ApiProperty({ example: 'الدرعية', description: 'اسم المدينة ' })
   @IsString()
-  arName: string;
-
-  @ApiProperty({ example: 'Diriyah', description: 'اسم المدينة بالإنجليزية' })
-  @IsString()
-  enName: string;
+  name: string;
 
   @ApiPropertyOptional({ example: 24.744, description: 'خط العرض (Latitude)' })
   @IsOptional()
@@ -29,12 +25,7 @@ export class UpdateCityDto {
   @ApiPropertyOptional({ example: 'الدرعية', description: 'اسم المدينة بالعربية' })
   @IsOptional()
   @IsString()
-  arName?: string;
-
-  @ApiPropertyOptional({ example: 'Diriyah', description: 'اسم المدينة بالإنجليزية' })
-  @IsOptional()
-  @IsString()
-  enName?: string;
+  name?: string;
 
   @ApiPropertyOptional({ example: 24.744, description: 'خط العرض (Latitude)' })
   @IsOptional()

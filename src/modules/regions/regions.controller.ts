@@ -1,10 +1,10 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
-import { RegionsService } from './ragions.service';
-import { FilterRagionDto } from './dtos/ragions.dto';
+import { RegionsService } from './Regions.service';
+import { FilterRegionDto } from './dtos/Regions.dto';
 
-@Controller('ragions')
-export class RagionsController {
+@Controller('Regions')
+export class RegionsController {
     constructor(
         private readonly regionsService: RegionsService
     ) {}
@@ -12,7 +12,7 @@ export class RagionsController {
     @Get()
     @ApiOperation({ summary: 'Get all regions (with cities)' })
     findAll(
-        @Query() filter: FilterRagionDto
+        @Query() filter: FilterRegionDto
     ) {
       return this.regionsService.findAllRegions(filter);
     }
