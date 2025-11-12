@@ -1,6 +1,7 @@
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Controller, Get, Post, Delete, Param, Body, Query, ParseIntPipe, Patch } from '@nestjs/common';
-import { CreateRegionDto, FilterRegionDto } from 'src/modules/regions/dtos/Regions.dto';
+import { CreateRegionDto, FilterRegionDto } from 'src/modules/regions/dtos/regions.dto';
+
 import { CreateCityDto } from 'src/modules/regions/dtos/cities.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { Language } from 'src/common/decorators/languages-headers.decorator';

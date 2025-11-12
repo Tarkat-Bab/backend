@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { RegionsService } from './regions.service';
-import { FilterRegionDto } from '../regions/dtos/Regions.dto';
+import { FilterRegionDto } from '../regions/dtos/regions.dto';
 
 @Controller('Regions')
 export class RegionsController {

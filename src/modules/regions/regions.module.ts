@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { RegionEntity } from '../regions/entities/Regions.entity';
+import { RegionEntity } from '../regions/entities/regions.entity';;
 import { CitiesEntity } from '../regions/entities/cities.entity';
 import { RegionsController } from './regions.controller';
 import { LocationService } from '../locations/location.service';

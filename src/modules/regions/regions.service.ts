@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RegionEntity } from '../regions/entities/Regions.entity';
+import { RegionEntity } from '../regions/entities/regions.entity';;
 import { CitiesEntity } from '../regions/entities/cities.entity';
 import { LocationService } from 'src/modules/locations/location.service';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
-import { CreateRegionDto, FilterRegionDto } from '../regions/dtos/Regions.dto';
+import { CreateRegionDto, FilterRegionDto } from '../regions/dtos/regions.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { CreateCityDto } from '../regions/dtos/cities.dto';
 
