@@ -8,13 +8,15 @@ import { DashboardRequestsModule } from './requests/requests.module';
 import { DashboardReportsModule } from './reports/reports.module';
 import { SettingsModule } from './settings/settings.module';
 import { DashboardPaymentsModule } from './payments/payments.module';
-import { DashboardNotificationModule } from './notifications/norifications.module';
+import { DashboardRegionsModule } from './regions/regions.module';
+import { DashboardNotificationModule } from './notifications/notifications.module';
 
 
 @Module({
   imports: [
     DashboardAuthModule, AuthModule, DashboardUsersModule, DashboardRequestsModule, 
-    DashboardReportsModule, SettingsModule, DashboardPaymentsModule, DashboardNotificationModule
+    DashboardReportsModule, SettingsModule, DashboardPaymentsModule, DashboardNotificationModule,
+    DashboardRegionsModule
   ],
   controllers: [DashboardController],
   providers: [DashboardService],

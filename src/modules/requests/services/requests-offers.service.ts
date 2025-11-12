@@ -11,7 +11,6 @@ import { RequestsService } from './requests.service';
 import { LocationService } from 'src/modules/locations/location.service';
 import { UsersTypes } from 'src/common/enums/users.enum';
 import { NotificationsService } from 'src/modules/notifications/notifications.service';
-import { NotificationTemplates } from 'src/modules/notifications/utilies/notification-templates';
 
 @Injectable()
 export class RequestOffersService {

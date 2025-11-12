@@ -30,6 +30,7 @@ import { DashboardModule }    from './dashboard/dashboard.module';
 import { NationaltiesModule } from './modules/nationalties/nationalties.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { RegionsModule } from './modules/regions/regions.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { PaymentModule } from './modules/payment/payment.module';
     NationaltiesModule,
     NotificationsModule,
     PaymentModule,
+    RegionsModule,
   ],
   controllers: [AppController],
   providers: [
