@@ -43,4 +43,15 @@ export class DashboardUsersService {
         }
         await this.notificationsService.autoNotification(id, "WARNING_USER", body )
     }
+
+    async listTechniciansReq(filter: FilterUsersDto){
+        return this.usersService.listTechniciansReq(filter);
+    }
+
+    async approveTech(id: number, approved: boolean ,lang: LanguagesEnum){
+        if(approved) await this.notificationsService.autoNotification(id, "APPROVED_USER" );
+        else await this.notificationsService.autoNotification(id, "APPROVED_USER" );
+        
+        return this.usersService.approveTech(id,approved, lang);
+    }
 }

@@ -46,5 +46,20 @@ export const NotificationTemplates = {
     enTitle: 'Account Blocked',
     arBody: 'تم حظر حسابك بسبب تكرار المخالفات أو انتهاك سياسات المنصة. يُرجى التواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.',
     enBody: 'Your account has been blocked due to repeated violations or policy breaches. Please contact support if you believe this is a mistake.',
+  },
+
+  APPROVED_USER: {
+    arTitle: 'تمت الموافقة على الحساب',
+    enTitle: 'Account Approved',
+    arBody: 'تمت الموافقة على حسابك ويمكنك الآن استخدام جميع خدمات المنصة.',
+    enBody: 'Your account has been approved and you can now use all platform services.',
+  },
+
+  UNAPPROVED_USER: {
+    arTitle: 'الحساب غير مفعل بعد',
+    enTitle: 'Account Not Approved Yet',
+    arBody: 'حسابك لم يتم الموافقة عليه بعد من قبل الإدارة، لا يمكنك استخدام بعض خدمات المنصة.',
+    enBody: 'Your account has not been approved by the admin yet. You cannot use some platform services.',
   }
+
 };

@@ -5,7 +5,6 @@ import { UserEntity } from '../entities/users.entity';
 import { TechnicalProfileEntity } from '../entities/technical_profile.entity';
 import { In, Repository } from 'typeorm';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
-import { FilesService } from 'src/common/files/files.services';
 import { TechnicalRegisterDto, UserRegisterDto } from '../../auth/dtos/register.dto';
 import { AdminLoginDto, LoginDto } from '../../auth/dtos/login.dto';
 import { compare, genSalt, hash } from 'bcrypt';
@@ -13,14 +12,12 @@ import { UpdateProfileDto } from '../dtos/UpdateProfileDto';
 import { ResetPasswordDto } from 'src/modules/auth/dtos/reset-password.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { LocationService } from 'src/modules/locations/location.service';
-import { MediaDir } from 'src/common/files/media-dir-.enum';
 import { NationaltiesService } from 'src/modules/nationalties/nationalties.service';
 import { ServicesService } from 'src/modules/services/services.service';
 import { FilterUsersDto } from '../dtos/filter-user-dto';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UserFcmTokenEntity } from '../entities/user-fcm-token.entity';
 import { RequestStatus } from 'src/modules/requests/enums/requestStatus.enum';
-import { NotificationsService } from 'src/modules/notifications/notifications.service';
 
 @Injectable()
 export class UsersService {
@@ -35,7 +32,6 @@ export class UsersService {
     private readonly userFcmTokenRepo: Repository<UserFcmTokenEntity>,
 
     private readonly paginatorService: PaginatorService,
-    private readonly fileService: FilesService,
     private readonly cloudflareService: CloudflareService,
     private readonly locationService: LocationService,
     private readonly nationalityService: NationaltiesService,
@@ -51,7 +47,7 @@ export class UsersService {
   }
 
   async createUser(loginDto: LoginDto, lang: LanguagesEnum) {
-    console.log(`login dto; `, loginDto)
+    // console.log(`login dto; `, loginDto)
     await this.checkUserExist({ email: null, phone: loginDto.phone, type: loginDto.type }, lang);
     
     // Prepare user data
@@ -409,6 +405,7 @@ export class UsersService {
           `${addressColumn} AS address`,
           'tech.id AS techId',
           'tech.avgRating AS avgRating',
+          'tech.approved AS approved',
         ]);
 
       existUser = await query.getRawOne();
@@ -436,6 +433,7 @@ export class UsersService {
       technicalProfile: isTechnical ? { id: rawTechId } : undefined,
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
       completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
+      approved: isTechnical ? { approved: existUser.approved } : undefined,
     } as unknown as UserEntity;
   }
 
@@ -762,75 +760,75 @@ export class UsersService {
     return await this.usersRepo.save(user);
   }
 
-async updateTechnical(
-  registerDto: TechnicalRegisterDto,
-  lang: LanguagesEnum = LanguagesEnum.ENGLISH,
-  image?: Express.Multer.File,
-  workLicenseImage?: Express.Multer.File,
-  identityImage?: Express.Multer.File
-) {
-  const { phone, location, ...rest } = registerDto;
+  async updateTechnical(
+    registerDto: TechnicalRegisterDto,
+    lang: LanguagesEnum = LanguagesEnum.ENGLISH,
+    image?: Express.Multer.File,
+    workLicenseImage?: Express.Multer.File,
+    identityImage?: Express.Multer.File
+  ) {
+    const { phone, location, ...rest } = registerDto;
 
-  const user = await this.usersRepo.findOne({
-    where: { phone, deleted: false, type: UsersTypes.TECHNICAL },
-    relations: ['technicalProfile', 'technicalProfile.services']
-  });
+    const user = await this.usersRepo.findOne({
+      where: { phone, deleted: false, type: UsersTypes.TECHNICAL },
+      relations: ['technicalProfile', 'technicalProfile.services']
+    });
 
-  if (!user) {
-    throw new NotFoundException(
-      lang === LanguagesEnum.ENGLISH ? 'Technical user not found' : 'المستخدم الفني غير موجود'
-    );
+    if (!user) {
+      throw new NotFoundException(
+        lang === LanguagesEnum.ENGLISH ? 'Technical user not found' : 'المستخدم الفني غير موجود'
+      );
+    }
+
+    Object.assign(user, rest);
+
+    if (image) {
+      // if (user.image)  await this.cloudflareService.deleteFile(user.image);
+
+      const saved = await this.cloudflareService.uploadFile(image);
+      user.image = saved.url;
+    }
+
+    if (identityImage) {
+      const saved = await this.cloudflareService.uploadFile(identityImage);
+      user.technicalProfile.identityImage = saved.url;
+    }
+
+    if (workLicenseImage) {
+      const saved = await this.cloudflareService.uploadFile(workLicenseImage);
+      user.technicalProfile.workLicenseImage = saved.url;
+    }
+
+    if (location) {
+      let parsed = typeof location === 'string' ? JSON.parse(location) : location;
+      const { latitude, longitude, address } = parsed;
+      const geo =
+        address
+          ? await this.locationService.getLatLongFromText(address, lang)
+          : await this.locationService.geolocationAddress(latitude, longitude);
+
+      user.latitude = geo.latitude;
+      user.longitude = geo.longitude;
+      user.arAddress = geo.ar_address;
+      user.enAddress = geo.en_address;
+    }
+
+    const nationality = await this.nationalityService.findOne(registerDto.nationalityId, lang);
+    user.technicalProfile.nationality = nationality;
+
+    const service = await this.serviceService.findOne(registerDto.serviceId, lang);
+    if (!user.technicalProfile.services) user.technicalProfile.services = [];
+    if (!user.technicalProfile.services.some(s => s.id === service.id)) {
+      user.technicalProfile.services.push(service);
+    }
+
+    user.status = UserStatus.ACTIVE;
+    const updatedUser = await this.usersRepo.save(user);
+    if (updatedUser.technicalProfile) updatedUser.technicalProfile.user = undefined;
+
+    const { password, ...result } = updatedUser;
+    return result;
   }
-
-  Object.assign(user, rest);
-
-  if (image) {
-    // if (user.image)  await this.cloudflareService.deleteFile(user.image);
-      
-    const saved = await this.cloudflareService.uploadFile(image);
-    user.image = saved.url;
-  }
-
-  if (identityImage) {
-    const saved = await this.cloudflareService.uploadFile(identityImage);
-    user.technicalProfile.identityImage = saved.url;
-  }
-
-  if (workLicenseImage) {
-    const saved = await this.cloudflareService.uploadFile(workLicenseImage);
-    user.technicalProfile.workLicenseImage = saved.url;
-  }
-
-  if (location) {
-    let parsed = typeof location === 'string' ? JSON.parse(location) : location;
-    const { latitude, longitude, address } = parsed;
-    const geo =
-      address
-        ? await this.locationService.getLatLongFromText(address, lang)
-        : await this.locationService.geolocationAddress(latitude, longitude);
-
-    user.latitude = geo.latitude;
-    user.longitude = geo.longitude;
-    user.arAddress = geo.ar_address;
-    user.enAddress = geo.en_address;
-  }
-
-  const nationality = await this.nationalityService.findOne(registerDto.nationalityId, lang);
-  user.technicalProfile.nationality = nationality;
-
-  const service = await this.serviceService.findOne(registerDto.serviceId, lang);
-  if (!user.technicalProfile.services) user.technicalProfile.services = [];
-  if (!user.technicalProfile.services.some(s => s.id === service.id)) {
-    user.technicalProfile.services.push(service);
-  }
-
-  user.status = UserStatus.ACTIVE;
-  const updatedUser = await this.usersRepo.save(user);
-  if (updatedUser.technicalProfile) updatedUser.technicalProfile.user = undefined;
-
-  const { password, ...result } = updatedUser;
-  return result;
-}
 
   
   async saveTechnicalProfile(technician: TechnicalProfileEntity) {
@@ -870,7 +868,7 @@ async updateTechnical(
     return await query.getMany();
   }
 
-   async findAllIds( userType: UsersTypes) {
+  async findAllIds( userType: UsersTypes) {
     const whereClause = userType ? { type: userType } : {}
     return this.usersRepo.find({
       where: whereClause,
@@ -878,4 +876,75 @@ async updateTechnical(
     });
 }
 
+    async listTechniciansReq(filter: FilterUsersDto) {
+      const { page, limit, username, createdAt, updatedAt, sortOrder } = filter;
+      const take = limit ?? 20;
+      const skip = ((page ?? 1) - 1) * take;
+    
+      const query = this.usersRepo
+        .createQueryBuilder('u')
+        .leftJoin('u.technicalProfile', 'tech')
+        .where('u.deleted = :deleted', { deleted: false })
+        .select([
+          'u.id AS id',
+          'u.username AS username',
+          'u.image AS image',
+          'u.createdAt AS createdAt',
+          'u.updatedAt AS updatedAt',
+        ]);
+      
+      // Filter by username
+      if (username) {
+        query.andWhere('u.username ILIKE :username', {
+          username: `%${username}%`,
+        });
+      }
+    
+      // Filter by createdAt
+      if (createdAt) {
+        query.andWhere('DATE(u.createdAt) = :createdAt', { createdAt });
+      }
+    
+      // Filter by updatedAt
+      if (updatedAt) {
+        query.andWhere('DATE(u.updatedAt) = :updatedAt', { updatedAt });
+      }
+    
+      // Pagination
+      query.take(take).skip(skip);
+    
+      // Order by createdAt or updatedAt based on sortOrder
+      query.orderBy('u.createdAt', sortOrder ?? 'DESC');
+    
+      const [rows, total] = await Promise.all([
+        query.getRawMany(),
+        query.getCount(),
+      ]);
+    
+      return this.paginatorService.makePaginate(rows, total, take, page);
+    }
+
+    async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
+      const user = await this.usersRepo.findOne({
+        where: {id, deleted: false},
+        relations: {technicalProfile: true}
+      });
+
+      if(!user){
+        throw new NotFoundException(
+          lang == LanguagesEnum.ARABIC ? 'المستخدم غير موجود.' : 'User not found.'
+        )
+      }
+
+      if (!user.technicalProfile) {
+        throw new NotFoundException(
+          lang === LanguagesEnum.ARABIC ? 'الملف الفني غير موجود.' : 'Technical profile not found.'
+        );
+      }
+
+      user.technicalProfile.approved =  approved;
+      return await this.usersRepo.save(user);
+    }
+
+    
 }

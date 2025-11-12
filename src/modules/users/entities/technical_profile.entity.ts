@@ -31,6 +31,9 @@ export class TechnicalProfileEntity extends BaseEntity {
     @Column({ type: 'float', default: 0 })
     avgRating: number;
 
+    @Column({type: 'boolean', default:null, nullable: true})
+    approved: boolean;
+
     @OneToMany(() => ServiceEntity, service => service.technicalProfile)
     services: ServiceEntity[];
 

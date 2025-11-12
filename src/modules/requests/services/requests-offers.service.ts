@@ -29,13 +29,15 @@ export class RequestOffersService {
   }
   async createRequestOffer(technicianId: number, requestId: number, createRequestOfferDto: CreateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
     const request = await this.requestService.findRequestById(requestId, lang);
-    if(!request){
-      if(lang === LanguagesEnum.ARABIC){
-        throw new NotFoundException(`الطلب غير موجود`);
-      }else{
-        throw new NotFoundException(`Request not found`);
-      }
-    }
+    const user = await this.usersService.findById(technicianId, lang);
+
+    // if(!user.approved){
+    //   throw new UnauthorizedException(
+    //       lang === LanguagesEnum.ARABIC 
+    //           ? 'لا يمكنك تقديم عرض قبل موافقة الادمن على حسابك' 
+    //         : 'You cannot submit an offer before admin approves your account'
+    //     );
+    // }
 
     if(request.status !== RequestStatus.PENDING){
       if(lang === LanguagesEnum.ARABIC){
@@ -75,7 +77,6 @@ export class RequestOffersService {
       dataToUpdate.enAddress = saveLocation.en_address;
     }
     
-    const user = await this.usersService.findById(technicianId, lang);
     if(user.type !== UsersTypes.TECHNICAL){
       if(lang === LanguagesEnum.ARABIC){
         throw new UnauthorizedException('المستخدم ليس فني');
