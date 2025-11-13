@@ -144,8 +144,8 @@ export class ReportsService {
     async findReportsByUser(userId: number, userType: UsersTypes, lang: LanguagesEnum) {
         return await this.reportsRepo.find({
             where: [
-                { deleted: false, reporter: { id: userId, deleted: false } },
-                { deleted: false, reported: { id: userId, deleted: false } },
+                { deleted: false, reporter: { id: userId, deleted: false }, request:{ deleted: false } },
+                { deleted: false, reported: { id: userId, deleted: false }, request:{ deleted: false } },
             ],
             order: { createdAt: 'DESC' },
             relations: {request: true},
@@ -174,6 +174,9 @@ export class ReportsService {
         .leftJoinAndSelect('report.media', 'media')
         .where('report.deleted = :deleted', { deleted: false })
         .andWhere('report.resolved = :resolved', { resolved: false })
+        .andWhere('request.deleted = false')
+        .andWhere('reported.deleted = false')
+        .andWhere('reporter.deleted = false')
         .orderBy('report.createdAt', 'DESC')
         .skip((page - 1) * limit)
         .take(limit)
@@ -240,9 +243,6 @@ export class ReportsService {
       return this.paginatorService.makePaginate(data, total, limit, page);
     }
 
-
-
-
     async createReply(reportId: number, createReplyDto: CreateReplyDto, lang: LanguagesEnum) {
         const report = await this.reportsRepo.findOne({ where: { id: reportId } });
         if (!report) {
@@ -265,7 +265,7 @@ export class ReportsService {
     }
 
     async findRepliesByReport(reportId: number, lang: LanguagesEnum) {
-        const report = await this.reportsRepo.findOne({ where: { id: reportId } });
+        const report = await this.reportsRepo.findOne({ where: { id: reportId, request: { deleted : false}, reported:{deleted:false}, reporter:{ deleted:false} }, });
         if (!report) {
             throw new NotFoundException(
                 lang === LanguagesEnum.ARABIC
