@@ -905,6 +905,7 @@ export class UsersService {
         'services.id AS sericeId',
         'services.arName AS sericeArName',
         'services.enName AS sericeEnName',
+        'services.icone AS sericeIcon',
       ]);
     
     if (username) {
