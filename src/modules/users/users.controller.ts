@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './services/users.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
