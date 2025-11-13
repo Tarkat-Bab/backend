@@ -357,6 +357,9 @@ export class UsersService {
     const addressColumn =
       lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
 
+    const addressServColumn =
+      lang === LanguagesEnum.ARABIC ? 'services.arName' : 'services.enName';
+
     let query = this.usersRepo
       .createQueryBuilder('u')
       .leftJoin('u.serviceRequests', 'serviceRequests')
@@ -392,6 +395,7 @@ export class UsersService {
       query = this.usersRepo
         .createQueryBuilder('u')
         .leftJoin('u.technicalProfile', 'tech')
+        .leftJoin('tech.services', 'services')
         .where('u.deleted = :deleted', { deleted: false })
         .andWhere('u.id = :id', { id })
         .select([
@@ -406,17 +410,17 @@ export class UsersService {
           'tech.id AS techId',
           'tech.avgRating AS avgRating',
           'tech.approved AS approved',
+          'services.id AS serviceId',
+          'services.icone AS serviceIcone',
+          `${addressServColumn} AS serviceName`
         ]);
 
       existUser = await query.getRawOne();
+      // console.log(existUser)
     }
-
     const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
     const isUser = existUser?.type === UsersTypes.USER;
 
-    // Raw query returns flattened keys (lowercased), e.g. techId -> techid, avgRating -> avgrating.
-    // Avoid accessing nested objects on the raw result (existUser.technicalProfile is undefined).
-    const rawTechId = isTechnical ? Number(existUser.techid ?? existUser.techId ?? 0) : undefined;
     return {
       id: existUser.id,
       username: existUser.username,
@@ -428,11 +432,11 @@ export class UsersService {
       totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
       reports: Number(existUser.reportssubmitted ?? 0),
       type: existUser.type,
-      techId: rawTechId,
-      technicalProfile: isTechnical ? { id: rawTechId } : undefined,
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
       completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
-      approved: isTechnical ? { approved: existUser.approved } : undefined,
+      approved: isTechnical ? existUser.approved  : undefined,
+      serviceName: isTechnical? existUser.servicename: undefined,
+      serviceIcon: isTechnical? existUser.serviceicone: undefined
     } as unknown as UserEntity;
   }
 
@@ -659,6 +663,7 @@ export class UsersService {
       delete userdata.enAddress;
 
      if(user.type === UsersTypes.TECHNICAL){
+        const isApproved = user.technicalProfile.approved;
         return {
           id: userdata.id,
           username: userdata.username,
@@ -666,6 +671,11 @@ export class UsersService {
           description: userdata.technicalProfile?.description,
           image: userdata.image,
           address: userdata.address,
+          approved: userdata.technicalProfile.approved,
+          workLicenseImage: isApproved? userdata.technicalProfile.workLicenseImage : undefined,
+          identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
+          nationality: isApproved? userdata.technicalProfile.nationality : undefined,
+          services: isApproved? userdata.technicalProfile.services : undefined,
         }
      }
      else if(user.type === UsersTypes.USER){
@@ -875,29 +885,33 @@ export class UsersService {
     });
 }
 
-    async listTechniciansReq(filter: FilterTechnicianReqDto) {
-      const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
-      const take = limit ?? 20;
-      const skip = ((page ?? 1) - 1) * take;
+  async listTechniciansReq(filter: FilterTechnicianReqDto) {
+    const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
+    const take = limit ?? 20;
+    const skip = ((page ?? 1) - 1) * take;
+  
+    const query = this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.technicalProfile', 'tech')
+      .leftJoin('tech.services', 'services')
+      .where('u.deleted = :deleted', { deleted: false })
+      .select([
+        'u.id AS id',
+        'u.username AS username',
+        'u.image AS image',
+        'u.createdAt AS createdAt',
+        'u.updatedAt AS updatedAt',
+        'tech.approved AS approved',
+        'services.id AS sericeId',
+        'services.arName AS sericeArName',
+        'services.enName AS sericeEnName',
+      ]);
     
-      const query = this.usersRepo
-        .createQueryBuilder('u')
-        .leftJoin('u.technicalProfile', 'tech')
-        .where('u.deleted = :deleted', { deleted: false })
-        .select([
-          'u.id AS id',
-          'u.username AS username',
-          'u.image AS image',
-          'u.createdAt AS createdAt',
-          'u.updatedAt AS updatedAt',
-          'tech.approved AS approved'
-        ]);
-      
-      if (username) {
-        query.andWhere('u.username ILIKE :username', {
-            username: `%${username}%`,
-        });
-      }
+    if (username) {
+      query.andWhere('u.username ILIKE :username', {
+          username: `%${username}%`,
+      });
+    }
 
     if (approved !== undefined) {
       query.andWhere('tech.approved = :approved', {
@@ -906,28 +920,28 @@ export class UsersService {
     }
     
       // Filter by createdAt
-      if (createdAt) {
-        query.andWhere('DATE(u.createdAt) = :createdAt', { createdAt });
-      }
-    
-      // Filter by updatedAt
-      if (updatedAt) {
-        query.andWhere('DATE(u.updatedAt) = :updatedAt', { updatedAt });
-      }
-    
-      // Pagination
-      query.take(take).skip(skip);
-    
-      // Order by createdAt or updatedAt based on sortOrder
-      query.orderBy('u.createdAt', sortOrder ?? 'DESC');
-    
-      const [rows, total] = await Promise.all([
-        query.getRawMany(),
-        query.getCount(),
-      ]);
-    
-      return this.paginatorService.makePaginate(rows, total, take, page);
+    if (createdAt) {
+      query.andWhere('DATE(u.createdAt) = :createdAt', { createdAt });
     }
+  
+    // Filter by updatedAt
+    if (updatedAt) {
+      query.andWhere('DATE(u.updatedAt) = :updatedAt', { updatedAt });
+    }
+  
+    // Pagination
+    query.take(take).skip(skip);
+  
+    // Order by createdAt or updatedAt based on sortOrder
+    query.orderBy('u.createdAt', sortOrder ?? 'DESC');
+  
+    const [rows, total] = await Promise.all([
+      query.getRawMany(),
+      query.getCount(),
+    ]);
+  
+    return this.paginatorService.makePaginate(rows, total, take, page);
+  }
 
     async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
       const user = await this.usersRepo.findOne({
