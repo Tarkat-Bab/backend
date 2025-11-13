@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
 import { PaginatorInput } from 'src/common/paginator/types/paginate.input';
 
 export class CreateRegionDto {
@@ -39,9 +40,17 @@ export class UpdateRegionDto {
 }
 
 
-export class FilterRegionDto extends PaginatorInput {
+// export class FilterRegionDto extends PaginatorInput {
+export class FilterRegionDto {
     @ApiPropertyOptional({ example: "المجمعة", description: 'search by city or Region name' })
     @IsString()
     @IsOptional()
     search?: string;
+
+
+    @ApiPropertyOptional({ example: true, description: 'search by city availability' })
+    @IsBoolean()
+    @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
+    available: boolean;
 }

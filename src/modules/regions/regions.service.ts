@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { RegionEntity } from '../regions/entities/regions.entity';;
 import { CitiesEntity } from '../regions/entities/cities.entity';
 import { LocationService } from 'src/modules/locations/location.service';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { CreateRegionDto, FilterRegionDto } from '../regions/dtos/regions.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { CreateCityDto } from '../regions/dtos/cities.dto';
+import { CreateCityDto, UpdateCitiesAvailabilityDto } from '../regions/dtos/cities.dto';
 
 @Injectable()
 export class RegionsService {
@@ -68,33 +68,46 @@ export class RegionsService {
   }
 
   async findAllRegions(filterRegionDto: FilterRegionDto) {
-    const page = filterRegionDto.page || 1;
-    const limit = filterRegionDto.limit || 20;
-    const skip = (page - 1) * limit;
-
-    const where: any[] = [];
-
-    if (filterRegionDto.search) {
-      where.push(
-        { arName: filterRegionDto.search },
-        { enName: filterRegionDto.search },
-      );
-    }
-
-    const [result, count] = await this.regionRepo.findAndCount({
-      where: where.length ? where : {}, 
-      relations: ['cities'],
-      order: { createdAt: 'DESC' },
-      select:{
-          id:true, arName:true, enName:true, latitude:true, longitude:true, createdAt:true,
-          cities:{id:true, arName:true, enName:true, latitude:true, longitude:true,}
-      },
-      skip,
-      take: limit,
-    });
-
-    return this.paginatorService.makePaginate(result, count, limit, page);
-  }
+   const { search, available } = filterRegionDto;
+  
+   const query = this.regionRepo
+     .createQueryBuilder('region')
+     .leftJoinAndSelect('region.cities', 'city')
+     .orderBy('region.createdAt', 'DESC')
+     .select([
+       'region.id',
+       'region.arName',
+       'region.enName',
+       'region.latitude',
+       'region.longitude',
+       'region.createdAt',
+       'city.id',
+       'city.arName',
+       'city.enName',
+       'city.latitude',
+       'city.longitude',
+       'city.available',
+     ]);
+    
+   if (search) {
+     query.andWhere(
+       '(region.arName ILIKE :search OR region.enName ILIKE :search)',
+       { search: `%${search}%` },
+     );
+   }
+  
+   if (available !== undefined) {
+     query.andWhere('city.available = :available', { available });
+   }
+  
+   const regions = await query.getMany();
+  
+   const filteredRegions = available !== undefined
+     ? regions.filter(r => r.cities.some(c => c.available === available))
+     : regions;
+  
+   return filteredRegions;
+  }  
 
 
   async findRegionById(id: number, lang: LanguagesEnum): Promise<RegionEntity> {
@@ -146,4 +159,38 @@ export class RegionsService {
     }
     await this.cityRepo.remove(city);
   }
+
+  async updateCitiesAvailability(
+    UpdateCitiesAvailabilityDto: UpdateCitiesAvailabilityDto,
+    lang: LanguagesEnum
+  ): Promise<void> {
+    const {cityIds, available} = UpdateCitiesAvailabilityDto;
+    if (!cityIds || cityIds.length === 0) {
+      throw new BadRequestException(
+        lang === LanguagesEnum.ARABIC
+          ? 'يجب تحديد معرفات المدن'
+          : 'City IDs are required'
+      );
+    }
+
+    const cities = await this.cityRepo.find({
+      where:{id: In(cityIds)},
+      select:{id:true, available:true}
+      });
+
+    if (cities.length === 0) {
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC
+          ? 'لم يتم العثور على أي مدينة'
+          : 'No cities found'
+      );
+    }
+
+    for (const city of cities) {
+      city.available = available;
+    }
+
+    await this.cityRepo.save(cities);
+  }
+
 }

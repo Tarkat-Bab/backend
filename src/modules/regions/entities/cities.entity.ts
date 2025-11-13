@@ -16,6 +16,8 @@ export class CitiesEntity extends BaseEntity{
     @Column({ type: 'double precision', nullable: true })
     longitude: number;
 
+    @Column({type: 'boolean', default: false})
+    available: boolean;
 
     @ManyToOne(() => RegionEntity, (region) => region.cities, {
         onDelete: 'CASCADE',
