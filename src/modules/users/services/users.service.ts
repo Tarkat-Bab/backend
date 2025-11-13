@@ -14,7 +14,7 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { LocationService } from 'src/modules/locations/location.service';
 import { NationaltiesService } from 'src/modules/nationalties/nationalties.service';
 import { ServicesService } from 'src/modules/services/services.service';
-import { FilterUsersDto } from '../dtos/filter-user-dto';
+import { FilterTechnicianReqDto, FilterUsersDto } from '../dtos/filter-user-dto';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UserFcmTokenEntity } from '../entities/user-fcm-token.entity';
 import { RequestStatus } from 'src/modules/requests/enums/requestStatus.enum';
@@ -417,7 +417,6 @@ export class UsersService {
     // Raw query returns flattened keys (lowercased), e.g. techId -> techid, avgRating -> avgrating.
     // Avoid accessing nested objects on the raw result (existUser.technicalProfile is undefined).
     const rawTechId = isTechnical ? Number(existUser.techid ?? existUser.techId ?? 0) : undefined;
-
     return {
       id: existUser.id,
       username: existUser.username,
@@ -876,8 +875,8 @@ export class UsersService {
     });
 }
 
-    async listTechniciansReq(filter: FilterUsersDto) {
-      const { page, limit, username, createdAt, updatedAt, sortOrder } = filter;
+    async listTechniciansReq(filter: FilterTechnicianReqDto) {
+      const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
       const take = limit ?? 20;
       const skip = ((page ?? 1) - 1) * take;
     
@@ -891,14 +890,20 @@ export class UsersService {
           'u.image AS image',
           'u.createdAt AS createdAt',
           'u.updatedAt AS updatedAt',
+          'tech.approved AS approved'
         ]);
       
-      // Filter by username
       if (username) {
         query.andWhere('u.username ILIKE :username', {
-          username: `%${username}%`,
+            username: `%${username}%`,
         });
       }
+
+    if (approved !== undefined) {
+      query.andWhere('tech.approved = :approved', {
+        approved,
+      });
+    }
     
       // Filter by createdAt
       if (createdAt) {

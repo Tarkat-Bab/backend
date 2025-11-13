@@ -3,7 +3,7 @@ import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { UserStatus } from 'src/common/enums/users.enum';
 import { sendMessageDto, sendNotificationDto } from 'src/modules/notifications/dtos/send-notification.dto';
 import { NotificationsService } from 'src/modules/notifications/notifications.service';
-import { FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
+import { FilterTechnicianReqDto, FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
 import { UsersService } from 'src/modules/users/services/users.service';
 
 @Injectable()
@@ -44,14 +44,16 @@ export class DashboardUsersService {
         await this.notificationsService.autoNotification(id, "WARNING_USER", body )
     }
 
-    async listTechniciansReq(filter: FilterUsersDto){
+    async listTechniciansReq(filter: FilterTechnicianReqDto){
         return this.usersService.listTechniciansReq(filter);
     }
 
     async approveTech(id: number, approved: boolean ,lang: LanguagesEnum){
-        if(approved) await this.notificationsService.autoNotification(id, "APPROVED_USER" );
-        else await this.notificationsService.autoNotification(id, "APPROVED_USER" );
-        
-        return this.usersService.approveTech(id,approved, lang);
+        const updatedTechnician = await this.usersService.approveTech(id,approved, lang);
+        if(updatedTechnician){
+            if(approved) await this.notificationsService.autoNotification(id, "APPROVED_USER" );
+            else await this.notificationsService.autoNotification(id, "UNAPPROVED_USER" );
+            return updatedTechnician;
+        }
     }
 }

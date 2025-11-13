@@ -1,13 +1,14 @@
 import { Body, Controller, Delete, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { DashboardUsersService } from './users.service';
-import { FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
+import { FilterTechnicianReqDto, FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { AdminPermissions } from 'src/common/permissions/admin.permissions';
 import { UserStatus } from 'src/common/enums/users.enum';
 import { sendMessageDto } from 'src/modules/notifications/dtos/send-notification.dto';
+import { ParseBoolPipe } from '@nestjs/common';
 
 @ApiBearerAuth()
 @ApiTags('Dashboard')
@@ -35,19 +36,19 @@ export class DashboardUsersController {
     @Permissions(AdminPermissions.VIEW_USERS) 
     @Get('technicians/requests')
     getTechniciansReq(
-        @Query() filterUserDto: FilterUsersDto,
+        @Query() filterUserDto: FilterTechnicianReqDto,
     ) {
         return this.usersService.listTechniciansReq(filterUserDto);
     }
 
     @Patch('technicians/approved/:id')
-    @Permissions(AdminPermissions.UPDATE_USER) 
+    @Permissions(AdminPermissions.UPDATE_USER)
     approveTech(
-        @Param('id') userId: number,
-        @Query() approved: boolean,
-        @Language() lang: LanguagesEnum,
+      @Param('id') userId: number,
+      @Query('approved', ParseBoolPipe) approved: boolean,
+      @Language() lang: LanguagesEnum,
     ) {
-        return this.usersService.approveTech(userId, approved, lang);
+      return this.usersService.approveTech(userId, approved, lang);
     }
 
     @Get(':id')

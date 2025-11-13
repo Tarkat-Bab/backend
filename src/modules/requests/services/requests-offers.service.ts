@@ -31,13 +31,13 @@ export class RequestOffersService {
     const request = await this.requestService.findRequestById(requestId, lang);
     const user = await this.usersService.findById(technicianId, lang);
 
-    // if(!user.approved){
-    //   throw new UnauthorizedException(
-    //       lang === LanguagesEnum.ARABIC 
-    //           ? 'لا يمكنك تقديم عرض قبل موافقة الادمن على حسابك' 
-    //         : 'You cannot submit an offer before admin approves your account'
-    //     );
-    // }
+    if(user.type === UsersTypes.TECHNICAL && !user.technicalProfile.approved){
+      throw new UnauthorizedException(
+          lang === LanguagesEnum.ARABIC 
+              ? 'لا يمكنك تقديم عرض قبل موافقة الادمن على حسابك' 
+            : 'You cannot submit an offer before admin approves your account'
+        );
+    }
 
     if(request.status !== RequestStatus.PENDING){
       if(lang === LanguagesEnum.ARABIC){
