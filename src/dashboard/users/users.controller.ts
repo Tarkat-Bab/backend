@@ -1,28 +1,28 @@
 import { Body, Controller, Delete, Get, Param, Patch, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { DashboardUsersService } from './users.service';
 import { FilterUsersDto } from 'src/modules/users/dtos/filter-user-dto';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { isPublic } from 'src/common/decorators/public.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { AdminPermissions } from 'src/common/permissions/admin.permissions';
 import { UserStatus } from 'src/common/enums/users.enum';
-import { sendMessageDto, sendNotificationDto } from 'src/modules/notifications/dtos/send-notification.dto';
+import { sendMessageDto } from 'src/modules/notifications/dtos/send-notification.dto';
 
 @ApiBearerAuth()
 @ApiTags('Dashboard')
 @Controller('dashboard/users')
+@ApiHeader({
+    name: 'Accept-Language',
+    description: 'Language for the response (e.g., ar, en)',
+    required: false,
+})  
 export class DashboardUsersController {
     constructor(
         private readonly usersService: DashboardUsersService,
     ) {}
     
-    @ApiHeader({
-        name: 'Accept-Language',
-        description: 'Language for the response (e.g., ar, en)',
-        required: false,
-    })     
+   
     @Permissions(AdminPermissions.VIEW_USERS) 
     @Get()
     getUsers(
@@ -32,11 +32,24 @@ export class DashboardUsersController {
         return this.usersService.getAllUsers(filterUserDto, lang);
     }
 
-    @ApiHeader({
-        name: 'Accept-Language',
-        description: 'Language for the response (e.g., ar, en)',
-        required: false,
-    })   
+    @Permissions(AdminPermissions.VIEW_USERS) 
+    @Get('technicians/requests')
+    getTechniciansReq(
+        @Query() filterUserDto: FilterUsersDto,
+    ) {
+        return this.usersService.listTechniciansReq(filterUserDto);
+    }
+
+    @Patch('technicians/approved/:id')
+    @Permissions(AdminPermissions.UPDATE_USER) 
+    approveTech(
+        @Param('id') userId: number,
+        @Query() approved: boolean,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.usersService.approveTech(userId, approved, lang);
+    }
+
     @Get(':id')
     @Permissions(AdminPermissions.VIEW_USERS) 
     getUserById(

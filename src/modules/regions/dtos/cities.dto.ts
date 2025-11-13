@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, ArrayNotEmpty, IsBoolean } from 'class-validator';
 
 export class CreateCityDto {
   @ApiProperty({ example: 'الدرعية', description: 'اسم المدينة ' })
@@ -41,4 +41,23 @@ export class UpdateCityDto {
   @IsOptional()
   @IsNumber()
   regionId?: number;
+}
+
+export class UpdateCitiesAvailabilityDto {
+  @ApiProperty({
+    example: [1, 2, 3],
+    description: 'List of city IDs to update',
+    type: [Number],
+  })
+  @IsArray()
+  @ArrayNotEmpty({ message: 'City IDs array cannot be empty' })
+  @IsNumber({}, { each: true })
+  cityIds: number[];
+
+  @ApiProperty({
+    example: true,
+    description: 'New availability status (true = available, false = unavailable)',
+  })
+  @IsBoolean({ message: 'Available must be a boolean value' })
+  available: boolean;
 }
