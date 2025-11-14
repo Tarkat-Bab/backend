@@ -428,6 +428,7 @@ export class UsersService {
     }
     const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
     const isUser = existUser?.type === UsersTypes.USER;
+    console.log(existUser)
     return {
       id: existUser.id,
       username: existUser.username,
@@ -444,7 +445,7 @@ export class UsersService {
       approved: isTechnical ? existUser.approved  : undefined,
       serviceName: isTechnical? existUser.servicename: undefined,
       serviceIcon: isTechnical? existUser.serviceicone: undefined,
-      workLicenseImage: isTechnical? existUser.workLicenseimage : undefined,
+      workLicenseImage: isTechnical? existUser.worklicenseimage : undefined,
       identityImage: isTechnical? existUser.identityimage : undefined,
       nationalityName: isTechnical? existUser.nationalityname : undefined,
     } as unknown as UserEntity;
