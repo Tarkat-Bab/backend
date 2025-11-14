@@ -360,6 +360,9 @@ export class UsersService {
     const addressServColumn =
       lang === LanguagesEnum.ARABIC ? 'services.arName' : 'services.enName';
 
+    const nationalityColumn =
+      lang === LanguagesEnum.ARABIC ? 'nationality.arName' : 'nationality.enName';
+
     let query = this.usersRepo
       .createQueryBuilder('u')
       .leftJoin('u.serviceRequests', 'serviceRequests')
@@ -395,6 +398,7 @@ export class UsersService {
       query = this.usersRepo
         .createQueryBuilder('u')
         .leftJoin('u.technicalProfile', 'tech')
+        .leftJoin('tech.nationality', 'nationality')
         .leftJoin('tech.services', 'services')
         .where('u.deleted = :deleted', { deleted: false })
         .andWhere('u.id = :id', { id })
@@ -412,7 +416,11 @@ export class UsersService {
           'tech.approved AS approved',
           'services.id AS serviceId',
           'services.icone AS serviceIcone',
-          `${addressServColumn} AS serviceName`
+          `${addressServColumn} AS serviceName`,
+          `tech.workLicenseImage AS workLicenseImage`,
+          `tech.identityImage AS identityImage`,
+          `tech.nationality.id AS nationalityId`,
+          `${nationalityColumn} AS nationalityName`,
         ]);
 
       existUser = await query.getRawOne();
@@ -420,7 +428,6 @@ export class UsersService {
     }
     const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
     const isUser = existUser?.type === UsersTypes.USER;
-
     return {
       id: existUser.id,
       username: existUser.username,
@@ -436,7 +443,10 @@ export class UsersService {
       completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
       approved: isTechnical ? existUser.approved  : undefined,
       serviceName: isTechnical? existUser.servicename: undefined,
-      serviceIcon: isTechnical? existUser.serviceicone: undefined
+      serviceIcon: isTechnical? existUser.serviceicone: undefined,
+      workLicenseImage: isTechnical? existUser.workLicenseimage : undefined,
+      identityImage: isTechnical? existUser.identityimage : undefined,
+      nationalityName: isTechnical? existUser.nationalityname : undefined,
     } as unknown as UserEntity;
   }
 
@@ -666,7 +676,6 @@ export class UsersService {
       delete userdata.enAddress;
 
      if(user.type === UsersTypes.TECHNICAL){
-      console.log("TECHNICALLLLLLLLLLLLLLL")
         const isApproved = user.technicalProfile.approved;
         return {
           id: userdata.id,
@@ -680,6 +689,8 @@ export class UsersService {
           identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
           nationality: isApproved? userdata.technicalProfile.nationality : undefined,
           services: isApproved? userdata.technicalProfile.services : undefined,
+          avgRating: user.technicalProfile.avgRating,
+          totalReviews: user.technicalProfile.reviews.length
         }
      }
      else if(user.type === UsersTypes.USER){
