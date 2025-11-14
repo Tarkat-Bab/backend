@@ -901,63 +901,61 @@ export class UsersService {
 }
 
   async listTechniciansReq(filter: FilterTechnicianReqDto) {
-    const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
-    const take = limit ?? 20;
-    const skip = ((page ?? 1) - 1) * take;
-  
-    const query = this.usersRepo
-      .createQueryBuilder('u')
-      .leftJoin('u.technicalProfile', 'tech')
-      .leftJoin('tech.services', 'services')
-      .where('u.deleted = :deleted', { deleted: false })
-      .select([
-        'u.id AS id',
-        'u.username AS username',
-        'u.image AS image',
-        'u.createdAt AS createdAt',
-        'u.updatedAt AS updatedAt',
-        'tech.approved AS approved',
-        'services.id AS sericeId',
-        'services.arName AS sericeArName',
-        'services.enName AS sericeEnName',
-        'services.icone AS sericeIcon',
-      ]);
-    
-    if (username) {
-      query.andWhere('u.username ILIKE :username', {
-          username: `%${username}%`,
-      });
-    }
+   const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
 
-    if (approved !== undefined) {
-      query.andWhere('tech.approved = :approved', {
-        approved,
-      });
-    }
-    
-      // Filter by createdAt
-    if (createdAt) {
-      query.andWhere('DATE(u.createdAt) = :createdAt', { createdAt });
-    }
-  
-    // Filter by updatedAt
-    if (updatedAt) {
-      query.andWhere('DATE(u.updatedAt) = :updatedAt', { updatedAt });
-    }
-  
-    // Pagination
-    query.take(take).skip(skip);
-  
-    // Order by createdAt or updatedAt based on sortOrder
-    query.orderBy('u.createdAt', sortOrder ?? 'DESC');
-  
-    const [rows, total] = await Promise.all([
-      query.getRawMany(),
-      query.getCount(),
-    ]);
-  
-    return this.paginatorService.makePaginate(rows, total, take, page);
+   const take = limit ?? 20;
+   const skip = ((page ?? 1) - 1) * take;
+
+   const query = this.usersRepo
+     .createQueryBuilder('u')
+     .leftJoin('u.technicalProfile', 'tech')
+     .leftJoin('tech.services', 'services')
+     .where('u.deleted = :deleted', { deleted: false })
+     .andWhere('u.type = :userType', { userType: UsersTypes.TECHNICAL })
+     .andWhere('u.status = :userStatus', { userStatus: UserStatus.ACTIVE })
+     .select([
+       'u.id AS id',
+       'u.username AS username',
+       'u.image AS image',
+       'u.createdAt AS createdAt',
+       'u.updatedAt AS updatedAt',
+       'tech.approved AS approved',
+       'services.id AS serviceId',
+       'services.arName AS serviceArName',
+       'services.enName AS serviceEnName',
+       'services.icone AS serviceIcon',
+     ]);
+
+   if (approved === undefined) {
+     query.andWhere('(tech.approved = false OR tech.approved IS NULL)');
+   } else {
+     query.andWhere('tech.approved = :approved', { approved });
+   }
+
+   if (username) {
+     query.andWhere('u.username ILIKE :username', { username: `%${username}%` });
+   }
+
+   if (createdAt) {
+     query.andWhere('DATE(u.createdAt) = :createdAt', { createdAt });
+   }
+
+   if (updatedAt) {
+     query.andWhere('DATE(u.updatedAt) = :updatedAt', { updatedAt });
+   }
+
+   query.take(take).skip(skip);
+
+   query.orderBy('u.createdAt', sortOrder ?? 'DESC');
+
+   const [rows, total] = await Promise.all([
+     query.getRawMany(),
+     query.getCount(),
+   ]);
+
+   return this.paginatorService.makePaginate(rows, total, take, page);
   }
+
 
     async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
       const user = await this.usersRepo.findOne({
