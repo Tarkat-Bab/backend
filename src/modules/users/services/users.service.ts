@@ -680,7 +680,7 @@ export class UsersService {
         const nationalityName = lang == LanguagesEnum.ARABIC ? userdata.technicalProfile.nationality.arName: userdata.technicalProfile.nationality.enName;
         const isActive = user.status == UserStatus.ACTIVE;
 
-        console.log(userdata)
+        // console.log(userdata)
         return {
           id: userdata.id,
           isActive,
