@@ -639,7 +639,7 @@ export class UsersService {
     try{
       let user = await this.usersRepo.findOne({
         where: { id: userID, deleted: false, status: UserStatus.ACTIVE },
-        relations: ['technicalProfile', 'technicalProfile.reviews'],
+        relations: ['technicalProfile', 'technicalProfile.reviews', 'technicalProfile.services'],
         select: {
           id: true,
           username: true,
@@ -680,6 +680,7 @@ export class UsersService {
         const nationalityName = lang == LanguagesEnum.ARABIC ? userdata.technicalProfile.nationality.arName: userdata.technicalProfile.nationality.enName;
         const isActive = user.status == UserStatus.ACTIVE;
 
+        console.log(userdata)
         return {
           id: userdata.id,
           isActive,
