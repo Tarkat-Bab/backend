@@ -639,7 +639,7 @@ export class UsersService {
     try{
       let user = await this.usersRepo.findOne({
         where: { id: userID, deleted: false, status: UserStatus.ACTIVE },
-        relations: ['technicalProfile'],
+        relations: ['technicalProfile', 'technicalProfile.reviews', 'technicalProfile.services'],
         select: {
           id: true,
           username: true,
@@ -654,7 +654,7 @@ export class UsersService {
           technicalProfile: true
         },
       });
-      console.log(user)
+      // console.log(user)
       if (!user) {
         if(lang === LanguagesEnum.ENGLISH){
            throw new NotFoundException('User not found.');
@@ -677,8 +677,13 @@ export class UsersService {
 
      if(user.type === UsersTypes.TECHNICAL){
         const isApproved = user.technicalProfile.approved;
+        const nationalityName = lang == LanguagesEnum.ARABIC ? userdata.technicalProfile.nationality.arName: userdata.technicalProfile.nationality.enName;
+        const isActive = user.status == UserStatus.ACTIVE;
+
+        // console.log(userdata)
         return {
           id: userdata.id,
+          isActive,
           username: userdata.username,
           phone: userdata.phone,
           description: userdata.technicalProfile?.description,
@@ -687,7 +692,7 @@ export class UsersService {
           approved: userdata.technicalProfile.approved,
           workLicenseImage: isApproved? userdata.technicalProfile.workLicenseImage : undefined,
           identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
-          nationality: isApproved? userdata.technicalProfile.nationality : undefined,
+          nationalityName: isApproved? nationalityName : undefined,
           services: isApproved? userdata.technicalProfile.services : undefined,
           avgRating: user.technicalProfile.avgRating,
           totalReviews: user.technicalProfile.reviews.length
