@@ -34,7 +34,9 @@ export class TechnicalProfileEntity extends BaseEntity {
     @Column({type: 'boolean', default:null, nullable: true})
     approved: boolean;
 
-    @OneToMany(() => ServiceEntity, service => service.technicalProfile)
+    @OneToMany(() => ServiceEntity, service => service.technicalProfile, {
+        onDelete: 'CASCADE'
+    })
     services: ServiceEntity[];
 
     @OneToMany(() => ReviewsEntity, review => review.technician)
