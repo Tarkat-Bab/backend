@@ -41,6 +41,8 @@ export class DashboardUsersService {
         if(warning.blocked){
             await this.notificationsService.autoNotification(id, "BLOCKED_USER")
         }
+        if(body.enBody === undefined) body.enBody = body.arBody;
+        console.log(body)
         await this.notificationsService.autoNotification(id, "WARNING_USER", body )
     }
 
