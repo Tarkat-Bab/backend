@@ -10,6 +10,7 @@ import { ReportsEntity } from "src/modules/reports/entities/reports.entity";
 import { ReportReason } from "src/modules/reports/enums/reports.enum";
 import { RequestOffersEntity } from "../../modules/requests/entities/request_offers.entity";
 import { SettingEntity } from "src/dashboard/settings/setting.entity";
+import { MediaDir } from "src/common/files/media-dir-.enum";
 
 export const seedData = async (manager: EntityManager) => {
     await seedSetting(manager);
@@ -79,23 +80,23 @@ async function seedServices(manager: EntityManager) {
         { 
             arName: 'الكهرباء',
             enName: 'Electricity',
-            icone: 'electricity.png'
+            icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/electricity.png`
          },
-        { arName: 'السباكة', enName: 'Plumbing', icone: 'plumbing.png' },
-        { arName: 'التكييف', enName: 'Air Conditioning', icone: 'ac.png' },
-        { arName: 'تنظيف خزانات', enName: 'Water Tank Cleaning', icone: 'tank_cleaning.png' },
-        { arName: 'كاميرات أمنية', enName: 'Security Cameras', icone: 'security_cameras.png' },
-        { arName: 'حدادة', enName: 'Blacksmithing', icone: 'blacksmithing.png' },
-        { arName: 'دهان', enName: 'Painting', icone: 'painting.png' },
-        { arName: 'نجارة', enName: 'Carpentry', icone: 'carpentry.png' },
-        { arName: 'نظافة المنزل', enName: 'House Cleaning', icone: 'house_cleaning.png' },
-        { arName: 'خدمات الأثاث', enName: 'Furniture Services', icone: 'furniture_services.png' },
-        { arName:  'خدمات اخري', enName: 'Other Services', icone: 'others.png' }
+        { arName: 'السباكة', enName: 'Plumbing', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/plumbing.png` },
+        { arName: 'التكييف', enName: 'Air Conditioning', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/ac.png` },
+        { arName: 'تنظيف خزانات', enName: 'Water Tank Cleaning', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/tank_cleaning.png` },
+        { arName: 'كاميرات أمنية', enName: 'Security Cameras', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/security_cameras.png` },
+        { arName: 'حدادة', enName: 'Blacksmithing', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/blacksmithing.png` },
+        { arName: 'دهان', enName: 'Painting', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/painting.png` },
+        { arName: 'نجارة', enName: 'Carpentry', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/carpentry.png` },
+        { arName: 'نظافة المنزل', enName: 'House Cleaning', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/house_cleaning.png` },
+        { arName: 'خدمات الأثاث', enName: 'Furniture Services', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/furniture_services.png`},
+        { arName:  'خدمات اخري', enName: 'Other Services', icone: `https://api.tarqatbab.com.sa/${process.env.MEDIA_DIR}/${MediaDir.SERVICES}/others.png` }
     ];
 
     // Check if services already exist
     const existingServices = await manager.find(ServiceEntity);
-    
+    // console.log(existingServices)
     if (existingServices.length === 0) {
         console.log('Seeding services...');
         

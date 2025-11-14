@@ -531,7 +531,7 @@ export class UsersService {
         { id, deleted: false, user: { deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } },
         { deleted: false, user: { id, deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } }
       ],
-      relations: ['user', 'reviews', 'services'],
+      relations: ['user', 'reviews', 'services', 'nationality'],
       select: {
         id: true,
         avgRating: true,
@@ -544,6 +544,9 @@ export class UsersService {
         },
         reviews: { id: true },
         services: { id: true, enName: true, arName: true, icone: true},
+        workLicenseImage: true,
+        identityImage: true,
+        nationality: true,
       },
     });
     if (!technician) {
@@ -638,10 +641,10 @@ export class UsersService {
           arAddress: true,
           enAddress: true,
           type: true,
-          technicalProfile: { id: true, description: true }
+          technicalProfile: true
         },
       });
-
+      console.log(user)
       if (!user) {
         if(lang === LanguagesEnum.ENGLISH){
            throw new NotFoundException('User not found.');
@@ -663,6 +666,7 @@ export class UsersService {
       delete userdata.enAddress;
 
      if(user.type === UsersTypes.TECHNICAL){
+      console.log("TECHNICALLLLLLLLLLLLLLL")
         const isApproved = user.technicalProfile.approved;
         return {
           id: userdata.id,
