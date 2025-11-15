@@ -150,14 +150,16 @@ export class RegionsService {
     return this.cityRepo.save(city);
   }
 
-  async removeCity(cityId: number, lang: LanguagesEnum): Promise<void> {
-    const city = await this.cityRepo.findOne({ where: { id: cityId } });
-    if (!city) {
+  async removeCity(cityIds: number[], lang: LanguagesEnum): Promise<void> {
+    const citities = await this.cityRepo.find({ where: { id: In(cityIds) } });
+    if (citities.length != cityIds.length) {
       throw new NotFoundException(
         lang === LanguagesEnum.ARABIC ? 'المدينة غير موجودة' : 'City not found',
       );
     }
-    await this.cityRepo.remove(city);
+    for(let i=0; i < citities.length ; i++){
+      await this.cityRepo.remove(citities[i]);
+    }
   }
 
   async updateCitiesAvailability(
