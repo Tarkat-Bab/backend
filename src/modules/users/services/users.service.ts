@@ -443,7 +443,7 @@ export class UsersService {
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
       completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
       technicalProfile:{
-        id:  isTechnical ? existUser.techId : undefined,
+        id:  isTechnical ? existUser.techid : undefined,
         approved: isTechnical ? existUser.approved  : undefined,
       },
       serviceName: isTechnical? existUser.servicename: undefined,
@@ -655,6 +655,7 @@ export class UsersService {
         select: {
           id: true,
           username: true,
+          status: true,
           phone: true,
           email: true,
           image: true,

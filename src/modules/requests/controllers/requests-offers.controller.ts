@@ -29,6 +29,7 @@ export class RequestOffersController {
     @Language() lang: LanguagesEnum,
     @Body() createRequestOfferDto: CreateRequestOfferDto,
   ): Promise<RequestOffersEntity> {
+    console.log("Token: ", user.id)
     return this.requestsOffersService.createRequestOffer(user.id, requestId, createRequestOfferDto, lang);
   }
 
