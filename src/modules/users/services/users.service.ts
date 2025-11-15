@@ -357,6 +357,12 @@ export class UsersService {
     const addressColumn =
       lang === LanguagesEnum.ARABIC ? 'u.arAddress' : 'u.enAddress';
 
+    const addressServColumn =
+      lang === LanguagesEnum.ARABIC ? 'services.arName' : 'services.enName';
+
+    const nationalityColumn =
+      lang === LanguagesEnum.ARABIC ? 'nationality.arName' : 'nationality.enName';
+
     let query = this.usersRepo
       .createQueryBuilder('u')
       .leftJoin('u.serviceRequests', 'serviceRequests')
@@ -392,6 +398,8 @@ export class UsersService {
       query = this.usersRepo
         .createQueryBuilder('u')
         .leftJoin('u.technicalProfile', 'tech')
+        .leftJoin('tech.nationality', 'nationality')
+        .leftJoin('tech.services', 'services')
         .where('u.deleted = :deleted', { deleted: false })
         .andWhere('u.id = :id', { id })
         .select([
@@ -406,17 +414,21 @@ export class UsersService {
           'tech.id AS techId',
           'tech.avgRating AS avgRating',
           'tech.approved AS approved',
+          'services.id AS serviceId',
+          'services.icone AS serviceIcone',
+          `${addressServColumn} AS serviceName`,
+          `tech.workLicenseImage AS workLicenseImage`,
+          `tech.identityImage AS identityImage`,
+          `tech.nationality.id AS nationalityId`,
+          `${nationalityColumn} AS nationalityName`,
         ]);
 
       existUser = await query.getRawOne();
+      // console.log(existUser)
     }
-
     const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
     const isUser = existUser?.type === UsersTypes.USER;
-
-    // Raw query returns flattened keys (lowercased), e.g. techId -> techid, avgRating -> avgrating.
-    // Avoid accessing nested objects on the raw result (existUser.technicalProfile is undefined).
-    const rawTechId = isTechnical ? Number(existUser.techid ?? existUser.techId ?? 0) : undefined;
+    console.log(existUser)
     return {
       id: existUser.id,
       username: existUser.username,
@@ -428,11 +440,14 @@ export class UsersService {
       totalOrders: isUser ? Number(existUser.orderscount ?? 0) : undefined,
       reports: Number(existUser.reportssubmitted ?? 0),
       type: existUser.type,
-      techId: rawTechId,
-      technicalProfile: isTechnical ? { id: rawTechId } : undefined,
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
       completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
-      approved: isTechnical ? { approved: existUser.approved } : undefined,
+      approved: isTechnical ? existUser.approved  : undefined,
+      serviceName: isTechnical? existUser.servicename: undefined,
+      serviceIcon: isTechnical? existUser.serviceicone: undefined,
+      workLicenseImage: isTechnical? existUser.worklicenseimage : undefined,
+      identityImage: isTechnical? existUser.identityimage : undefined,
+      nationalityName: isTechnical? existUser.nationalityname : undefined,
     } as unknown as UserEntity;
   }
 
@@ -527,7 +542,7 @@ export class UsersService {
         { id, deleted: false, user: { deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } },
         { deleted: false, user: { id, deleted: false, status: dashboard ? UserStatus.ACTIVE : undefined } }
       ],
-      relations: ['user', 'reviews', 'services'],
+      relations: ['user', 'reviews', 'services', 'nationality'],
       select: {
         id: true,
         avgRating: true,
@@ -540,6 +555,9 @@ export class UsersService {
         },
         reviews: { id: true },
         services: { id: true, enName: true, arName: true, icone: true},
+        workLicenseImage: true,
+        identityImage: true,
+        nationality: true,
       },
     });
     if (!technician) {
@@ -595,7 +613,10 @@ export class UsersService {
 
   async changeUserStatus(id: number, status: UserStatus){
     const user = await this.findById(id);
-    await this.usersRepo.update(user.id, { status })
+    if(user.status === UserStatus.BLOCKED && status == UserStatus.ACTIVE){
+      return await this.usersRepo.update(user.id, { status,  warningCount:0})
+    }
+    return await this.usersRepo.update(user.id, { status })
   }
 
   async warnUser(id:number, lang: LanguagesEnum){
@@ -622,7 +643,7 @@ export class UsersService {
     try{
       let user = await this.usersRepo.findOne({
         where: { id: userID, deleted: false, status: UserStatus.ACTIVE },
-        relations: ['technicalProfile'],
+        relations: ['technicalProfile', 'technicalProfile.reviews', 'technicalProfile.services'],
         select: {
           id: true,
           username: true,
@@ -634,10 +655,10 @@ export class UsersService {
           arAddress: true,
           enAddress: true,
           type: true,
-          technicalProfile: { id: true, description: true }
+          technicalProfile: true
         },
       });
-
+      // console.log(user)
       if (!user) {
         if(lang === LanguagesEnum.ENGLISH){
            throw new NotFoundException('User not found.');
@@ -659,13 +680,26 @@ export class UsersService {
       delete userdata.enAddress;
 
      if(user.type === UsersTypes.TECHNICAL){
+        const isApproved = user.technicalProfile.approved;
+        const nationalityName = lang == LanguagesEnum.ARABIC ? userdata.technicalProfile.nationality.arName: userdata.technicalProfile.nationality.enName;
+        const isActive = user.status == UserStatus.ACTIVE;
+
+        // console.log(userdata)
         return {
           id: userdata.id,
+          isActive,
           username: userdata.username,
           phone: userdata.phone,
           description: userdata.technicalProfile?.description,
           image: userdata.image,
           address: userdata.address,
+          approved: userdata.technicalProfile.approved,
+          workLicenseImage: isApproved? userdata.technicalProfile.workLicenseImage : undefined,
+          identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
+          nationalityName: isApproved? nationalityName : undefined,
+          services: isApproved? userdata.technicalProfile.services : undefined,
+          avgRating: user.technicalProfile.avgRating,
+          totalReviews: user.technicalProfile.reviews.length
         }
      }
      else if(user.type === UsersTypes.USER){
@@ -875,59 +909,62 @@ export class UsersService {
     });
 }
 
-    async listTechniciansReq(filter: FilterTechnicianReqDto) {
-      const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
-      const take = limit ?? 20;
-      const skip = ((page ?? 1) - 1) * take;
-    
-      const query = this.usersRepo
-        .createQueryBuilder('u')
-        .leftJoin('u.technicalProfile', 'tech')
-        .where('u.deleted = :deleted', { deleted: false })
-        .select([
-          'u.id AS id',
-          'u.username AS username',
-          'u.image AS image',
-          'u.createdAt AS createdAt',
-          'u.updatedAt AS updatedAt',
-          'tech.approved AS approved'
-        ]);
-      
-      if (username) {
-        query.andWhere('u.username ILIKE :username', {
-            username: `%${username}%`,
-        });
-      }
+  async listTechniciansReq(filter: FilterTechnicianReqDto) {
+   const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
 
-    if (approved !== undefined) {
-      query.andWhere('tech.approved = :approved', {
-        approved,
-      });
-    }
-    
-      // Filter by createdAt
-      if (createdAt) {
-        query.andWhere('DATE(u.createdAt) = :createdAt', { createdAt });
-      }
-    
-      // Filter by updatedAt
-      if (updatedAt) {
-        query.andWhere('DATE(u.updatedAt) = :updatedAt', { updatedAt });
-      }
-    
-      // Pagination
-      query.take(take).skip(skip);
-    
-      // Order by createdAt or updatedAt based on sortOrder
-      query.orderBy('u.createdAt', sortOrder ?? 'DESC');
-    
-      const [rows, total] = await Promise.all([
-        query.getRawMany(),
-        query.getCount(),
-      ]);
-    
-      return this.paginatorService.makePaginate(rows, total, take, page);
-    }
+   const take = limit ?? 20;
+   const skip = ((page ?? 1) - 1) * take;
+
+   const query = this.usersRepo
+     .createQueryBuilder('u')
+     .leftJoin('u.technicalProfile', 'tech')
+     .leftJoin('tech.services', 'services')
+     .where('u.deleted = :deleted', { deleted: false })
+     .andWhere('u.type = :userType', { userType: UsersTypes.TECHNICAL })
+     .andWhere('u.status = :userStatus', { userStatus: UserStatus.ACTIVE })
+     .select([
+       'u.id AS id',
+       'u.username AS username',
+       'u.image AS image',
+       'u.createdAt AS createdAt',
+       'u.updatedAt AS updatedAt',
+       'tech.approved AS approved',
+       'services.id AS serviceId',
+       'services.arName AS serviceArName',
+       'services.enName AS serviceEnName',
+       'services.icone AS serviceIcon',
+     ]);
+
+   if (approved === undefined) {
+     query.andWhere('(tech.approved = false OR tech.approved IS NULL)');
+   } else {
+     query.andWhere('tech.approved = :approved', { approved });
+   }
+
+   if (username) {
+     query.andWhere('u.username ILIKE :username', { username: `%${username}%` });
+   }
+
+   if (createdAt) {
+     query.andWhere('DATE(u.createdAt) = :createdAt', { createdAt });
+   }
+
+   if (updatedAt) {
+     query.andWhere('DATE(u.updatedAt) = :updatedAt', { updatedAt });
+   }
+
+   query.take(take).skip(skip);
+
+   query.orderBy('u.createdAt', sortOrder ?? 'DESC');
+
+   const [rows, total] = await Promise.all([
+     query.getRawMany(),
+     query.getCount(),
+   ]);
+
+   return this.paginatorService.makePaginate(rows, total, take, page);
+  }
+
 
     async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
       const user = await this.usersRepo.findOne({

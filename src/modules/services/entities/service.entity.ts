@@ -22,12 +22,12 @@ export class ServiceEntity extends BaseEntity {
     @OneToMany(() => ServiceRequestsEntity, serviceRequests => serviceRequests.service, { onDelete: 'RESTRICT' })
     requests: ServiceRequestsEntity[];
 
-    @BeforeInsert()
-    @BeforeUpdate()
-    async MediaUrl() {
-        if (typeof this.icone === 'string' && process.env.APP_URL) {
-            const fullPath = join(process.env.MEDIA_DIR, MediaDir.SERVICES, this.icone);
-            this.icone = `${process.env.APP_URL}/${fullPath}`;
-        }
-    }
+    // @BeforeInsert()
+    // @BeforeUpdate()
+    // async MediaUrl() {
+    //     if (typeof this.icone === 'string' && process.env.APP_URL) {
+    //         const fullPath = join(process.env.MEDIA_DIR, MediaDir.SERVICES, this.icone);
+    //         this.icone = `${process.env.APP_URL}/${fullPath}`;
+    //     }
+    // }
 }

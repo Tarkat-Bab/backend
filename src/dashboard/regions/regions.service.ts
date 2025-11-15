@@ -35,8 +35,8 @@ export class DashboardRegionsService {
     return this.regionService.addCityToRegion(cityData, lang);
   }
 
-  async removeCity(cityId: number, lang: LanguagesEnum) {
-    return this.regionService.removeCity(cityId, lang);
+  async removeCity(cityIds: number[], lang: LanguagesEnum) {
+    return this.regionService.removeCity(cityIds, lang);
   }
 
   async updateCitiesAvailability(
