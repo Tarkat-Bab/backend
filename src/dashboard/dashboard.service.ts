@@ -26,7 +26,8 @@ export class DashboardService {
             totalApprovedTechnicians,
             totalJoiningRequests,
             totalRequests,
-            totalReports
+            totalReports,
+            totalPaymentAmount:0
         }
     }
 }
