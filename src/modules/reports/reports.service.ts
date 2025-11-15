@@ -278,4 +278,10 @@ export class ReportsService {
             order: { createdAt: 'DESC' },
         });
     }
+
+    async reportsAnalysis(){
+        return await this.reportsRepo.count({
+            where: { deleted: false },
+        });
+    }
 }

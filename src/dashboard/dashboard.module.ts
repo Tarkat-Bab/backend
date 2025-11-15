@@ -10,13 +10,16 @@ import { SettingsModule } from './settings/settings.module';
 import { DashboardPaymentsModule } from './payments/payments.module';
 import { DashboardRegionsModule } from './regions/regions.module';
 import { DashboardNotificationModule } from './notifications/notifications.module';
+import { UsersModule } from 'src/modules/users/users.module';
+import { RequestsModule } from 'src/modules/requests/requests.module';
+import { ReportsModule } from 'src/modules/reports/reports.module';
 
 
 @Module({
   imports: [
     DashboardAuthModule, AuthModule, DashboardUsersModule, DashboardRequestsModule, 
     DashboardReportsModule, SettingsModule, DashboardPaymentsModule, DashboardNotificationModule,
-    DashboardRegionsModule
+    DashboardRegionsModule, UsersModule, RequestsModule, ReportsModule
   ],
   controllers: [DashboardController],
   providers: [DashboardService],
