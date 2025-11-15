@@ -28,4 +28,30 @@ export class SettingEntity {
         }
      })
     technicianPercentage: number;
+
+    @Column({
+        type: 'decimal',
+        precision: 5,
+        scale: 2,
+        default: 0,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value)
+        },
+        nullable: true
+     })
+    clientMaxDiscount: number;
+
+    @Column({
+        type: 'decimal',
+        precision: 5,
+        scale: 2,
+        default: 0,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value)
+        },
+        nullable: true
+     })
+    technicianMaxDiscount: number;
 }
