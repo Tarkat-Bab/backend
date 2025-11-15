@@ -428,7 +428,7 @@ export class UsersService {
     }
     const isTechnical = existUser?.type === UsersTypes.TECHNICAL;
     const isUser = existUser?.type === UsersTypes.USER;
-    console.log(existUser)
+    // console.log(existUser)
     return {
       id: existUser.id,
       username: existUser.username,
@@ -442,13 +442,21 @@ export class UsersService {
       type: existUser.type,
       avgRating: isTechnical ? Number(existUser.avgrating ?? 0) : undefined,
       completedOrders: isTechnical ? Number(existUser.completedorders ?? 0) : undefined,
-      approved: isTechnical ? existUser.approved  : undefined,
+      technicalProfile:{
+        id:  isTechnical ? existUser.techId : undefined,
+        approved: isTechnical ? existUser.approved  : undefined,
+      },
       serviceName: isTechnical? existUser.servicename: undefined,
       serviceIcon: isTechnical? existUser.serviceicone: undefined,
       workLicenseImage: isTechnical? existUser.worklicenseimage : undefined,
       identityImage: isTechnical? existUser.identityimage : undefined,
       nationalityName: isTechnical? existUser.nationalityname : undefined,
     } as unknown as UserEntity;
+  }
+
+  async checkApprovedTech(techProfileId:number){
+    const techProfile = await this.technicalProfileRepo.findOne({where:{id: techProfileId}});
+    return techProfile.approved;
   }
 
   async findOne(id: number, lang?: LanguagesEnum){

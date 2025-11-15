@@ -27,11 +27,12 @@ export class RequestOffersService {
   async save(offer: RequestOffersEntity){
     return await this.requestOffersRepository.save(offer);
   }
+
   async createRequestOffer(technicianId: number, requestId: number, createRequestOfferDto: CreateRequestOfferDto, lang: LanguagesEnum): Promise<RequestOffersEntity> {
     const request = await this.requestService.findRequestById(requestId, lang);
     const user = await this.usersService.findById(technicianId, lang);
-
-    if(user.type === UsersTypes.TECHNICAL && !user.technicalProfile.approved){
+    const approvedTech = await this.usersService.checkApprovedTech(user.technicalProfile.id);
+    if(user.type === UsersTypes.TECHNICAL && (approvedTech == null || !approvedTech)){
       throw new UnauthorizedException(
           lang === LanguagesEnum.ARABIC 
               ? 'لا يمكنك تقديم عرض قبل موافقة الادمن على حسابك' 
