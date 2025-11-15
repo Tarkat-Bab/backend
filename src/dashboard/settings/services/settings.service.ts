@@ -1,10 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { SettingEntity } from "./setting.entity";
 import { Repository } from "typeorm";
+import { SettingEntity } from "../entities/setting.entity";
 
 @Injectable()
-export class SettingsService {
+export class DashboardSettingsService {
     constructor(
         @InjectRepository(SettingEntity)
         private readonly settingRepository: Repository<SettingEntity>,

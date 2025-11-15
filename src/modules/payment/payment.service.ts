@@ -3,14 +3,13 @@ import { Repository } from 'typeorm';
 import { PaymentEntity } from './entities/payment.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersService } from '../users/services/users.service';
-import { RequestsService } from '../requests/services/requests.service';
 import { SavePaymentDto } from './dtos/save-payment.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import axios from 'axios';
-import { SettingsService } from 'src/dashboard/settings/settings.service';
 import { FilterPaymentsDto } from './dtos/filter-payments.dto';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { RequestOffersService } from '../requests/services/requests-offers.service';
+import { DashboardSettingsService } from 'src/dashboard/settings/services/settings.service';
 
 @Injectable()
 export class PaymentService {
@@ -20,7 +19,7 @@ export class PaymentService {
 
         private readonly userService: UsersService,
         private readonly requestOfferService: RequestOffersService,
-        private readonly settingsService: SettingsService,
+        private readonly settingsService: DashboardSettingsService,
         private readonly paginationService: PaginatorService
 
     ) {}

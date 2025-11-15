@@ -330,13 +330,13 @@ export class RequestsService {
       createdAt: requestEntity.createdAt,
     };
 
-    if (!dashboard && userId && requestEntity.user.id !== userId) {
-      requestData = {
-        ...requestData,
-        price: null,
-        offers: requestData.offers.map((o) => ({ ...o, price: null })),
-      };
-    }
+    // if (!dashboard && userId && requestEntity.user.id !== userId) {
+    //   requestData = {
+    //     ...requestData,
+    //     price: null,
+    //     offers: requestData.offers.map((o) => ({ ...o, price: null })),
+    //   };
+    // }
 
     return requestData;
   }

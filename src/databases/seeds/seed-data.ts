@@ -9,7 +9,7 @@ import { RequestStatus } from "src/modules/requests/enums/requestStatus.enum";
 import { ReportsEntity } from "src/modules/reports/entities/reports.entity";
 import { ReportReason } from "src/modules/reports/enums/reports.enum";
 import { RequestOffersEntity } from "../../modules/requests/entities/request_offers.entity";
-import { SettingEntity } from "src/dashboard/settings/setting.entity";
+import { SettingEntity } from "src/dashboard/settings/entities/setting.entity";
 
 export const seedData = async (manager: EntityManager) => {
     await seedSetting(manager);

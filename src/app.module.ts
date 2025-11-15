@@ -31,6 +31,7 @@ import { NationaltiesModule } from './modules/nationalties/nationalties.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { RegionsModule } from './modules/regions/regions.module';
+import { DeviceVersionsModule } from './modules/versions/device-versions..module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { RegionsModule } from './modules/regions/regions.module';
     NotificationsModule,
     PaymentModule,
     RegionsModule,
+    DeviceVersionsModule
   ],
   controllers: [AppController],
   providers: [
