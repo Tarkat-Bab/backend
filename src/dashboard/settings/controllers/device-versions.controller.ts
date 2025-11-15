@@ -10,11 +10,11 @@ import { UpdateDeviceVersionDto } from '../dtos/update-device-versions.dto';
 export class DashboardDeviceVersionsController {
   constructor(private service: DashboardDeviceVersionsService) {}
 
-//   @Post()
-//   @ApiOperation({ summary: 'Create new device version settings' })
-//   create(@Body() dto: CreateDeviceVersionDto) {
-//     return this.service.create(dto);
-//   }
+  // @Post()
+  // @ApiOperation({ summary: 'Create new device version settings' })
+  // create(@Body() dto: CreateDeviceVersionDto) {
+  //   return this.service.create(dto);
+  // }
 
   @Get()
   @ApiOperation({ summary: 'Get the latest version settings' })
@@ -22,9 +22,9 @@ export class DashboardDeviceVersionsController {
     return this.service.getLatest();
   }
 
-  @Patch(':id')
+  @Patch()
   @ApiOperation({ summary: 'Update version settings by ID' })
-  update(@Param('id') id: number, @Body() dto: UpdateDeviceVersionDto) {
-    return this.service.update(id, dto);
+  update( @Body() dto: UpdateDeviceVersionDto) {
+    return this.service.update(dto);
   }
 }

@@ -5,10 +5,11 @@ import { DeviceVersionsEntity } from "./entities/device-versions.entity";
 import { DashboardSettingsService } from "./services/settings.service";
 import { DashboardDeviceVersionsService } from "./services/device-versions.service";
 import { DashboardDeviceVersionsController } from "./controllers/device-versions.controller";
+import { DashboardSettingsController } from "./controllers/settings.controller";
 
 @Module({
   imports: [TypeOrmModule.forFeature([SettingEntity, DeviceVersionsEntity])],
-  controllers: [DashboardDeviceVersionsController],
+  controllers: [DashboardDeviceVersionsController, DashboardSettingsController],
   providers: [DashboardSettingsService, DashboardDeviceVersionsService],
   exports: [DashboardSettingsService, DashboardDeviceVersionsService],
 })
