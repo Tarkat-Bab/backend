@@ -24,7 +24,7 @@ export class DeviceVersionsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update version settings by ID' })
-  update(@Param('id') id: number, @Body() dto: UpdateDeviceVersionDto) {
-    return this.service.update(id, dto);
+  update(@Body() dto: UpdateDeviceVersionDto) {
+    return this.service.update(dto);
   }
 }

@@ -22,9 +22,9 @@ export class DashboardDeviceVersionsService {
     return await this.repo.findOne({where:{}});;
   }
 
-  async update(id: number, dto: UpdateDeviceVersionDto) {
-    await this.repo.update(id, dto);
-
-    return this.getLatest();
+  async update(dto: UpdateDeviceVersionDto) {
+    const versions = await this.getLatest();
+    await this.repo.update(versions.id, dto);
+    return await this.getLatest();
   }
 }
