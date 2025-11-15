@@ -78,11 +78,11 @@ export class DashboardRegionsController {
     return this.dashboardRegionsService.addCityToRegion(cityData, lang);
   }
 
-  @Delete('city/:cityId')
-  async removeCity(
-    @Param('cityId', ParseIntPipe) cityId: number,
-    @Language() lang: LanguagesEnum,
-  ) {
-    return this.dashboardRegionsService.removeCity(cityId, lang);
-  }
+  // @Delete('city/:cityId')
+  // async removeCity(
+  //   @Param('cityId', ParseIntPipe) cityIds: number[],
+  //   @Language() lang: LanguagesEnum,
+  // ) {
+  //   return this.dashboardRegionsService.removeCity(cityId, lang);
+  // }
 }

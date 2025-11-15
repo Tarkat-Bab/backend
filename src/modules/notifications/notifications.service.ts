@@ -65,8 +65,8 @@ export class NotificationsService {
     const content = {
       arTitle: templateData?.arTitle ?? baseTemplate.arTitle,
       enTitle: templateData?.enTitle ?? baseTemplate.enTitle,
-      arBody: templateData?.arBody ?? baseTemplate.arBody ? baseTemplate.arBody : baseTemplate.enBody,
-      enBody: templateData?.enBody ?? baseTemplate.enBody ? baseTemplate.enBody : baseTemplate.arBody,
+      arBody: templateData?.arBody ?? baseTemplate.arBody,
+      enBody: templateData?.enBody ?? baseTemplate.enBody,
     };
 
     // const content = this.prepareNotificationContent(null, templateKey, templateData);

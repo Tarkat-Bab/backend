@@ -613,7 +613,10 @@ export class UsersService {
 
   async changeUserStatus(id: number, status: UserStatus){
     const user = await this.findById(id);
-    await this.usersRepo.update(user.id, { status })
+    if(user.status === UserStatus.BLOCKED && status == UserStatus.ACTIVE){
+      return await this.usersRepo.update(user.id, { status,  warningCount:0})
+    }
+    return await this.usersRepo.update(user.id, { status })
   }
 
   async warnUser(id:number, lang: LanguagesEnum){
