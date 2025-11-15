@@ -219,7 +219,7 @@ export class RequestsService {
       .where('request.id = :id', { id })
       .andWhere('request.deleted = false')
       .andWhere('user.deleted = false')
-      // .andWhere('user.status = :status', { status: 'active' })
+      .andWhere('user.status = :status', { status: 'active' })
       .getOne();
 
     if (!requestEntity) {
@@ -270,16 +270,16 @@ export class RequestsService {
       };
     });
 
-    if (
-      requestEntity.status === RequestStatus.COMPLETED ||
-      requestEntity.status === RequestStatus.IN_PROGRESS
-    ) {
-      offers = offers.filter((o) => o.accepted === true);
-    }
+    // if (
+    //   requestEntity.status === RequestStatus.COMPLETED ||
+    //   requestEntity.status === RequestStatus.IN_PROGRESS
+    // ) {
+    //   offers = offers.filter((o) => o.accepted === true);
+    // }
 
     let canOffering = true;
     let offered = offers.filter((offer)=>offer.technician.id == userId);
-    if(offered.length >0) canOffering = false;
+    if(offered.length >0 || requestEntity?.status !== RequestStatus.PENDING) canOffering = false;
 
     const media = (requestEntity.media || []).map((m) => ({
       id: m.id,
