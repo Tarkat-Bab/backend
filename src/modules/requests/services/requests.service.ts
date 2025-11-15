@@ -277,9 +277,9 @@ export class RequestsService {
       offers = offers.filter((o) => o.accepted === true);
     }
 
-    let canOffered = true;
+    let canOffering = true;
     let offered = offers.filter((offer)=>offer.technician.id == userId);
-    if(offered.length >0) canOffered = false;
+    if(offered.length >0) canOffering = false;
 
     const media = (requestEntity.media || []).map((m) => ({
       id: m.id,
@@ -334,7 +334,7 @@ export class RequestsService {
       offers,
       remainingWarrantyDays: requestEntity.remainingWarrantyDays,
       createdAt: requestEntity.createdAt,
-      canOffered
+      canOffering
     };
 
     // if (!dashboard && userId && requestEntity.user.id !== userId) {
