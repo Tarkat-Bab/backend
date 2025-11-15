@@ -18,6 +18,7 @@ import { RequestsMedia } from '../entities/request_media.entity';
 import { PaginatorInput } from 'src/common/paginator/types/paginate.input';
 import { RequestOffersService } from './requests-offers.service';
 import { NotificationsService } from 'src/modules/notifications/notifications.service';
+import { off } from 'process';
 
 @Injectable()
 export class RequestsService {
@@ -276,6 +277,10 @@ export class RequestsService {
       offers = offers.filter((o) => o.accepted === true);
     }
 
+    let canOffered = true;
+    let offered = offers.filter((offer)=>offer.technician.id == userId);
+    if(offered.length >0) canOffered = false;
+
     const media = (requestEntity.media || []).map((m) => ({
       id: m.id,
       media: m.media,
@@ -329,6 +334,7 @@ export class RequestsService {
       offers,
       remainingWarrantyDays: requestEntity.remainingWarrantyDays,
       createdAt: requestEntity.createdAt,
+      canOffered
     };
 
     // if (!dashboard && userId && requestEntity.user.id !== userId) {
