@@ -630,6 +630,42 @@ export class RequestsService {
     return request;
   }
 
+  async requestsAnalysis() {
+  // total requests
+  const totalRequests = await this.serviceRequestsRepository.count({
+      where: { deleted: false },
+  });
+
+  // pending
+  const pendingRequests = await this.serviceRequestsRepository.count({
+    where: { deleted: false, status: RequestStatus.PENDING },
+  });
+
+  // in-progress
+  const inProgressRequests = await this.serviceRequestsRepository.count({
+    where: { deleted: false, status: RequestStatus.IN_PROGRESS },
+  });
+
+  // completed
+  const completedRequests = await this.serviceRequestsRepository.count({
+    where: { deleted: false, status: RequestStatus.COMPLETED },
+  });
+
+  // canceled
+  const canceledRequests = await this.serviceRequestsRepository.count({
+    where: { deleted: false, status: RequestStatus.CANCELLED },
+  });
+
+  return {
+    totalRequests,
+    pendingRequests,
+    inProgressRequests,
+    completedRequests,
+    canceledRequests
+  };
+}
+
+
 private calculateRemainingWarrantyDays(completedAt: Date, warrantyDays: number): number {
   const currentDate = new Date();
   const passedDays = Math.floor((currentDate.getTime() - completedAt.getTime()) / (1000 * 3600 * 24));

@@ -999,5 +999,50 @@ export class UsersService {
       return await this.usersRepo.save(user);
     }
 
+  async usersAnalysis() {
+    // ---- Count Clients ----
+    const totalUsers = await this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.technicalProfile', 'tech')
+      .where('u.type <> :type', { type: UsersTypes.ADMIN })
+      .getCount();
+
+    // ---- Count Clients ----
+    const totalClients = await this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.technicalProfile', 'tech')
+      .where('u.type = :type', { type: UsersTypes.USER })
+      // .andWhere('tech.id IS NULL')
+      .getCount();
     
+    // ---- Count Technicians ----
+    const totalTechnicians = await this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.technicalProfile', 'tech')
+      .where('u.type = :type', { type: UsersTypes.TECHNICAL })
+      .getCount();
+      
+    const totalApprovedTechnicians = await this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.technicalProfile', 'tech')
+      .where('u.type = :type', { type: UsersTypes.TECHNICAL })
+      .andWhere('tech.approved = true')
+      .getCount();
+    
+    const totalJoiningRequests = await this.usersRepo
+      .createQueryBuilder('u')
+      .leftJoin('u.technicalProfile', 'tech')
+      .where('u.type = :type', { type: UsersTypes.TECHNICAL })
+      .andWhere('tech.approved is null')
+      .getCount();
+
+    return {
+      totalUsers,
+      totalClients,
+      totalTechnicians,
+      totalApprovedTechnicians,
+      totalJoiningRequests
+    };
+}  
+
 }
