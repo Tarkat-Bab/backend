@@ -701,6 +701,8 @@ export class UsersService {
           description: userdata.technicalProfile?.description,
           image: userdata.image,
           address: userdata.address,
+          latitude: userdata.latitude,
+          longitude: userdata.longitude,
           approved: userdata.technicalProfile.approved,
           workLicenseImage: isApproved? userdata.technicalProfile.workLicenseImage : undefined,
           identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
