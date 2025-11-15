@@ -113,6 +113,7 @@ export class RequestsService {
         'request.arAddress',
         'request.enAddress',
         'request.createdAt',
+        'request.price',
 
         'user.id',
         'user.username',
