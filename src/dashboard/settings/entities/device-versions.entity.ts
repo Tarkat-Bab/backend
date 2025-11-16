@@ -23,7 +23,7 @@ export class DeviceVersionsEntity {
     exact_blocked_version: string;
     min_supported_version: string;
     maintenance_mode: boolean;
-    maintenance_message?: string;
+    maintenance_message: string;
   };
 
   @Column({ 
@@ -34,6 +34,6 @@ export class DeviceVersionsEntity {
     exact_blocked_version: string;
     min_supported_version: string;
     maintenance_mode: boolean;
-    maintenance_message?: string;
+    maintenance_message: string;
   };
 }
