@@ -11,6 +11,7 @@ export class UpdateDeviceVersionDto {
       change_reason: "Hotfix: block 5.2.7 and raise minimums"
     }
   })
+  @IsOptional()
   @IsObject()
   meta: any;
 

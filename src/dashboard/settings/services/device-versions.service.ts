@@ -22,9 +22,33 @@ export class DashboardDeviceVersionsService {
     return await this.repo.findOne({where:{}});;
   }
 
+  // async update(dto: UpdateDeviceVersionDto) {
+  //   const versions = await this.getLatest();
+  //   await this.repo.update(versions.id, dto);
+  //   return await this.getLatest();
+  // }
   async update(dto: UpdateDeviceVersionDto) {
     const versions = await this.getLatest();
-    await this.repo.update(versions.id, dto);
-    return await this.getLatest();
+    
+    // Merge nested objects only if they exist in the DTO
+    const mergedData: any = {
+      ...versions, // keep all old data
+      ...dto,      // override top-level fields
+      android: dto.android
+        ? { ...versions.android, ...dto.android }
+        : versions.android,
+    
+      ios: dto.ios
+        ? { ...versions.ios, ...dto.ios }
+        : versions.ios,
+    
+      meta: dto.meta
+        ? { ...versions.meta, ...dto.meta }
+        : versions.meta,
+    };
+  
+    await this.repo.update(versions.id, mergedData);
+    return this.getLatest();
   }
+
 }
