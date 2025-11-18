@@ -6,18 +6,14 @@ import {
   OneToOne,
   OneToMany,
   JoinColumn,
-  BeforeUpdate,
 } from 'typeorm';
 import { hash, genSalt } from 'bcrypt';
-import { join } from 'path';
 import { BaseEntity }    from '../../../common/baseEntity/baseEntity';
 import { UsersTypes, UserStatus } from '../../../common/enums/users.enum';
-import { MediaDir } from 'src/common/files/media-dir-.enum';
 import { TechnicalProfileEntity } from './technical_profile.entity';
 import { UserFcmTokenEntity } from './user-fcm-token.entity';
 import { ServiceRequestsEntity } from 'src/modules/requests/entities/service_requests.entity';
 import { ReportsEntity } from 'src/modules/reports/entities/reports.entity';
-import { NotificationsEntity } from 'src/modules/notifications/entities/notification.entity';
 import { UsersNotifications } from 'src/modules/notifications/entities/usersNotifications.entity';
 import { PaymentEntity } from 'src/modules/payment/entities/payment.entity';
 

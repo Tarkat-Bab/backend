@@ -32,6 +32,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PaymentModule } from './modules/payment/payment.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { DeviceVersionsModule } from './modules/versions/device-versions..module';
+import { ChatModule } from './modules/chat/chat.module';
+import { ChatController } from './modules/chat/chat.controller';
+import { ChatService } from './modules/chat/chat.service';
 
 @Module({
   imports: [
@@ -77,9 +80,10 @@ import { DeviceVersionsModule } from './modules/versions/device-versions..module
     NotificationsModule,
     PaymentModule,
     RegionsModule,
-    DeviceVersionsModule
+    DeviceVersionsModule,
+    ChatModule
   ],
-  controllers: [AppController],
+  controllers: [AppController, ChatController],
   providers: [
     AppService,
     {
@@ -90,6 +94,7 @@ import { DeviceVersionsModule } from './modules/versions/device-versions..module
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
+    ChatService,
   ],
 })
 export class AppModule {}
