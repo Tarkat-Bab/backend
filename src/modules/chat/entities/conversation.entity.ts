@@ -13,9 +13,6 @@ export class ConversationEntity extends BaseEntity {
   })
   type: ConversationType;
 
-  @Column({ type: 'boolean', default: false })
-  isClosed: boolean;
-
   @OneToMany(
     () => ConversationParticipantEntity,
     (participant) => participant.conversation,
