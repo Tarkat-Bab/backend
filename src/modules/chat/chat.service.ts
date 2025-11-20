@@ -58,15 +58,15 @@ export class ChatService {
     if (!conversation) throw new NotFoundException('Conversation not found');
 
     const sender = await this.userRepo.findOne({ where: { id: senderId } });
-
-    const message = await this.messageRepo.save({
+    console.log("MEsssage............")
+    const message = await this.messageRepo.create({
       conversation,
       sender,
       type,
       content,
     });
     
-    return message;
+    return  await this.messageRepo.save(message);
   }
 
   // MARK MESSAGE AS READ
@@ -109,4 +109,29 @@ export class ChatService {
     participant.lastSeenAt = new Date();
     return this.participantRepo.save(participant);
   }
+
+  async createOrGetConversation(
+    senderId: number,
+    receiverId: number,
+    type: ConversationType = ConversationType.CLIENT_TECHNICIAN,
+  ) {
+    const conversation = await this.conversationRepo
+      .createQueryBuilder('conversation')
+      .leftJoinAndSelect('conversation.participants', 'participant')
+      .leftJoinAndSelect('participant.user', 'user')
+      .where('participant.user_id IN (:...ids)', { ids: [senderId, receiverId] })
+      .getMany();
+
+    const matchedConversation = conversation.find(c => 
+      c.participants.every(p => [senderId, receiverId].includes(p.user.id))
+    );
+
+    if (!matchedConversation) {
+      return this.createConversation(type, [senderId, receiverId]);
+    }
+    return matchedConversation;
+  }
+
+
+
 }
