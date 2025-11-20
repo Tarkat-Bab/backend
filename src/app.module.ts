@@ -32,7 +32,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PaymentModule } from './modules/payment/payment.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { DeviceVersionsModule } from './modules/versions/device-versions..module';
-
+import { ChatModule } from './modules/chat/chat.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -77,7 +77,8 @@ import { DeviceVersionsModule } from './modules/versions/device-versions..module
     NotificationsModule,
     PaymentModule,
     RegionsModule,
-    DeviceVersionsModule
+    DeviceVersionsModule,
+    ChatModule
   ],
   controllers: [AppController],
   providers: [
