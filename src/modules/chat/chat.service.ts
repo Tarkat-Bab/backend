@@ -25,7 +25,6 @@ export class ChatService {
 
   ) {}
 
-  // CREATE CONVERSATION
   async createConversation(
     type: ConversationType,
     participantIds: number[],
@@ -44,7 +43,6 @@ export class ChatService {
     return conversation;
   }
 
-  // SEND MESSAGE
   async sendMessage(
     conversationId: number,
     senderId: number,
@@ -66,13 +64,7 @@ export class ChatService {
     });
     
     await this.messageRepo.save(message);
-    return this.messageRepo.findOne({where:{id: message.id}, select:{
-          id: true,
-          content: true,
-          createdAt: true,
-          isRead: true,
-          sender:{id: true, username:true},
-      }})
+    return this.getOneMessage(message.id);
   }
 
   // MARK MESSAGE AS READ
@@ -141,7 +133,17 @@ export class ChatService {
     return matchedConversation;
   }
 
+  async getOneMessage(messageId: number){
+      const message = this.messageRepo.findOne({where:{id: messageId }, select:{
+          id: true,
+          content: true,
+          createdAt: true,
+          isRead: true,
+          sender:{id: true, username:true},
+      }});
 
-
+      if(!message){ throw new NotFoundException() }
+      return message;
+  }
 
 }
