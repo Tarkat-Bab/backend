@@ -35,13 +35,12 @@ export class ChatGateway
   }
 
   @SubscribeMessage('allConversations')
-  async allConversations(data:{userId: number, conversationId:number}){
-    // console.log("All conversations...........")
-    const conversations = await this.chatService.getUserConversations(data.userId);
+  async allConversations(data:{userId: number, conversationId:number, type?: ConversationType}){
+    const conversations = await this.chatService.getUserConversations(data.userId, data.type);
 
     const room = `conv_${data.conversationId}`;
     this.server.to(room).emit('allConversations', conversations);
-    return {conversations}
+    return conversations
   }
 
   // Join or create a conversation
