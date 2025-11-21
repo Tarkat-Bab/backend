@@ -148,6 +148,7 @@ export class ChatService {
           image: recipient.user.image,
         } : null,
         lastMessage: msg.content,
+        messageDate: msg.createdAt,
         unreadCount: (!msg.isRead && msg.sender.id !== userId) ? 1 : 0,
       });
     });
