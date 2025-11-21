@@ -35,7 +35,9 @@ export class ChatGateway
   }
 
   @SubscribeMessage('allConversations')
-  async allConversations(userId: number){}
+  async allConversations(userId: number){
+
+  }
 
   // Join or create a conversation
   @SubscribeMessage('joinConversation')
@@ -93,17 +95,16 @@ export class ChatGateway
     data: { conversationId: number; senderId: number; content: string; type?: ConversationType },
   ) {
     
-    const room = `conv_${data.conversationId}`;
-    this.server.to(room).emit('newMessage', data.content);
-
     const msg = await this.chatService.sendMessage(
       data.conversationId,
       data.senderId,
       data.content,
     );
 
+    const room = `conv_${data.conversationId}`;
+    this.server.to(room).emit('newMessage', msg);
 
-    // console.log("Send messages envent: ", { msg})
+    console.log("Send messages envent: ", { msg})
     return msg;
   }
 
