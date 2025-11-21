@@ -115,12 +115,49 @@ export class ChatService {
   }
 
   async getUserConversations(userId: number) {
-    return this.participantRepo.find({
-      where: { user: { id: userId } },
-      relations: ['conversation', 'conversation.participants', 'conversation.messages'],
-      order: { createdAt: 'DESC' },
+    const messages = await this.messageRepo
+      .createQueryBuilder("message")
+      .leftJoinAndSelect("message.conversation", "conversation")
+      .leftJoinAndSelect("message.sender", "sender")
+      .leftJoinAndSelect("conversation.participants", "participant")
+      .leftJoinAndSelect("participant.user", "user")
+      .orderBy("message.createdAt", "DESC")
+      .getMany();
+
+    const conversationMap = new Map<number, any>();
+
+    messages.forEach(msg => {
+      const convId = msg.conversation.id;
+      if (conversationMap.has(convId)) {
+        const conv = conversationMap.get(convId);
+        if (!msg.isRead && msg.sender.id !== userId) {
+          conv.unreadCount += 1;
+        }
+        return;
+      }
+
+      const recipient = msg.conversation.participants.find(p => p.user.id !== userId);
+
+      conversationMap.set(convId, {
+        conversationId: convId,
+        type: msg.conversation.type,
+        updatedAt: msg.conversation.updatedAt,
+        recipient: recipient ? {
+          id: recipient.user.id,
+          username: recipient.user.username,
+          image: recipient.user.image,
+        } : null,
+        lastMessage: msg.content,
+        unreadCount: (!msg.isRead && msg.sender.id !== userId) ? 1 : 0,
+      });
     });
+
+    return Array.from(conversationMap.values());
   }
+
+
+
+
 
   async updateLastSeen(conversationId: number, userId: number) {
     const participant = await this.participantRepo.findOne({
