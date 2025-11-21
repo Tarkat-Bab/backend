@@ -47,6 +47,10 @@ export class ChatGateway
     );
 
     const room = `conv_${conversation.id}`;
+    if (client.rooms.has(room)) {
+      console.log("Already joined:", room);
+       return;
+    }
     client.join(room);
 
     // Update last seen
@@ -75,7 +79,8 @@ export class ChatGateway
       conversationId: conversation.id,
     });
 
-    return { conversationId: conversation.id };
+    // console.log("Join Conversation envent: ", { conversationId: conversation.id , messages})
+    return { conversationId: conversation.id , messages};
   }
 
   // Send message
@@ -93,6 +98,7 @@ export class ChatGateway
     const room = `conv_${data.conversationId}`;
     this.server.to(room).emit('newMessage', msg);
 
+    // console.log("Send messages envent: ", { msg})
     return msg;
   }
 
