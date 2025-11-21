@@ -74,27 +74,25 @@ export class ChatService {
   }
 
   async getOneMessage(messageId: number){
-    const message = await this.messageRepo.findOne({
-      where: { id: messageId },
-      relations: { sender: true },
-      select: {
-        id: true,
-        content: true,
-        createdAt: true,
-        isRead: true,
-        sender: {
-          id: true,
-          username: true
-        }
-      }
-    });
+    const message = await this.messageRepo
+      .createQueryBuilder('message')
+      .leftJoinAndSelect('message.sender', 'sender')
+      .select([
+        'message.id',
+        'message.content',
+        'message.createdAt',
+        'message.isRead',
+        'sender.id',
+        'sender.username',
+        'sender.image',
+      ])
+      .where('message.id = :id', { id: messageId })
+      .getOne();
 
-    if(!message){
-      throw new NotFoundException();
-    }
+    if (!message) throw new NotFoundException();
     return message;
   }
-  // MARK MESSAGE AS READ
+
   async markAsRead(messageId: number) {
     const message = await this.messageRepo.findOne({ where: { id: messageId } });
     if (!message) throw new NotFoundException('Message not found');
@@ -103,7 +101,6 @@ export class ChatService {
     return this.messageRepo.save(message);
   }
 
-  // GET MESSAGES OF A CONVERSATION
   async getConversationMessages(conversationId: number) {
     return this.messageRepo.find({
       where: { conversation: { id: conversationId, deleted:false }, deleted: false, sender:{deleted:false}  },
@@ -119,7 +116,6 @@ export class ChatService {
     });
   }
 
-  // GET USER'S CONVERSATIONS
   async getUserConversations(userId: number) {
     return this.participantRepo.find({
       where: { user: { id: userId } },
@@ -128,7 +124,6 @@ export class ChatService {
     });
   }
 
-  // UPDATE LAST SEEN
   async updateLastSeen(conversationId: number, userId: number) {
     const participant = await this.participantRepo.findOne({
       where: {
