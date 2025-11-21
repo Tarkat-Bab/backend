@@ -7,6 +7,7 @@ import { MessageEntity } from './entities/message.entity';
 import { UserEntity } from '../users/entities/users.entity';
 import { ConversationType } from './enums/conversationType.enum';
 import { MessageType } from './enums/messageType.enum';
+import { NotFound } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class ChatService {
@@ -25,6 +26,7 @@ export class ChatService {
 
   ) {}
 
+  // CREATE CONVERSATION
   async createConversation(
     type: ConversationType,
     participantIds: number[],
@@ -43,6 +45,7 @@ export class ChatService {
     return conversation;
   }
 
+  // SEND MESSAGE
   async sendMessage(
     conversationId: number,
     senderId: number,
@@ -56,7 +59,10 @@ export class ChatService {
     if (!conversation) throw new NotFoundException('Conversation not found');
 
     const sender = await this.userRepo.findOne({ where: { id: senderId } });
-    const message = await this.messageRepo.create({
+    if(!sender){
+      throw new NotFoundException("Sender not found");
+    }
+    const message = this.messageRepo.create({
       conversation,
       sender,
       type,
@@ -67,6 +73,27 @@ export class ChatService {
     return this.getOneMessage(message.id);
   }
 
+  async getOneMessage(messageId: number){
+    const message = await this.messageRepo.findOne({
+      where: { id: messageId },
+      relations: { sender: true },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        isRead: true,
+        sender: {
+          id: true,
+          username: true
+        }
+      }
+    });
+
+    if(!message){
+      throw new NotFoundException();
+    }
+    return message;
+  }
   // MARK MESSAGE AS READ
   async markAsRead(messageId: number) {
     const message = await this.messageRepo.findOne({ where: { id: messageId } });
@@ -133,17 +160,7 @@ export class ChatService {
     return matchedConversation;
   }
 
-  async getOneMessage(messageId: number){
-      const message = this.messageRepo.findOne({where:{id: messageId }, select:{
-          id: true,
-          content: true,
-          createdAt: true,
-          isRead: true,
-          sender:{id: true, username:true},
-      }});
 
-      if(!message){ throw new NotFoundException() }
-      return message;
-  }
+
 
 }

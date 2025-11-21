@@ -103,7 +103,7 @@ export class ChatGateway
     );
 
 
-    // console.log("Send messages envent: ", { msg})
+    console.log("Send messages envent: ", { msg})
     return msg;
   }
 
