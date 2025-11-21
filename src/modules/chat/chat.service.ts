@@ -58,7 +58,6 @@ export class ChatService {
     if (!conversation) throw new NotFoundException('Conversation not found');
 
     const sender = await this.userRepo.findOne({ where: { id: senderId } });
-    console.log("MEsssage............")
     const message = await this.messageRepo.create({
       conversation,
       sender,
@@ -66,7 +65,14 @@ export class ChatService {
       content,
     });
     
-    return  await this.messageRepo.save(message);
+    await this.messageRepo.save(message);
+    return this.messageRepo.findOne({where:{id: message.id}, select:{
+          id: true,
+          content: true,
+          createdAt: true,
+          isRead: true,
+          sender:{id: true, username:true},
+      }})
   }
 
   // MARK MESSAGE AS READ
@@ -81,8 +87,16 @@ export class ChatService {
   // GET MESSAGES OF A CONVERSATION
   async getConversationMessages(conversationId: number) {
     return this.messageRepo.find({
-      where: { conversation: { id: conversationId } },
+      where: { conversation: { id: conversationId, deleted:false }, deleted: false, sender:{deleted:false}  },
       order: { createdAt: 'ASC' },
+      select:{
+          id: true,
+          content: true,
+          createdAt: true,
+          isRead: true,
+          sender:{id: true, username:true},
+          conversation:{id:true}
+      }
     });
   }
 
@@ -110,27 +124,23 @@ export class ChatService {
     return this.participantRepo.save(participant);
   }
 
-  async createOrGetConversation(
-    senderId: number,
-    receiverId: number,
-    type: ConversationType = ConversationType.CLIENT_TECHNICIAN,
-  ) {
-    const conversation = await this.conversationRepo
+  async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
+    const qb = this.conversationRepo
       .createQueryBuilder('conversation')
-      .leftJoinAndSelect('conversation.participants', 'participant')
-      .leftJoinAndSelect('participant.user', 'user')
+      .leftJoin('conversation.participants', 'participant')
       .where('participant.user_id IN (:...ids)', { ids: [senderId, receiverId] })
-      .getMany();
-
-    const matchedConversation = conversation.find(c => 
-      c.participants.every(p => [senderId, receiverId].includes(p.user.id))
-    );
-
+      .groupBy('conversation.id')
+      .having('COUNT(DISTINCT participant.user_id) = 2');
+  
+    const matchedConversation = await qb.getOne();
+  
     if (!matchedConversation) {
       return this.createConversation(type, [senderId, receiverId]);
     }
+  
     return matchedConversation;
   }
+
 
 
 
