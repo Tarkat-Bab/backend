@@ -26,7 +26,6 @@ export class ChatService {
 
   ) {}
 
-  // CREATE CONVERSATION
   async createConversation(
     type: ConversationType,
     participantIds: number[],
@@ -45,7 +44,6 @@ export class ChatService {
     return conversation;
   }
 
-  // SEND MESSAGE
   async sendMessage(
     conversationId: number,
     senderId: number,
