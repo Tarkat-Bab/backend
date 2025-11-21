@@ -34,6 +34,9 @@ export class ChatGateway
     console.log(`Client Disconnected: ${client.id}`);
   }
 
+  @SubscribeMessage('allConversations')
+  async allConversations(userId: number){}
+
   // Join or create a conversation
   @SubscribeMessage('joinConversation')
   async onJoinConversation(
@@ -47,10 +50,10 @@ export class ChatGateway
     );
 
     const room = `conv_${conversation.id}`;
-    if (client.rooms.has(room)) {
-      console.log("Already joined:", room);
-       return;
-    }
+    // if (client.rooms.has(room)) {
+    //   console.log("Already joined:", room);
+    //    return;
+    // }
     client.join(room);
 
     // Update last seen
@@ -89,14 +92,16 @@ export class ChatGateway
     @MessageBody()
     data: { conversationId: number; senderId: number; content: string; type?: ConversationType },
   ) {
+    
+    const room = `conv_${data.conversationId}`;
+    this.server.to(room).emit('newMessage', data.content);
+
     const msg = await this.chatService.sendMessage(
       data.conversationId,
       data.senderId,
       data.content,
     );
 
-    const room = `conv_${data.conversationId}`;
-    this.server.to(room).emit('newMessage', msg);
 
     // console.log("Send messages envent: ", { msg})
     return msg;
