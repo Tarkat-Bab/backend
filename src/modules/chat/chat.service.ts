@@ -114,7 +114,8 @@ export class ChatService {
     });
   }
 
-  async getUserConversations(userId: number) {
+  async getUserConversations(userId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
+    console.log(type)
     const messages = await this.messageRepo
       .createQueryBuilder("message")
       .leftJoinAndSelect("message.conversation", "conversation")
@@ -122,6 +123,7 @@ export class ChatService {
       .leftJoinAndSelect("conversation.participants", "participant")
       .leftJoinAndSelect("participant.user", "user")
       .orderBy("message.createdAt", "DESC")
+      .where('conversation.type = :convType', { convType: type })
       .getMany();
 
     const conversationMap = new Map<number, any>();
