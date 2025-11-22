@@ -34,16 +34,18 @@ export class ChatGateway
     console.log(`Client Disconnected: ${client.id}`);
   }
 
-  @SubscribeMessage('allConversations')
-  async allConversations(data:{userId: number, conversationId:number, type?: ConversationType}){
-    const conversations = await this.chatService.getUserConversations(data.userId, data.type);
 
-    const room = `conv_${data.conversationId}`;
-    this.server.to(room).emit('allConversations', conversations);
-    return conversations
+  @SubscribeMessage('allConversations')
+  async allConversations(@MessageBody() data: { userId: number;  type?: ConversationType }) {
+    const conversations = await this.chatService.getUserConversations(
+      data.userId,
+      data.type
+    );
+
+    this.server.emit('allConversations', conversations);
+    return conversations;
   }
 
-  // Join or create a conversation
   @SubscribeMessage('joinConversation')
   async onJoinConversation(
     @ConnectedSocket() client: Socket,
