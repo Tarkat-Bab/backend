@@ -120,9 +120,9 @@ async getUserConversations(
     .createQueryBuilder("conversation")
     .leftJoinAndSelect("conversation.participants", "participant")
     .leftJoinAndSelect("participant.user", "user")
-    .andWhere("conversation.type = :type", { type })
-    .orderBy("conversation.updatedAt", "DESC")
+    // .andWhere("conversation.type = :type", { type })
     // .where('participant.user_id = :userId',{userId} )
+    .orderBy("conversation.updatedAt", "DESC")
     .getMany();
 
   const result = [];
@@ -184,14 +184,14 @@ async getUserConversations(
   }
 
   async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
+    console.log(`createOrGetConversation`)
     let conversation = await this.conversationRepo
       .createQueryBuilder('conversation')
-      .leftJoin('conversation.participants', 'participant')
-      .addSelect('ARRAY_AGG(participant.user_id) as participant_ids')
-      .where('participant.user_id IN (:...ids)', { ids: [senderId, receiverId] })
+      .innerJoin('conversation.participants', 'p1', 'p1.user_id = :u1', { u1: senderId })
+      .innerJoin('conversation.participants', 'p2', 'p2.user_id = :u2', { u2: receiverId })
       .groupBy('conversation.id')
-      .having('COUNT(DISTINCT participant.user_id) = 2')
       .getOne();
+
   
     if (conversation) return conversation;
   
