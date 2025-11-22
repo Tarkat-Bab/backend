@@ -113,50 +113,58 @@ export class ChatService {
       }
     });
   }
+async getUserConversations(
+  userId: number,
+  type: ConversationType = ConversationType.CLIENT_TECHNICIAN
+) {
+  const conversations = await this.conversationRepo
+    .createQueryBuilder("conversation")
+    .leftJoinAndSelect("conversation.participants", "participant")
+    .leftJoinAndSelect("participant.user", "user")
+    .andWhere("conversation.type = :type", { type })
+    .orderBy("conversation.updatedAt", "DESC")
+    // .where('participant.user_id = :userId',{userId} )
+    .getMany();
 
-  async getUserConversations(userId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
-    console.log(type)
-    const messages = await this.messageRepo
+  const result = [];
+
+  for (const conv of conversations) {
+    const recipient = conv.participants.find(p => p.user.id !== userId);
+
+    // ⛔ Skip conversation with no other participant
+    if (!recipient) continue;
+
+    const lastMessage = await this.messageRepo
       .createQueryBuilder("message")
-      .leftJoinAndSelect("message.conversation", "conversation")
-      .leftJoinAndSelect("message.sender", "sender")
-      .leftJoinAndSelect("conversation.participants", "participant")
-      .leftJoinAndSelect("participant.user", "user")
+      .where("message.conversation_id = :cid", { cid: conv.id })
       .orderBy("message.createdAt", "DESC")
-      .where('conversation.type = :convType', { convType: type })
-      .getMany();
+      .leftJoinAndSelect("message.sender", "sender")
+      .getOne();
 
-    const conversationMap = new Map<number, any>();
+    const unreadCount = await this.messageRepo
+      .createQueryBuilder("message")
+      .where("message.conversation_id = :cid", { cid: conv.id })
+      .andWhere("message.isRead = false")
+      .andWhere("message.sender_id != :uid", { uid: userId })
+      .getCount();
 
-    messages.forEach(msg => {
-      const convId = msg.conversation.id;
-      if (conversationMap.has(convId)) {
-        const conv = conversationMap.get(convId);
-        if (!msg.isRead && msg.sender.id !== userId) {
-          conv.unreadCount += 1;
-        }
-        return;
-      }
-
-      const recipient = msg.conversation.participants.find(p => p.user.id !== userId);
-
-      conversationMap.set(convId, {
-        conversationId: convId,
-        type: msg.conversation.type,
-        updatedAt: msg.conversation.updatedAt,
-        recipient: recipient ? {
-          id: recipient.user.id,
-          username: recipient.user.username,
-          image: recipient.user.image,
-        } : null,
-        lastMessage: msg.content,
-        messageDate: msg.createdAt,
-        unreadCount: (!msg.isRead && msg.sender.id !== userId) ? 1 : 0,
-      });
+    result.push({
+      conversationId: conv.id,
+      type: conv.type,
+      updatedAt: conv.updatedAt,
+      recipient: {
+        id: recipient.user.id,
+        username: recipient.user.username,
+        image: recipient.user.image,
+      },
+      lastMessage: lastMessage ? lastMessage.content : null,
+      messageDate: lastMessage ? lastMessage.createdAt : null,
+      unreadCount,
     });
-
-    return Array.from(conversationMap.values());
   }
+
+  return result;
+}
 
 
 
@@ -177,23 +185,37 @@ export class ChatService {
   }
 
   async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
-    const qb = this.conversationRepo
+    let conversation = await this.conversationRepo
       .createQueryBuilder('conversation')
       .leftJoin('conversation.participants', 'participant')
+      .addSelect('ARRAY_AGG(participant.user_id) as participant_ids')
       .where('participant.user_id IN (:...ids)', { ids: [senderId, receiverId] })
       .groupBy('conversation.id')
-      .having('COUNT(DISTINCT participant.user_id) = 2');
+      .having('COUNT(DISTINCT participant.user_id) = 2')
+      .getOne();
   
-    const matchedConversation = await qb.getOne();
+    if (conversation) return conversation;
   
-    if (!matchedConversation) {
-      return this.createConversation(type, [senderId, receiverId]);
-    }
-  
-    return matchedConversation;
+    //use transaction to avoid race condition
+    return await this.conversationRepo.manager.transaction(async (manager) => {
+      // double-check inside transaction
+      conversation = await manager
+        .getRepository(ConversationEntity)
+        .createQueryBuilder('conversation')
+        .leftJoin('conversation.participants', 'participant')
+        .addSelect('ARRAY_AGG(participant.user_id) as participant_ids')
+        .where('participant.user_id IN (:...ids)', { ids: [senderId, receiverId] })
+        .groupBy('conversation.id')
+        .having('COUNT(DISTINCT participant.user_id) = 2')
+        .getOne();
+    
+      if (conversation) return conversation;
+    
+      // create if still not exists
+      const newConv = await this.createConversation(type, [senderId, receiverId]);
+      return newConv;
+    });
   }
-
-
 
 
 }
