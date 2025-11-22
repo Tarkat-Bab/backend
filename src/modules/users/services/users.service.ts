@@ -253,6 +253,7 @@ export class UsersService {
         'u.createdAt AS createdAt',
         'u.status AS status',
         'u.phone AS phone',
+        'u.type AS type',
         `${addressColumn} AS address`, 
         `COUNT(DISTINCT serviceRequests.id) AS orderscount`,
       ])
@@ -306,6 +307,7 @@ export class UsersService {
         address: u.address,
         status: u.status,
         phone: u.phone,
+        type: u.type,
         totalOrders: isUser ? Number(u.orderscount ?? 0) : undefined,
         avgRating: isTechnical ? Number(u.avgrating ?? 0) : undefined,
         completedOrders: isTechnical ? Number(u.completedorders ?? 0) : undefined,
