@@ -7,7 +7,6 @@ import { MessageEntity } from './entities/message.entity';
 import { UserEntity } from '../users/entities/users.entity';
 import { ConversationType } from './enums/conversationType.enum';
 import { MessageType } from './enums/messageType.enum';
-import { NotFound } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class ChatService {

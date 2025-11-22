@@ -42,7 +42,8 @@ export class ChatGateway
       data.type
     );
 
-    this.server.emit('allConversations', conversations);
+    const room = `conve_all_${data.userId}`;
+    this.server.to(room).emit('allConversations', conversations);
     return conversations;
   }
 
