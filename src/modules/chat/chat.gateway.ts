@@ -36,10 +36,11 @@ export class ChatGateway
 
 
   @SubscribeMessage('allConversations')
-  async allConversations(@ConnectedSocket() client: Socket, @MessageBody() data: { userId: number;  type?: ConversationType }) {
+  async allConversations(@ConnectedSocket() client: Socket, @MessageBody() data: { userId: number;  type?: ConversationType; includeMessages?: boolean }) {
     const conversations = await this.chatService.getUserConversations(
       data.userId,
-      data.type
+      data.type,
+      data.includeMessages || false
     );
 
     const room = `conve_all_${data.userId}`;
@@ -49,8 +50,8 @@ export class ChatGateway
     return conversations;
   }
 
-  async emitConversationsUpdate(userId: number, type?: ConversationType) {
-    const conversations = await this.chatService.getUserConversations(userId, type);
+  async emitConversationsUpdate(userId: number, type?: ConversationType, includeMessages: boolean = true) {
+    const conversations = await this.chatService.getUserConversations(userId, type, includeMessages);
     const room = `conve_all_${userId}`;
     this.server.to(room).emit('allConversations', conversations);
   }
@@ -124,14 +125,19 @@ export class ChatGateway
   }
 
   @SubscribeMessage('readMessage')
-  async onReadMessage(@MessageBody() data: { messageId: number; conversationId: number }) {
+  async onReadMessage(@MessageBody() data: { messageId: number; conversationId: number; userId: number; type?: ConversationType }) {
     console.log("Read msg.....")
     await this.chatService.markAsRead(data.messageId);
     const room = `conv_${data.conversationId}`;
-    // this.server.to(room).emit('messageRead', { messageId: data.messageId });
+    
     this.server.to(room).emit('messageRead', { 
-    messageId: data.messageId,
-    isRead: true 
-  });
+      messageId: data.messageId,
+      isRead: true 
+    });
+
+    // Update conversation list to reflect read status
+    if (data.userId) {
+      this.emitConversationsUpdate(data.userId, data.type);
+    }
   }
 }
