@@ -36,15 +36,23 @@ export class ChatGateway
 
 
   @SubscribeMessage('allConversations')
-  async allConversations(@MessageBody() data: { userId: number;  type?: ConversationType }) {
+  async allConversations(@ConnectedSocket() client: Socket, @MessageBody() data: { userId: number;  type?: ConversationType }) {
     const conversations = await this.chatService.getUserConversations(
       data.userId,
       data.type
     );
 
     const room = `conve_all_${data.userId}`;
-    this.server.to(room).emit('allConversations', conversations);
+    client.join(room);
+    
+    client.emit('allConversations', conversations);
     return conversations;
+  }
+
+  async emitConversationsUpdate(userId: number, type?: ConversationType) {
+    const conversations = await this.chatService.getUserConversations(userId, type);
+    const room = `conve_all_${userId}`;
+    this.server.to(room).emit('allConversations', conversations);
   }
 
   @SubscribeMessage('joinConversation')
@@ -80,13 +88,17 @@ export class ChatGateway
       conversationId: conversation.id,
     });
 
+    // Update conversations list for both users
+    this.emitConversationsUpdate(data.userId, data.type);
+    this.emitConversationsUpdate(data.receiverId, data.type);
+
     return { conversationId: conversation.id , messages};
   }
 
   @SubscribeMessage('sendMessage')
   async onSendMessage(
     @MessageBody()
-    data: { conversationId: number; senderId: number; content: string; type?: ConversationType },
+    data: { conversationId: number; senderId: number; content: string; receiverId: number; type?: ConversationType },
   ) {
     
     const msg = await this.chatService.sendMessage(
@@ -98,7 +110,10 @@ export class ChatGateway
     const room = `conv_${data.conversationId}`;
     this.server.to(room).emit('newMessage', msg);
 
-    // console.log("Send messages envent: ", { msg})
+    // Update all conversations for both sender and receiver
+    this.emitConversationsUpdate(data.senderId, data.type);
+    this.emitConversationsUpdate(data.receiverId, data.type);
+
     return msg;
   }
 
