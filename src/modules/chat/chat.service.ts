@@ -114,14 +114,15 @@ export class ChatService {
   }
 async getUserConversations(
   userId: number,
-  type: ConversationType = ConversationType.CLIENT_TECHNICIAN
+  type: ConversationType = ConversationType.CLIENT_TECHNICIAN,
+  includeMessages: boolean = false
 ) {
   const conversations = await this.conversationRepo
     .createQueryBuilder("conversation")
+    .innerJoin("conversation.participants", "userParticipant", "userParticipant.user_id = :userId", { userId })
     .leftJoinAndSelect("conversation.participants", "participant")
     .leftJoinAndSelect("participant.user", "user")
-    // .andWhere("conversation.type = :type", { type })
-    // .where('participant.user_id = :userId',{userId} )
+    .where("user.deleted = false")
     .orderBy("conversation.updatedAt", "DESC")
     .getMany();
 
@@ -147,7 +148,7 @@ async getUserConversations(
       .andWhere("message.sender_id != :uid", { uid: userId })
       .getCount();
 
-    result.push({
+    const conversationData: any = {
       conversationId: conv.id,
       type: conv.type,
       updatedAt: conv.updatedAt,
@@ -159,7 +160,14 @@ async getUserConversations(
       lastMessage: lastMessage ? lastMessage.content : null,
       messageDate: lastMessage ? lastMessage.createdAt : null,
       unreadCount,
-    });
+    };
+
+    // Include all messages if requested
+    if (includeMessages) {
+      conversationData.messages = await this.getConversationMessages(conv.id);
+    }
+
+    result.push(conversationData);
   }
 
   return result;
