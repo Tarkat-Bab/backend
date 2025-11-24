@@ -121,7 +121,7 @@ export class LocationService {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     
-    return distance;
+    return Math.ceil(distance * (Math.PI / 180));
   }
   
   // Helper function to convert degrees to radians

@@ -231,13 +231,17 @@ export class RequestsService {
       }
     }
 
+    // Calculate remaining warranty days for completed requests
+    let remainingWarrantyDays = requestEntity.remainingWarrantyDays;
     if (
-      requestEntity.status === RequestStatus.COMPLETED &&
-      requestEntity.completedAt
+      requestEntity.status === RequestStatus.COMPLETED 
     ) {
-      requestEntity.remainingWarrantyDays = this.calculateRemainingWarrantyDays(
+      // Use a fixed warranty period (20 days as per entity default)
+      console.log(requestEntity.completedAt)
+      const warrantyPeriod = 20;
+      remainingWarrantyDays = this.calculateRemainingWarrantyDays(
         requestEntity.completedAt,
-        requestEntity.remainingWarrantyDays
+        warrantyPeriod
       );
     }
       
@@ -262,6 +266,7 @@ export class RequestsService {
                 lang === LanguagesEnum.ARABIC
                   ? o.technician?.user?.arAddress
                   : o.technician?.user?.enAddress,
+              farAway: this.locationService.calculateDistance(requestEntity.longitude, requestEntity.latitude, o.technician.user.longitude,  o.technician.user.latitude)
             }
           : null,
         needsDelivery: (o as any).needsDelivery,
@@ -269,13 +274,6 @@ export class RequestsService {
         accepted: (o as any).accepted,
       };
     });
-
-    // if (
-    //   requestEntity.status === RequestStatus.COMPLETED ||
-    //   requestEntity.status === RequestStatus.IN_PROGRESS
-    // ) {
-    //   offers = offers.filter((o) => o.accepted === true);
-    // }
 
     let canOffering = true;
     let offered = offers.filter((offer)=>offer.technician.id == userId);
@@ -332,7 +330,8 @@ export class RequestsService {
           : null,
       media,
       offers,
-      remainingWarrantyDays: requestEntity.remainingWarrantyDays,
+      remainingWarrantyDays,
+      completedAt: requestEntity.completedAt,
       createdAt: requestEntity.createdAt,
       canOffering
     };
@@ -668,7 +667,7 @@ export class RequestsService {
 
 private calculateRemainingWarrantyDays(completedAt: Date, warrantyDays: number): number {
   const currentDate = new Date();
-  const passedDays = Math.floor((currentDate.getTime() - completedAt.getTime()) / (1000 * 3600 * 24));
+  const passedDays = Math.ceil((currentDate.getTime() - completedAt.getTime()) / (1000 * 3600 * 24));
   const remainingDays = warrantyDays - passedDays;
   return remainingDays > 0 ? remainingDays : 0;
 }
