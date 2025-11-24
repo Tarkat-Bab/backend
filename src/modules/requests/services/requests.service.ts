@@ -266,6 +266,7 @@ export class RequestsService {
                 lang === LanguagesEnum.ARABIC
                   ? o.technician?.user?.arAddress
                   : o.technician?.user?.enAddress,
+              farAway: this.locationService.calculateDistance(requestEntity.longitude, requestEntity.latitude, o.technician.user.longitude,  o.technician.user.latitude)
             }
           : null,
         needsDelivery: (o as any).needsDelivery,
