@@ -36,47 +36,39 @@ export class ChatGateway
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client Disconnected: ${client.id}`);
-    
-    // Leave all rooms when disconnected
-    if (client.data?.userId) {
-      const userRoom = `user_${client.data.userId}`;
-      client.leave(userRoom);
-    }
+    console.log(`Client Disconnected: ${client.id} - User: ${client.data?.userId || 'unknown'}`);
   }
-
 
   @SubscribeMessage('allConversations')
   async allConversations(@ConnectedSocket() client: Socket, @MessageBody() data: { userId: number;  type?: ConversationType; includeMessages?: boolean }) {
+    // IMPORTANT: Store userId in socket data for targeted real-time updates
+    client.data.userId = data.userId;
+    console.log(`User ${data.userId} subscribed to allConversations on socket ${client.id}`);
+    
     const conversations = await this.chatService.getUserConversations(
       data.userId,
       data.type,
       data.includeMessages || false
     );
-
-    // Join both rooms for this user
+    
     const conversationsRoom = `conve_all_${data.userId}`;
-    const userRoom = `user_${data.userId}`;
-    
-    client.join(conversationsRoom);
-    client.join(userRoom);
-    
-    // Store userId in socket data
-    client.data.userId = data.userId;
-    
-    client.emit('allConversations', conversations);
+    client.to(conversationsRoom).emit('allConversations', conversations);
     return conversations;
   }
 
   async emitConversationsUpdate(userId: number, type?: ConversationType, includeMessages: boolean = false) {
     const conversations = await this.chatService.getUserConversations(userId, type, includeMessages);
     
-    // Emit to both the conversations room and the user room
-    const conversationsRoom = `conve_all_${userId}`;
-    const userRoom = `user_${userId}`;
+    // Get all sockets for this specific user and emit directly to them
+    const sockets = await this.server.fetchSockets();
+    const userSockets = sockets.filter(socket => socket.data?.userId === userId);
     
-    this.server.to(conversationsRoom).emit('allConversations', conversations);
-    this.server.to(userRoom).emit('allConversations', conversations);
+    console.log(`Emitting conversations update to user ${userId}, found ${userSockets.length} socket(s)`);
+    
+    // Emit directly to each socket belonging to this user
+    userSockets.forEach(socket => {
+      socket.emit('allConversations', conversations);
+    });
   }
 
   @SubscribeMessage('joinConversation')
@@ -94,14 +86,12 @@ export class ChatGateway
     const isNewConversation = result.isNew;
 
     const room = `conv_${conversation.id}`;
-    const userRoom = `user_${data.userId}`;
     
-    // Store userId in socket data for notification checking
+    // Store userId in socket data for notification checking and targeted updates
     client.data.userId = data.userId;
     
-    // Join both conversation room and user room
+    // Join conversation room (only participants will be in this room)
     client.join(room);
-    client.join(userRoom);
 
     await this.chatService.updateLastSeen(conversation.id, data.userId);
 
@@ -123,7 +113,7 @@ export class ChatGateway
     });
 
     // Update conversations list for both users in real-time
-    // This will work even if they haven't subscribed to allConversations yet
+    // Uses socket.data.userId to target specific users only
     await this.emitConversationsUpdate(data.userId, data.type);
     await this.emitConversationsUpdate(data.receiverId, data.type);
 
@@ -143,16 +133,17 @@ export class ChatGateway
     );
 
     const room = `conv_${data.conversationId}`;
+    
+    // Only emit to the conversation room (participants only)
     this.server.to(room).emit('newMessage', msg);
 
-    // Update all conversations for both sender and receiver
-    this.emitConversationsUpdate(data.senderId, data.type);
-    this.emitConversationsUpdate(data.receiverId, data.type);
+    // Update conversations list ONLY for the two participants
+    await this.emitConversationsUpdate(data.senderId, data.type);
+    await this.emitConversationsUpdate(data.receiverId, data.type);
 
     // Check if receiver is in the chat room
     const receiverSockets = await this.server.in(room).fetchSockets();
     const isReceiverInRoom = receiverSockets.some(socket => {
-      // You may need to store userId in socket data when user joins
       return socket.data?.userId === data.receiverId;
     });
 
