@@ -10,6 +10,8 @@ import {
 import { Socket, Server } from 'socket.io';
 import { ChatService } from './chat.service';
 import { ConversationType } from './enums/conversationType.enum';
+import { NotificationsService } from '../notifications/notifications.service';
+import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -17,7 +19,10 @@ import { ConversationType } from './enums/conversationType.enum';
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   server: Server;
 
@@ -32,6 +37,12 @@ export class ChatGateway
 
   handleDisconnect(client: Socket) {
     console.log(`Client Disconnected: ${client.id}`);
+    
+    // Leave all rooms when disconnected
+    if (client.data?.userId) {
+      const userRoom = `user_${client.data.userId}`;
+      client.leave(userRoom);
+    }
   }
 
 
@@ -43,17 +54,29 @@ export class ChatGateway
       data.includeMessages || false
     );
 
-    const room = `conve_all_${data.userId}`;
-    client.join(room);
+    // Join both rooms for this user
+    const conversationsRoom = `conve_all_${data.userId}`;
+    const userRoom = `user_${data.userId}`;
+    
+    client.join(conversationsRoom);
+    client.join(userRoom);
+    
+    // Store userId in socket data
+    client.data.userId = data.userId;
     
     client.emit('allConversations', conversations);
     return conversations;
   }
 
-  async emitConversationsUpdate(userId: number, type?: ConversationType, includeMessages: boolean = true) {
+  async emitConversationsUpdate(userId: number, type?: ConversationType, includeMessages: boolean = false) {
     const conversations = await this.chatService.getUserConversations(userId, type, includeMessages);
-    const room = `conve_all_${userId}`;
-    this.server.to(room).emit('allConversations', conversations);
+    
+    // Emit to both the conversations room and the user room
+    const conversationsRoom = `conve_all_${userId}`;
+    const userRoom = `user_${userId}`;
+    
+    this.server.to(conversationsRoom).emit('allConversations', conversations);
+    this.server.to(userRoom).emit('allConversations', conversations);
   }
 
   @SubscribeMessage('joinConversation')
@@ -61,14 +84,24 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { userId: number; receiverId: number; type?: ConversationType },
   ) {
-    const conversation = await this.chatService.createOrGetConversation(
+    const result = await this.chatService.createOrGetConversation(
       data.userId,
       data.receiverId,
       data.type,
     );
+    
+    const conversation = result.conversation;
+    const isNewConversation = result.isNew;
 
     const room = `conv_${conversation.id}`;
+    const userRoom = `user_${data.userId}`;
+    
+    // Store userId in socket data for notification checking
+    client.data.userId = data.userId;
+    
+    // Join both conversation room and user room
     client.join(room);
+    client.join(userRoom);
 
     await this.chatService.updateLastSeen(conversation.id, data.userId);
 
@@ -89,17 +122,18 @@ export class ChatGateway
       conversationId: conversation.id,
     });
 
-    // Update conversations list for both users
-    this.emitConversationsUpdate(data.userId, data.type);
-    this.emitConversationsUpdate(data.receiverId, data.type);
+    // Update conversations list for both users in real-time
+    // This will work even if they haven't subscribed to allConversations yet
+    await this.emitConversationsUpdate(data.userId, data.type);
+    await this.emitConversationsUpdate(data.receiverId, data.type);
 
-    return { conversationId: conversation.id , messages};
+    return { conversationId: conversation.id , messages, isNewConversation};
   }
 
   @SubscribeMessage('sendMessage')
   async onSendMessage(
     @MessageBody()
-    data: { conversationId: number; senderId: number; content: string; receiverId: number; type?: ConversationType },
+    data: { conversationId: number; senderId: number; content: string; receiverId: number; type?: ConversationType; lang?: LanguagesEnum },
   ) {
     
     const msg = await this.chatService.sendMessage(
@@ -114,6 +148,27 @@ export class ChatGateway
     // Update all conversations for both sender and receiver
     this.emitConversationsUpdate(data.senderId, data.type);
     this.emitConversationsUpdate(data.receiverId, data.type);
+
+    // Check if receiver is in the chat room
+    const receiverSockets = await this.server.in(room).fetchSockets();
+    const isReceiverInRoom = receiverSockets.some(socket => {
+      // You may need to store userId in socket data when user joins
+      return socket.data?.userId === data.receiverId;
+    });
+
+    // Send notification only if receiver is not in the chat
+    if (!isReceiverInRoom) {
+      await this.notificationsService.autoNotification(
+        data.receiverId,
+        'NEW_CHAT_MESSAGE',
+        {
+          senderName: msg.sender.username,
+          messageContent: data.content.length > 50 ? data.content.substring(0, 50) + '...' : data.content,
+          conversationId: data.conversationId,
+        },
+        data.lang || LanguagesEnum.ENGLISH,
+      );
+    }
 
     return msg;
   }

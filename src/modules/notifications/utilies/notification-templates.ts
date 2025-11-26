@@ -60,6 +60,13 @@ export const NotificationTemplates = {
     enTitle: 'Account Not Approved Yet',
     arBody: 'حسابك لم يتم الموافقة عليه بعد من قبل الإدارة، لا يمكنك استخدام بعض خدمات المنصة.',
     enBody: 'Your account has not been approved by the admin yet. You cannot use some platform services.',
+  },
+
+  NEW_CHAT_MESSAGE: {
+    arTitle: 'رسالة جديدة من {{senderName}}',
+    enTitle: 'New message from {{senderName}}',
+    arBody: '{{messageContent}}',
+    enBody: '{{messageContent}}',
   }
 
 };
