@@ -55,4 +55,17 @@ export class UsersController {
     ) {
         return this.usersService.technicianProfile(technicianId, lang);
     }
+
+    @ApiHeader({
+      name: 'Accept-Language',
+      description: 'Language for the response (e.g., ar, en)',
+      required: false,
+    })
+    @Get('loguot')
+    async logout(
+        @CurrentUser() user: any,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.usersService.logout(user.id, lang);
+    }
 }

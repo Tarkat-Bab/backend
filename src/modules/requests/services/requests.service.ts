@@ -284,6 +284,11 @@ export class RequestsService {
       media: m.media,
     }));
 
+    const owner = requestEntity.user.id == userId;
+    const reqPrice = typeof requestEntity.price === 'number'
+          ? requestEntity.price
+          : Number(requestEntity.price);
+
     let requestData = {
       id: requestEntity.id,
       title: requestEntity.title,
@@ -291,10 +296,7 @@ export class RequestsService {
       address: (requestEntity as any)[addressField],
       status: requestEntity.status,
       reviewed: requestEntity.reviewed,
-      price:
-        typeof requestEntity.price === 'number'
-          ? requestEntity.price
-          : Number(requestEntity.price),
+      price: owner? reqPrice : null,
       requestNumber: requestEntity.requestNumber,
       offersCount: offers.length,
       user: {

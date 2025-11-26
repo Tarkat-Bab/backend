@@ -201,10 +201,10 @@ async getUserConversations(
       .getOne();
 
   
-    if (conversation) return conversation;
+    if (conversation) return { conversation, isNew: false };
   
     //use transaction to avoid race condition
-    return await this.conversationRepo.manager.transaction(async (manager) => {
+    const result = await this.conversationRepo.manager.transaction(async (manager) => {
       // double-check inside transaction
       conversation = await manager
         .getRepository(ConversationEntity)
@@ -216,12 +216,14 @@ async getUserConversations(
         .having('COUNT(DISTINCT participant.user_id) = 2')
         .getOne();
     
-      if (conversation) return conversation;
+      if (conversation) return { conversation, isNew: false };
     
       // create if still not exists
       const newConv = await this.createConversation(type, [senderId, receiverId]);
-      return newConv;
+      return { conversation: newConv, isNew: true };
     });
+    
+    return result;
   }
 
 

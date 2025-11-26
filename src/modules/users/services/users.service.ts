@@ -1045,6 +1045,16 @@ export class UsersService {
       totalApprovedTechnicians,
       totalJoiningRequests
     };
-}  
+  }  
+
+  async logout(userId: number, lang: LanguagesEnum){
+    await this.userFcmTokenRepo.delete({ user: { id: userId } });
+    
+    return {
+      message: lang === LanguagesEnum.ARABIC 
+        ? 'تم تسجيل الخروج بنجاح' 
+        : 'Logged out successfully'
+    };
+  } 
 
 }
