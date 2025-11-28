@@ -133,75 +133,85 @@ export class ChatService {
       }
     });
   }
-async getUserConversations(
-  userId: number,
-  type?: ConversationType,
-  includeMessages: boolean = false
-) {
-  let query = this.conversationRepo
-    .createQueryBuilder("conversation")
-    .distinct(true)
-    .innerJoin("conversation.participants", "userParticipant", "userParticipant.user_id = :userId", { userId })
-    .leftJoinAndSelect("conversation.participants", "participant")
-    .leftJoinAndSelect("participant.user", "user")
-    .where("user.deleted = false")
-    .andWhere("conversation.deleted = false");
+  
+  async getUserConversations(
+    userId: number,
+    type?: ConversationType,
+    includeMessages: boolean = false
+  ) {
+    let query = this.conversationRepo
+      .createQueryBuilder("conversation")
+      .distinct(true)
+      .innerJoin("conversation.participants", "userParticipant", "userParticipant.user_id = :userId", { userId })
+      .leftJoinAndSelect("conversation.participants", "participant")
+      .leftJoinAndSelect("participant.user", "user")
+      .where("user.deleted = false")
+      .andWhere("conversation.deleted = false");
 
-  // Only filter by type if provided
-  if (type) {
-    query = query.andWhere("conversation.type = :conversationType", { conversationType: type });
-  }
-
-  const conversations = await query
-    .orderBy("conversation.updatedAt", "DESC")
-    .getMany();
-
-  const result = [];
-
-  for (const conv of conversations) {
-    const recipient = conv.participants.find(p => p.user.id !== userId);
-
-    // ⛔ Skip conversation with no other participant
-    if (!recipient) continue;
-
-    const lastMessage = await this.messageRepo
-      .createQueryBuilder("message")
-      .where("message.conversation_id = :cid", { cid: conv.id })
-      .orderBy("message.createdAt", "DESC")
-      .leftJoinAndSelect("message.sender", "sender")
-      .getOne();
-
-    const unreadCount = await this.messageRepo
-      .createQueryBuilder("message")
-      .where("message.conversation_id = :cid", { cid: conv.id })
-      .andWhere("message.isRead = false")
-      .andWhere("message.sender_id != :uid", { uid: userId })
-      .getCount();
-
-    const conversationData: any = {
-      conversationId: conv.id,
-      type: conv.type,
-      updatedAt: conv.updatedAt,
-      recipient: {
-        id: recipient.user.id,
-        username: recipient.user.username,
-        image: recipient.user.image,
-      },
-      lastMessage: lastMessage ? lastMessage.content : null,
-      messageDate: lastMessage ? lastMessage.createdAt : null,
-      unreadCount,
-    };
-
-    // Include all messages if requested
-    if (includeMessages) {
-      conversationData.messages = await this.getConversationMessages(conv.id);
+    // Only filter by type if provided
+    if (type) {
+      query = query.andWhere("conversation.type = :conversationType", { conversationType: type });
     }
 
-    result.push(conversationData);
-  }
+    const conversations = await query
+      .orderBy("conversation.updatedAt", "DESC")
+      .getMany();
 
-  return result;
-}
+    const result = [];
+
+    for (const conv of conversations) {
+      const recipient = conv.participants.find(p => p.user.id !== userId);
+
+      // ⛔ Skip conversation with no other participant
+      if (!recipient) continue;
+
+      // Check if conversation has any messages
+      const messageCount = await this.messageRepo
+        .createQueryBuilder("message")
+        .where("message.conversation_id = :cid", { cid: conv.id })
+        .getCount();
+
+      // ⛔ Skip conversations with no messages
+      if (messageCount === 0) continue;
+
+      const lastMessage = await this.messageRepo
+        .createQueryBuilder("message")
+        .where("message.conversation_id = :cid", { cid: conv.id })
+        .orderBy("message.createdAt", "DESC")
+        .leftJoinAndSelect("message.sender", "sender")
+        .getOne();
+
+      const unreadCount = await this.messageRepo
+        .createQueryBuilder("message")
+        .where("message.conversation_id = :cid", { cid: conv.id })
+        .andWhere("message.isRead = false")
+        .andWhere("message.sender_id != :uid", { uid: userId })
+        .getCount();
+
+      const conversationData: any = {
+        conversationId: conv.id,
+        type: conv.type,
+        updatedAt: conv.updatedAt,
+        recipient: {
+          id: recipient.user.id,
+          username: recipient.user.username,
+          image: recipient.user.image,
+        },
+        lastMessage: lastMessage ? lastMessage.content : null,
+        messageDate: lastMessage ? lastMessage.createdAt : null,
+        unreadCount,
+      };
+
+      // Include all messages if requested
+      if (includeMessages) {
+        conversationData.messages = await this.getConversationMessages(conv.id);
+      }
+
+      result.push(conversationData);
+    }
+
+    return result;
+  }
 
 
 
@@ -221,20 +231,15 @@ async getUserConversations(
     return this.participantRepo.save(participant);
   }
 
-  async findExistingConversation(senderId: number, receiverId: number) {
-    const conversation = await this.conversationRepo
+  async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
+    //console.log(`createOrGetConversation`)
+    let conversation = await this.conversationRepo
       .createQueryBuilder('conversation')
       .innerJoin('conversation.participants', 'p1', 'p1.user_id = :u1', { u1: senderId })
       .innerJoin('conversation.participants', 'p2', 'p2.user_id = :u2', { u2: receiverId })
       .groupBy('conversation.id')
       .getOne();
-    
-    return conversation;
-  }
 
-  async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
-    //console.log(`createOrGetConversation`)
-    let conversation = await this.findExistingConversation(senderId, receiverId);
   
     if (conversation) return { conversation, isNew: false };
   
