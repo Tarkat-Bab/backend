@@ -127,7 +127,7 @@ export class ChatGateway
   @SubscribeMessage('sendMessage')
   async onSendMessage(
     @MessageBody()
-    data: { conversationId: number; senderId: number; receiverId: number; type?: ConversationType; content?: string; file?: Express.Multer.File; lang?: LanguagesEnum },
+    data: { conversationId: number; senderId: number; content?: string; file?: Express.Multer.File; lang?: LanguagesEnum },
   ) {
     
     const msg = await this.chatService.sendMessage(
@@ -147,7 +147,7 @@ export class ChatGateway
     console.log('Updating conversations for participants:', participantIds);
     
     for (const participantId of participantIds) {
-      await this.emitConversationsUpdate(participantId, data.type);
+      await this.emitConversationsUpdate(participantId, msg.conversation.type);
     }
 
     return msg;
