@@ -126,6 +126,8 @@ export class ChatService {
           content: true,
           createdAt: true,
           isRead: true,
+          imageUrl: true,
+          type: true,
           sender:{id: true, username:true},
           conversation:{id:true}
       }
