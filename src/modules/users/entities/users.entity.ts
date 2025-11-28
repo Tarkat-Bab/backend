@@ -16,6 +16,7 @@ import { ServiceRequestsEntity } from 'src/modules/requests/entities/service_req
 import { ReportsEntity } from 'src/modules/reports/entities/reports.entity';
 import { UsersNotifications } from 'src/modules/notifications/entities/usersNotifications.entity';
 import { PaymentEntity } from 'src/modules/payment/entities/payment.entity';
+import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
@@ -65,6 +66,9 @@ export class UserEntity extends BaseEntity {
   @Column({type: 'int', default:0})
   warningCount: number;
   
+  // @Column({type: 'varchar', enum: LanguagesEnum, default: LanguagesEnum.ENGLISH })
+  // usedLanguage: LanguagesEnum;
+
   @OneToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.user, { cascade: true })
   technicalProfile: TechnicalProfileEntity;
 
@@ -88,6 +92,7 @@ export class UserEntity extends BaseEntity {
 
   @OneToMany(() => PaymentEntity, payment => payment.user)
   payments: PaymentEntity[];
+
 
   @BeforeInsert()
   async hashPassword() {

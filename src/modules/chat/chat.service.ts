@@ -213,10 +213,6 @@ export class ChatService {
     return result;
   }
 
-
-
-
-
   async updateLastSeen(conversationId: number, userId: number) {
     const participant = await this.participantRepo.findOne({
       where: {

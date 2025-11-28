@@ -109,7 +109,12 @@ export class RequestOffersService {
 
     await this.requestOffersRepository.save(offer);
     
-    await this.notificationService.autoNotification(request.user.id, 'RECEIVED_OFFER', { id: request.id});
+    await this.notificationService.autoNotification(
+      request.user.id, 
+      'RECEIVED_OFFER', 
+      { id: String(request.id) },
+      lang
+    );
 
     return this.findRequestOfferById(user.id, offer.id, lang, true);
   }
@@ -221,7 +226,12 @@ export class RequestOffersService {
     offer.accepted = true;
     
     await this.requestOffersRepository.save(offer);
-    await this.notificationService.autoNotification(request.user.id, 'ACCEPTED_OFFER', {id: request.id});
+    await this.notificationService.autoNotification(
+      offer.technician.user.id, 
+      'ACCEPTED_OFFER', 
+      { id: String(request.id) },
+      lang
+    );
     return this.requestService.save(request);
   }
 
