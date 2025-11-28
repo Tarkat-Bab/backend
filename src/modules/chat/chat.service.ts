@@ -135,16 +135,22 @@ export class ChatService {
   }
 async getUserConversations(
   userId: number,
-  type: ConversationType = ConversationType.CLIENT_TECHNICIAN,
+  type?: ConversationType,
   includeMessages: boolean = false
 ) {
-  const conversations = await this.conversationRepo
+  let query = this.conversationRepo
     .createQueryBuilder("conversation")
     .innerJoin("conversation.participants", "userParticipant", "userParticipant.user_id = :userId", { userId })
     .leftJoinAndSelect("conversation.participants", "participant")
     .leftJoinAndSelect("participant.user", "user")
-    .where("user.deleted = false")
-    .andWhere("conversation.type :conversationType", {conversationType: type})
+    .where("user.deleted = false");
+
+  // Only filter by type if provided
+  if (type) {
+    query = query.andWhere("conversation.type = :conversationType", { conversationType: type });
+  }
+
+  const conversations = await query
     .orderBy("conversation.updatedAt", "DESC")
     .getMany();
 
@@ -214,7 +220,7 @@ async getUserConversations(
   }
 
   async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
-    console.log(`createOrGetConversation`)
+    //console.log(`createOrGetConversation`)
     let conversation = await this.conversationRepo
       .createQueryBuilder('conversation')
       .innerJoin('conversation.participants', 'p1', 'p1.user_id = :u1', { u1: senderId })

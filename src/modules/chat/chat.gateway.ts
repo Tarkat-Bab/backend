@@ -29,22 +29,22 @@ export class ChatGateway
 
   afterInit(server: Server) {
     this.server = server;
-    console.log('Chat Gateway Initialized');
+    //console.log('Chat Gateway Initialized');
   }
 
   handleConnection(client: Socket) {
-    console.log(`Client Connected: ${client.id}`);
+    //console.log(`Client Connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client Disconnected: ${client.id} - User: ${client.data?.userId || 'unknown'}`);
+    //console.log(`Client Disconnected: ${client.id} - User: ${client.data?.userId || 'unknown'}`);
   }
 
   @SubscribeMessage('allConversations')
   async allConversations(@ConnectedSocket() client: Socket, @MessageBody() data: { userId: number;  type?: ConversationType; includeMessages?: boolean }) {
     // IMPORTANT: Store userId in socket data for targeted real-time updates
     client.data.userId = data.userId;
-    console.log(`User ${data.userId} subscribed to allConversations on socket ${client.id}`);
+    // //console.log(`User ${data.userId} subscribed to allConversations on socket ${client.id}`);
     
     const conversations = await this.chatService.getUserConversations(
       data.userId,
@@ -64,7 +64,7 @@ export class ChatGateway
     const sockets = await this.server.fetchSockets();
     const userSockets = sockets.filter(socket => socket.data?.userId === userId);
     
-    console.log(`Emitting conversations update to user ${userId}, found ${userSockets.length} socket(s)`);
+    // //console.log(`Emitting conversations update to user ${userId}, found ${userSockets.length} socket(s)`);
     
     // Emit directly to each socket belonging to this user
     userSockets.forEach(socket => {
@@ -141,7 +141,7 @@ export class ChatGateway
       // Get all participants and update their conversation lists
       const participantIds = await this.chatService.getConversationParticipants(data.conversationId);
       
-      console.log('Updating conversations for participants:', participantIds);
+      //console.log('Updating conversations for participants:', participantIds);
       
       // Get all connected sockets to check who is online
       const allSockets = await this.server.fetchSockets();
@@ -155,7 +155,7 @@ export class ChatGateway
             const isInConversationRoom = allSockets.some(
               s => s.data?.userId === participantId && s.rooms.has(room)
             );
-            console.log(`   - Is in conversation room: ${isInConversationRoom}`);
+            //console.log(`   - Is in conversation room: ${isInConversationRoom}`);
             
             // Only send notification if user is not actively viewing this conversation
             if (!isInConversationRoom) {
@@ -173,16 +173,16 @@ export class ChatGateway
                 data.lang || LanguagesEnum.ENGLISH,
               );
               
-              console.log(`📬 Notification sent to user ${participantId}:`, result);
+              //console.log(`📬 Notification sent to user ${participantId}:`, result);
             } else {
-              console.log(`⏭️ User ${participantId} is in conversation room, skipping notification`);
+              //console.log(`⏭️ User ${participantId} is in conversation room, skipping notification`);
             }
           } catch (notifError) {
             console.error(`❌ Failed to send notification to user ${participantId}:`, notifError);
             // Continue even if notification fails
           }
         } else {
-          console.log(`⏭️ Skipping notification for sender ${participantId}`);
+          //console.log(`⏭️ Skipping notification for sender ${participantId}`);
         }
       }
 
