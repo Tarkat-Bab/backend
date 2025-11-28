@@ -75,33 +75,26 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { userId: number; receiverId: number; type?: ConversationType },
   ) {
-    // Check if conversation exists (don't create it)
-    const existingConversation = await this.chatService.findExistingConversation(
+    const result = await this.chatService.createOrGetConversation(
       data.userId,
       data.receiverId,
+      data.type,
     );
+    
+    const conversation = result.conversation;
+    const isNewConversation = result.isNew;
 
+    const room = `conv_${conversation.id}`;
+    
     // Store userId in socket data for notification checking and targeted updates
     client.data.userId = data.userId;
-
-    if (!existingConversation) {
-      // No conversation exists yet - return empty state
-      return { 
-        conversationId: null, 
-        messages: [], 
-        isNewConversation: true,
-        receiverId: data.receiverId 
-      };
-    }
-
-    const room = `conv_${existingConversation.id}`;
     
     // Join conversation room (only participants will be in this room)
     client.join(room);
 
-    await this.chatService.updateLastSeen(existingConversation.id, data.userId);
+    await this.chatService.updateLastSeen(conversation.id, data.userId);
 
-    const messages = await this.chatService.getConversationMessages(existingConversation.id);
+    const messages = await this.chatService.getConversationMessages(conversation.id);
     const unreadMessages = messages.filter(
       (msg) => !msg.isRead && msg.sender.id !== data.userId,
     );
@@ -115,42 +108,31 @@ export class ChatGateway
     client.emit('conversationMessages', messages);
     this.server.to(room).emit('userJoined', {
       userId: data.userId,
-      conversationId: existingConversation.id,
+      conversationId: conversation.id,
     });
 
-    return { 
-      conversationId: existingConversation.id, 
-      messages, 
-      isNewConversation: false 
-    };
+    // Update conversations list for both users in real-time
+    // Uses socket.data.userId to target specific users only
+    await this.emitConversationsUpdate(data.userId, data.type);
+    await this.emitConversationsUpdate(data.receiverId, data.type);
+
+    return { conversationId: conversation.id , messages, isNewConversation};
   }
 
   @SubscribeMessage('sendMessage')
   async onSendMessage(
     @MessageBody()
-    data: { conversationId?: number; senderId: number; receiverId: number; content?: string; file?: Express.Multer.File; lang?: LanguagesEnum; type?: ConversationType },
+    data: { conversationId: number; senderId: number; content?: string; file?: Express.Multer.File; lang?: LanguagesEnum },
   ) {
     try {
-      // If no conversationId, create the conversation first
-      let conversationId = data.conversationId;
-      
-      if (!conversationId) {
-        const result = await this.chatService.createOrGetConversation(
-          data.senderId,
-          data.receiverId,
-          data.type,
-        );
-        conversationId = result.conversation.id;
-      }
-
       const msg = await this.chatService.sendMessage(
-        conversationId,
+        data.conversationId,
         data.senderId,
         data.content || '',
         data.file,
       );
 
-      const room = `conv_${conversationId}`;
+      const room = `conv_${data.conversationId}`;
       
       this.server.to(room).emit('newMessage', msg);
 
