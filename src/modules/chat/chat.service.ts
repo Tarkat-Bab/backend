@@ -50,7 +50,6 @@ export class ChatService {
     conversationId: number,
     senderId: number,
     content: string,
-    // type: MessageType = MessageType.TEXT,
     file?: Express.Multer.File
   ) {
     const conversation = await this.conversationRepo.findOne({
@@ -89,6 +88,7 @@ export class ChatService {
     const message = await this.messageRepo
       .createQueryBuilder('message')
       .leftJoinAndSelect('message.sender', 'sender')
+      .leftJoinAndSelect('message.conversation', 'conversation')
       .select([
         'message.id',
         'message.content',
@@ -99,7 +99,8 @@ export class ChatService {
         'sender.id',
         'sender.username',
         'sender.image',
-
+        'conversation.id',
+        'conversation.type',
       ])
       .where('message.id = :id', { id: messageId })
       .getOne();
