@@ -221,15 +221,20 @@ async getUserConversations(
     return this.participantRepo.save(participant);
   }
 
-  async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
-    //console.log(`createOrGetConversation`)
-    let conversation = await this.conversationRepo
+  async findExistingConversation(senderId: number, receiverId: number) {
+    const conversation = await this.conversationRepo
       .createQueryBuilder('conversation')
       .innerJoin('conversation.participants', 'p1', 'p1.user_id = :u1', { u1: senderId })
       .innerJoin('conversation.participants', 'p2', 'p2.user_id = :u2', { u2: receiverId })
       .groupBy('conversation.id')
       .getOne();
+    
+    return conversation;
+  }
 
+  async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
+    //console.log(`createOrGetConversation`)
+    let conversation = await this.findExistingConversation(senderId, receiverId);
   
     if (conversation) return { conversation, isNew: false };
   
