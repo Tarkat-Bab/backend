@@ -62,11 +62,13 @@ export class NotificationsService {
   ) {
     
     const baseTemplate = NotificationTemplates[templateKey];
+    
+    // Replace template placeholders with actual data
     const content = {
-      arTitle: templateData?.arTitle ?? baseTemplate.arTitle,
-      enTitle: templateData?.enTitle ?? baseTemplate.enTitle,
-      arBody: templateData?.arBody ?? baseTemplate.arBody,
-      enBody: templateData?.enBody ?? baseTemplate.enBody,
+      arTitle: this.replaceTemplate(templateData?.arTitle ?? baseTemplate.arTitle, templateData || {}),
+      enTitle: this.replaceTemplate(templateData?.enTitle ?? baseTemplate.enTitle, templateData || {}),
+      arBody: this.replaceTemplate(templateData?.arBody ?? baseTemplate.arBody, templateData || {}),
+      enBody: this.replaceTemplate(templateData?.enBody ?? baseTemplate.enBody, templateData || {}),
       type: baseTemplate.type,
       clickAction: baseTemplate.clickAction,
       referenceId: templateData?.id ? String(templateData.id) : null,
@@ -95,6 +97,8 @@ export class NotificationsService {
       body: localized.body,
       data: notificationData,
     });
+
+    console.log("notificationData: ", notificationData);
     return { success: true, savedNotification };
   }
 
