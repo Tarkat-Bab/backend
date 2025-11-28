@@ -73,7 +73,7 @@ export class NotificationsService {
     const savedNotification = await this.createNotification(content, [receiverId]);
     const localized = this.localizeContent(content, lang);
 
-    console.log("Sending notifications...")
+    //console.log("Sending notifications...")
 
     const extraData = templateData ? { ...templateData } : {};
 
@@ -181,7 +181,7 @@ export class NotificationsService {
 
   /** Language selector helper */
   private localizeContent(content, lang: LanguagesEnum) {
-    console.log("Lang: ", lang)
+    //console.log("Lang: ", lang)
     return {
       title: lang === LanguagesEnum.ARABIC ? content.arTitle : content.enTitle,
       body: lang === LanguagesEnum.ARABIC ? content.arBody : content.enBody,
@@ -221,7 +221,7 @@ export class NotificationsService {
         tokens: tokens.map((t) => t.fcm_token),
       });
 
-      console.log(`✅ Sent ${response.successCount} | ❌ Failed ${response.failureCount}`);
+      //console.log(`✅ Sent ${response.successCount} | ❌ Failed ${response.failureCount}`);
       return response;
     } catch (error) {
       console.error('❌ FCM send error:', error);
