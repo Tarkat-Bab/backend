@@ -94,9 +94,12 @@ export class ChatService {
         'message.content',
         'message.createdAt',
         'message.isRead',
+        'message.imageUrl',
+        'message.type',
         'sender.id',
         'sender.username',
         'sender.image',
+
       ])
       .where('message.id = :id', { id: messageId })
       .getOne();
