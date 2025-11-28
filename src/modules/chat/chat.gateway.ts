@@ -152,21 +152,14 @@ export class ChatGateway
         // Send notification only to receivers (not sender) who are NOT in the conversation room
         if (participantId !== data.senderId) {
           try {
-            console.log(`🔍 Checking notification for user ${participantId}`);
-            console.log(`   - Sender: ${data.senderId}`);
-            console.log(`   - Room: ${room}`);
-            
             const isInConversationRoom = allSockets.some(
               s => s.data?.userId === participantId && s.rooms.has(room)
             );
-            
             console.log(`   - Is in conversation room: ${isInConversationRoom}`);
             
             // Only send notification if user is not actively viewing this conversation
             if (!isInConversationRoom) {
               const messageContent = msg.content || (msg.imageUrl ? 'صورة 📷 Image' : 'رسالة جديدة New message');
-              
-              console.log(`   - Sending notification with content: "${messageContent}"`);
               
               const result = await this.notificationsService.autoNotification(
                 participantId,

@@ -142,6 +142,7 @@ async getUserConversations(
     .leftJoinAndSelect("conversation.participants", "participant")
     .leftJoinAndSelect("participant.user", "user")
     .where("user.deleted = false")
+    .andWhere("conversation.type :conversationType", {conversationType: type})
     .orderBy("conversation.updatedAt", "DESC")
     .getMany();
 
