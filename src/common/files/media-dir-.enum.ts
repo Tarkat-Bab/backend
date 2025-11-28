@@ -5,4 +5,5 @@ export enum MediaDir {
     REQUESTS = 'requests',
     REPORTS  = 'reports',
     SERVICES = 'services',
+    CHAT     = 'chat',
 }

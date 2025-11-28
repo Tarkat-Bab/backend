@@ -7,6 +7,8 @@ import { ConversationParticipantEntity } from './entities/conversation_participa
 import { MessageEntity } from './entities/message.entity';
 import { UserEntity } from '../users/entities/users.entity';
 import { ChatController } from './chat.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { FilesModule } from 'src/common/files/files.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { ChatController } from './chat.controller';
       MessageEntity,
       UserEntity,
     ]),
+    NotificationsModule,
+    FilesModule,
   ],
   controllers:[ ChatController],
   providers: [ChatService, ChatGateway],
