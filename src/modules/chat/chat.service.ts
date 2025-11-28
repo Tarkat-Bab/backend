@@ -65,19 +65,20 @@ export class ChatService {
     }
 
     let type = MessageType.TEXT;
-    let image  = null;
+    let imageUrl: string | null = null;
 
     if(file){
       type = MessageType.FILE;
-      image = await this.cloudflareService.uploadFile(file);
-
+      const image = await this.cloudflareService.uploadFile(file);
+      imageUrl = image?.url || null;
     }
+    
     const message = this.messageRepo.create({
       conversation,
       sender,
       content,
       type,
-      imageUrl: image.url
+      imageUrl
     });
     
     await this.messageRepo.save(message);
