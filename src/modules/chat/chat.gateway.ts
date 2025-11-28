@@ -33,19 +33,17 @@ export class ChatGateway
   }
 
   handleConnection(client: Socket) {
-    //console.log(`Client Connected: ${client.id}`);
+    console.log(`Client Connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    //console.log(`Client Disconnected: ${client.id} - User: ${client.data?.userId || 'unknown'}`);
+    console.log(`Client Disconnected: ${client.id} - User: ${client.data?.userId || 'unknown'}`);
   }
 
   @SubscribeMessage('allConversations')
   async allConversations(@ConnectedSocket() client: Socket, @MessageBody() data: { userId: number;  type?: ConversationType; includeMessages?: boolean }) {
     // IMPORTANT: Store userId in socket data for targeted real-time updates
     client.data.userId = data.userId;
-    // //console.log(`User ${data.userId} subscribed to allConversations on socket ${client.id}`);
-    
     const conversations = await this.chatService.getUserConversations(
       data.userId,
       data.type,
