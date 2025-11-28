@@ -226,5 +226,12 @@ async getUserConversations(
     return result;
   }
 
+  async getConversationParticipants(conversationId: number): Promise<number[]> {
+    const participants = await this.participantRepo.find({
+      where: { conversation: { id: conversationId } },
+      relations: ['user'],
+    });
+    return participants.map(p => p.user.id);
+  }
 
 }
