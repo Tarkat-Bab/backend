@@ -127,19 +127,18 @@ export class ChatGateway
   @SubscribeMessage('sendMessage')
   async onSendMessage(
     @MessageBody()
-    data: { conversationId: number; senderId: number; content: string; receiverId: number; messageType: MessageType; type?: ConversationType; lang?: LanguagesEnum },
+    data: { conversationId: number; senderId: number; receiverId: number; type?: ConversationType; content?: string; file?: Express.Multer.File; lang?: LanguagesEnum },
   ) {
     
     const msg = await this.chatService.sendMessage(
       data.conversationId,
       data.senderId,
       data.content,
-      data.messageType,
+      data.file,
     );
 
     const room = `conv_${data.conversationId}`;
     
-    // Only emit to the conversation room (participants only)
     this.server.to(room).emit('newMessage', msg);
 
     // Get all participants and update their conversation lists
@@ -154,92 +153,6 @@ export class ChatGateway
     return msg;
   }
 
-  @SubscribeMessage('sendImage')
-  async onSendImage(
-    @MessageBody()
-    data: { 
-      conversationId: number; 
-      senderId: number; 
-      receiverId: number; 
-      image: string; // base64 encoded image
-      fileName?: string; // optional original filename
-      type?: ConversationType; 
-      lang?: LanguagesEnum 
-    },
-  ) {
-    try {
-      // Extract mimetype and convert base64 to buffer
-      const matches = data.image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (!matches || matches.length !== 3) {
-        throw new Error('Invalid base64 image format');
-      }
-
-      const mimetype = matches[1];
-      const base64Data = matches[2];
-      const buffer = Buffer.from(base64Data, 'base64');
-
-      // Create a file object compatible with Cloudflare service
-      const file: Express.Multer.File = {
-        buffer,
-        mimetype,
-        originalname: data.fileName || `chat-image-${Date.now()}.jpg`,
-        fieldname: 'image',
-        encoding: '7bit',
-        size: buffer.length,
-        stream: null,
-        destination: '',
-        filename: '',
-        path: '',
-      };
-
-      // Upload to Cloudflare R2
-      const uploadResult = await this.cloudflareService.uploadFile(file);
-      const imageUrl = uploadResult.url;
-
-      // Save message with image URL
-      const msg = await this.chatService.sendMessage(
-        data.conversationId,
-        data.senderId,
-        imageUrl,
-        MessageType.IMAGE,
-      );
-
-      const room = `conv_${data.conversationId}`;
-      
-      // Emit to conversation room
-      this.server.to(room).emit('newMessage', msg);
-
-      // Update conversations list
-      await this.emitConversationsUpdate(data.senderId, data.type);
-      await this.emitConversationsUpdate(data.receiverId, data.type);
-
-      // Check if receiver is in the chat room
-      const receiverSockets = await this.server.in(room).fetchSockets();
-      const isReceiverInRoom = receiverSockets.some(socket => {
-        return socket.data?.userId === data.receiverId;
-      });
-
-      // Send notification only if receiver is not in the chat
-      if (!isReceiverInRoom) {
-        await this.notificationsService.autoNotification(
-          data.receiverId,
-          'NEW_CHAT_MESSAGE',
-          {
-            senderName: msg.sender.username,
-            messageContent: '📷 Image',
-            conversationId: data.conversationId,
-          },
-          data.lang || LanguagesEnum.ENGLISH,
-        );
-      }
-
-      return msg;
-    } catch (error) {
-      console.error('Error sending image:', error);
-      throw error;
-    }
-  }
-
   @SubscribeMessage('typing')
   handleTyping(@MessageBody() data: { conversationId: number; userId: number }) {
     const room = `conv_${data.conversationId}`;
@@ -248,7 +161,6 @@ export class ChatGateway
 
   @SubscribeMessage('readMessage')
   async onReadMessage(@MessageBody() data: { messageId: number; conversationId: number; userId?: number; type?: ConversationType }) {
-    console.log("Read msg.....")
     await this.chatService.markAsRead(data.messageId);
     const room = `conv_${data.conversationId}`;
     

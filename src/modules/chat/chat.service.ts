@@ -7,6 +7,7 @@ import { MessageEntity } from './entities/message.entity';
 import { UserEntity } from '../users/entities/users.entity';
 import { ConversationType } from './enums/conversationType.enum';
 import { MessageType } from './enums/messageType.enum';
+import { CloudflareService } from 'src/common/files/cloudflare.service';
 
 @Injectable()
 export class ChatService {
@@ -22,6 +23,8 @@ export class ChatService {
 
     @InjectRepository(UserEntity)
     private userRepo: Repository<UserEntity>,
+
+    private readonly cloudflareService: CloudflareService
 
   ) {}
 
@@ -47,7 +50,8 @@ export class ChatService {
     conversationId: number,
     senderId: number,
     content: string,
-    type: MessageType = MessageType.TEXT,
+    // type: MessageType = MessageType.TEXT,
+    file?: Express.Multer.File
   ) {
     const conversation = await this.conversationRepo.findOne({
       where: { id: conversationId },
@@ -59,11 +63,21 @@ export class ChatService {
     if(!sender){
       throw new NotFoundException("Sender not found");
     }
+
+    let type = MessageType.TEXT;
+    let image  = null;
+
+    if(file){
+      type = MessageType.FILE;
+      image = await this.cloudflareService.uploadFile(file);
+
+    }
     const message = this.messageRepo.create({
       conversation,
       sender,
-      type,
       content,
+      type,
+      imageUrl: image.url
     });
     
     await this.messageRepo.save(message);

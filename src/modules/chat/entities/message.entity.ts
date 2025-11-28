@@ -22,6 +22,9 @@ export class MessageEntity extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   content: string;
 
+  @Column({ type: 'text', nullable: true })
+  imageUrl : string;
+
   @Column({ type: 'boolean', default: false })
   isRead: boolean;
 }
