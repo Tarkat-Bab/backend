@@ -12,8 +12,6 @@ import { ChatService } from './chat.service';
 import { ConversationType } from './enums/conversationType.enum';
 import { NotificationsService } from '../notifications/notifications.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
-import { MessageType } from './enums/messageType.enum';
-import { CloudflareService } from 'src/common/files/cloudflare.service';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -25,7 +23,6 @@ export class ChatGateway
   constructor(
     private readonly chatService: ChatService,
     private readonly notificationsService: NotificationsService,
-    private readonly cloudflareService: CloudflareService,
   ) {}
 
   server: Server;
@@ -146,8 +143,40 @@ export class ChatGateway
     
     console.log('Updating conversations for participants:', participantIds);
     
+    // Get all connected sockets to check who is online
+    const allSockets = await this.server.fetchSockets();
+    const connectedUserIds = new Set(allSockets.map(s => s.data?.userId).filter(Boolean));
+    
     for (const participantId of participantIds) {
       await this.emitConversationsUpdate(participantId, msg.conversation.type);
+      
+      // Send notification only to receivers (not sender) who are NOT in the conversation room
+      if (participantId !== data.senderId) {
+        const isInConversationRoom = allSockets.some(
+          s => s.data?.userId === participantId && s.rooms.has(room)
+        );
+        
+        // Only send notification if user is not actively viewing this conversation
+        if (!isInConversationRoom) {
+          const messageContent = msg.content || (msg.imageUrl ? 'صورة 📷 Image' : 'رسالة جديدة New message');
+          
+          await this.notificationsService.autoNotification(
+            participantId,
+            'NEW_CHAT_MESSAGE',
+            {
+              senderName: msg.sender.username,
+              messageContent: messageContent,
+              conversationId: data.conversationId,
+              senderId: data.senderId,
+            },
+            data.lang || LanguagesEnum.ENGLISH,
+          );
+          
+          console.log(`📬 Notification sent to user ${participantId}`);
+        } else {
+          console.log(`⏭️ User ${participantId} is in conversation room, skipping notification`);
+        }
+      }
     }
 
     return msg;
