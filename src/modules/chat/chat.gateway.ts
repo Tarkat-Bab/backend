@@ -126,60 +126,68 @@ export class ChatGateway
     @MessageBody()
     data: { conversationId: number; senderId: number; content?: string; file?: Express.Multer.File; lang?: LanguagesEnum },
   ) {
-    
-    const msg = await this.chatService.sendMessage(
-      data.conversationId,
-      data.senderId,
-      data.content,
-      data.file,
-    );
+    try {
+      const msg = await this.chatService.sendMessage(
+        data.conversationId,
+        data.senderId,
+        data.content || '',
+        data.file,
+      );
 
-    const room = `conv_${data.conversationId}`;
-    
-    this.server.to(room).emit('newMessage', msg);
-
-    // Get all participants and update their conversation lists
-    const participantIds = await this.chatService.getConversationParticipants(data.conversationId);
-    
-    console.log('Updating conversations for participants:', participantIds);
-    
-    // Get all connected sockets to check who is online
-    const allSockets = await this.server.fetchSockets();
-    const connectedUserIds = new Set(allSockets.map(s => s.data?.userId).filter(Boolean));
-    
-    for (const participantId of participantIds) {
-      await this.emitConversationsUpdate(participantId, msg.conversation.type);
+      const room = `conv_${data.conversationId}`;
       
-      // Send notification only to receivers (not sender) who are NOT in the conversation room
-      if (participantId !== data.senderId) {
-        const isInConversationRoom = allSockets.some(
-          s => s.data?.userId === participantId && s.rooms.has(room)
-        );
+      this.server.to(room).emit('newMessage', msg);
+
+      // Get all participants and update their conversation lists
+      const participantIds = await this.chatService.getConversationParticipants(data.conversationId);
+      
+      console.log('Updating conversations for participants:', participantIds);
+      
+      // Get all connected sockets to check who is online
+      const allSockets = await this.server.fetchSockets();
+
+      for (const participantId of participantIds) {
+        await this.emitConversationsUpdate(participantId, msg.conversation.type);
         
-        // Only send notification if user is not actively viewing this conversation
-        if (!isInConversationRoom) {
-          const messageContent = msg.content || (msg.imageUrl ? 'صورة 📷 Image' : 'رسالة جديدة New message');
-          
-          await this.notificationsService.autoNotification(
-            participantId,
-            'NEW_CHAT_MESSAGE',
-            {
-              senderName: msg.sender.username,
-              messageContent: messageContent,
-              conversationId: data.conversationId,
-              senderId: data.senderId,
-            },
-            data.lang || LanguagesEnum.ENGLISH,
-          );
-          
-          console.log(`📬 Notification sent to user ${participantId}`);
-        } else {
-          console.log(`⏭️ User ${participantId} is in conversation room, skipping notification`);
+        // Send notification only to receivers (not sender) who are NOT in the conversation room
+        if (participantId !== data.senderId) {
+          try {
+            const isInConversationRoom = allSockets.some(
+              s => s.data?.userId === participantId && s.rooms.has(room)
+            );
+            
+            // Only send notification if user is not actively viewing this conversation
+            if (!isInConversationRoom) {
+              const messageContent = msg.content || (msg.imageUrl ? 'صورة 📷 Image' : 'رسالة جديدة New message');
+              
+              await this.notificationsService.autoNotification(
+                participantId,
+                'NEW_CHAT_MESSAGE',
+                {
+                  senderName: msg.sender.username,
+                  messageContent: messageContent,
+                  conversationId: data.conversationId,
+                  senderId: data.senderId,
+                },
+                data.lang || LanguagesEnum.ENGLISH,
+              );
+              
+              console.log(`📬 Notification sent to user ${participantId}`);
+            } else {
+              console.log(`⏭️ User ${participantId} is in conversation room, skipping notification`);
+            }
+          } catch (notifError) {
+            console.error(`❌ Failed to send notification to user ${participantId}:`, notifError);
+            // Continue even if notification fails
+          }
         }
       }
-    }
 
-    return msg;
+      return msg;
+    } catch (error) {
+      console.error('❌ Error in sendMessage:', error);
+      throw error;
+    }
   }
 
   @SubscribeMessage('typing')
