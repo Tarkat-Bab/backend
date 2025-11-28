@@ -895,6 +895,42 @@ export class UsersService {
     return users;
   }
 
+  async updateFcmToken(userId: number, fcmToken: string, usedLanguage: LanguagesEnum, lang: LanguagesEnum) {
+    if (!fcmToken || fcmToken.trim() === '') {
+      throw new BadRequestException(
+        lang === LanguagesEnum.ARABIC
+          ? 'رمز FCM مطلوب'
+          : 'FCM token is required'
+      );
+    }
+
+    const user = await this.findById(userId, lang);
+
+    // Remove all old FCM tokens for this user
+    await this.userFcmTokenRepo.delete({ user: { id: userId } });
+
+    // Add the new FCM token
+    const newToken = this.userFcmTokenRepo.create({
+      fcm_token: fcmToken,
+      user,
+    });
+
+    await this.userFcmTokenRepo.save(newToken);
+
+    // Update user's preferred language if provided
+    if (usedLanguage && Object.values(LanguagesEnum).includes(usedLanguage)) {
+      user.usedLanguage = usedLanguage;
+      await this.usersRepo.save(user);
+    }
+
+    return {
+      success: true,
+      message: lang === LanguagesEnum.ARABIC
+        ? 'تم تحديث رمز FCM واللغة بنجاح'
+        : 'FCM token and language updated successfully',
+    };
+  }
+
   async findUsersForFcm(type?: UsersTypes, userId?: number) {
     const query = this.usersRepo
       .createQueryBuilder('user')

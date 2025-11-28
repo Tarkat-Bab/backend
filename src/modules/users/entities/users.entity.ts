@@ -66,8 +66,8 @@ export class UserEntity extends BaseEntity {
   @Column({type: 'int', default:0})
   warningCount: number;
   
-  // @Column({type: 'varchar', enum: LanguagesEnum, default: LanguagesEnum.ENGLISH })
-  // usedLanguage: LanguagesEnum;
+  @Column({type: 'varchar', enum: LanguagesEnum, default: LanguagesEnum.ENGLISH })
+  usedLanguage: LanguagesEnum;
 
   @OneToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.user, { cascade: true })
   technicalProfile: TechnicalProfileEntity;

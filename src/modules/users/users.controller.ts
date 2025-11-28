@@ -68,4 +68,19 @@ export class UsersController {
     ) {
         return this.usersService.logout(user.id, lang);
     }
+
+    @ApiHeader({
+      name: 'Accept-Language',
+      description: 'Language for the response (e.g., ar, en)',
+      required: false,
+    })
+    @Patch('token-lang')
+    async updateFcmToken(
+        @CurrentUser() user: any,
+        @Body('fcmToken') fcmToken: string,
+        @Body('usedLanguage') usedLanguage: LanguagesEnum,
+        @Language() lang: LanguagesEnum,
+    ) {
+        return this.usersService.updateFcmToken(user.id, fcmToken, usedLanguage, lang);
+    }
 }
