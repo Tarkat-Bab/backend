@@ -126,6 +126,8 @@ export class ChatService {
           content: true,
           createdAt: true,
           isRead: true,
+          imageUrl: true,
+          type: true,
           sender:{id: true, username:true},
           conversation:{id:true}
       }
@@ -142,6 +144,7 @@ async getUserConversations(
     .leftJoinAndSelect("conversation.participants", "participant")
     .leftJoinAndSelect("participant.user", "user")
     .where("user.deleted = false")
+    .andWhere("conversation.type :conversationType", {conversationType: type})
     .orderBy("conversation.updatedAt", "DESC")
     .getMany();
 
