@@ -99,7 +99,7 @@ export class ChatGateway
   @SubscribeMessage('sendMessage')
   async onSendMessage(
     @MessageBody()
-    data: { conversationId: number; senderId: number; content: string; receiverId: number; type?: ConversationType },
+    data: { conversationId: number; senderId: number; content: string; receiverId?: number; type?: ConversationType },
   ) {
     
     const msg = await this.chatService.sendMessage(
@@ -111,9 +111,14 @@ export class ChatGateway
     const room = `conv_${data.conversationId}`;
     this.server.to(room).emit('newMessage', msg);
 
-    // Update all conversations for both sender and receiver
-    this.emitConversationsUpdate(data.senderId, data.type);
-    this.emitConversationsUpdate(data.receiverId, data.type);
+    // Get all participants and update their conversation lists
+    const participantIds = await this.chatService.getConversationParticipants(data.conversationId);
+    
+    console.log('Updating conversations for participants:', participantIds);
+    
+    for (const participantId of participantIds) {
+      await this.emitConversationsUpdate(participantId, data.type);
+    }
 
     return msg;
   }
@@ -125,7 +130,7 @@ export class ChatGateway
   }
 
   @SubscribeMessage('readMessage')
-  async onReadMessage(@MessageBody() data: { messageId: number; conversationId: number; userId: number; type?: ConversationType }) {
+  async onReadMessage(@MessageBody() data: { messageId: number; conversationId: number; userId?: number; type?: ConversationType }) {
     console.log("Read msg.....")
     await this.chatService.markAsRead(data.messageId);
     const room = `conv_${data.conversationId}`;
@@ -135,9 +140,11 @@ export class ChatGateway
       isRead: true 
     });
 
-    // Update conversation list to reflect read status
-    if (data.userId) {
-      this.emitConversationsUpdate(data.userId, data.type);
+    // Update conversation list for all participants to reflect read status
+    const participantIds = await this.chatService.getConversationParticipants(data.conversationId);
+    
+    for (const participantId of participantIds) {
+      await this.emitConversationsUpdate(participantId, data.type);
     }
   }
 }
