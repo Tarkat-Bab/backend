@@ -61,9 +61,7 @@ export class ChatGateway
     // Get all sockets for this specific user and emit directly to them
     const sockets = await this.server.fetchSockets();
     const userSockets = sockets.filter(socket => socket.data?.userId === userId);
-    
-    // //console.log(`Emitting conversations update to user ${userId}, found ${userSockets.length} socket(s)`);
-    
+        
     // Emit directly to each socket belonging to this user
     userSockets.forEach(socket => {
       socket.emit('allConversations', conversations);
@@ -86,10 +84,7 @@ export class ChatGateway
 
     const room = `conv_${conversation.id}`;
     
-    // Store userId in socket data for notification checking and targeted updates
     client.data.userId = data.userId;
-    
-    // Join conversation room (only participants will be in this room)
     client.join(room);
 
     await this.chatService.updateLastSeen(conversation.id, data.userId);
@@ -105,7 +100,7 @@ export class ChatGateway
       this.server.to(room).emit('messageRead', { messageId: msg.id });
     });
 
-    client.emit('conversationMessages', messages);
+    client.to(room).emit('conversationMessages', messages);
     this.server.to(room).emit('userJoined', {
       userId: data.userId,
       conversationId: conversation.id,

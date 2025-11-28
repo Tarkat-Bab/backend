@@ -146,7 +146,8 @@ export class ChatService {
       .leftJoinAndSelect("conversation.participants", "participant")
       .leftJoinAndSelect("participant.user", "user")
       .where("user.deleted = false")
-      .andWhere("conversation.deleted = false");
+      .andWhere("conversation.deleted = false")
+      .orderBy('conversation.updatedAt', 'DESC')
 
     // Only filter by type if provided
     if (type) {
