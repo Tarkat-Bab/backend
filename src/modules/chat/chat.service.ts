@@ -140,10 +140,12 @@ async getUserConversations(
 ) {
   let query = this.conversationRepo
     .createQueryBuilder("conversation")
+    .distinct(true)
     .innerJoin("conversation.participants", "userParticipant", "userParticipant.user_id = :userId", { userId })
     .leftJoinAndSelect("conversation.participants", "participant")
     .leftJoinAndSelect("participant.user", "user")
-    .where("user.deleted = false");
+    .where("user.deleted = false")
+    .andWhere("conversation.deleted = false");
 
   // Only filter by type if provided
   if (type) {
