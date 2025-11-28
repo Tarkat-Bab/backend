@@ -8,6 +8,8 @@ import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { CreateRegionDto, FilterRegionDto } from '../regions/dtos/regions.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { CreateCityDto, UpdateCitiesAvailabilityDto } from '../regions/dtos/cities.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UserEntity } from '../users/entities/users.entity';
 
 @Injectable()
 export class RegionsService {
@@ -17,8 +19,13 @@ export class RegionsService {
 
     @InjectRepository(CitiesEntity)
     private readonly cityRepo: Repository<CitiesEntity>,
+
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
+
     private readonly locationService: LocationService,
-    private readonly paginatorService: PaginatorService
+    private readonly paginatorService: PaginatorService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async createRegion(data: CreateRegionDto, lang: LanguagesEnum): Promise<RegionEntity> {
@@ -177,8 +184,9 @@ export class RegionsService {
 
     const cities = await this.cityRepo.find({
       where:{id: In(cityIds)},
-      select:{id:true, available:true}
-      });
+      relations: ['region'],
+      select:{id:true, available:true, arName: true, enName: true}
+    });
 
     if (cities.length === 0) {
       throw new NotFoundException(
@@ -188,11 +196,52 @@ export class RegionsService {
       );
     }
 
+    // If setting cities to unavailable, notify affected users
+    if (available === false) {
+      await this.notifyUsersInForbiddenRegions(cities, lang);
+    }
+
     for (const city of cities) {
       city.available = available;
     }
 
     await this.cityRepo.save(cities);
+  }
+
+  private async notifyUsersInForbiddenRegions(cities: CitiesEntity[], lang: LanguagesEnum): Promise<void> {
+    const cityNames = cities.map(c => lang === LanguagesEnum.ARABIC ? c.arName : c.enName);
+    
+    // Find users in these cities (you may need to adjust based on your user entity structure)
+    const affectedUsers = await this.userRepo
+      .createQueryBuilder('user')
+      .where('user.deleted = false')
+      .andWhere(
+        lang === LanguagesEnum.ARABIC 
+          ? 'user.arAddress ILIKE ANY(ARRAY[:...cityNames])'
+          : 'user.enAddress ILIKE ANY(ARRAY[:...cityNames])',
+        { cityNames: cityNames.map(name => `%${name}%`) }
+      )
+      .select(['user.id'])
+      .getMany();
+
+    // Send notifications to affected users
+    for (const user of affectedUsers) {
+      try {
+        await this.notificationsService.autoNotification(
+          user.id,
+          'REGION_FORBIDDEN',
+          {
+            screen: 'profile',
+            params: {
+              cities: cityNames,
+            },
+          },
+          lang
+        );
+      } catch (error) {
+        console.error(`Failed to send forbidden notification to user ${user.id}:`, error);
+      }
+    }
   }
 
 }

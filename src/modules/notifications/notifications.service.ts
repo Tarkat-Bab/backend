@@ -67,19 +67,33 @@ export class NotificationsService {
       enTitle: templateData?.enTitle ?? baseTemplate.enTitle,
       arBody: templateData?.arBody ?? baseTemplate.arBody,
       enBody: templateData?.enBody ?? baseTemplate.enBody,
+      type: baseTemplate.type,
+      clickAction: baseTemplate.clickAction,
+      referenceId: templateData?.id ? String(templateData.id) : null,
+      screen: templateData?.screen || null,
+      params: templateData?.params || {},
+      meta: templateData?.meta || {},
     };
 
-    // const content = this.prepareNotificationContent(null, templateKey, templateData);
     const savedNotification = await this.createNotification(content, [receiverId]);
     const localized = this.localizeContent(content, lang);
 
-    //console.log("Sending notifications...")
-
-    const extraData = templateData ? { ...templateData } : {};
+    // Build notification data in the required format
+    const notificationData = {
+      type: content.type,
+      title: localized.title,
+      body: localized.body,
+      click_action: content.clickAction,
+      id: content.referenceId,
+      screen: content.screen,
+      params: content.params,
+      meta: content.meta,
+    };
 
     await this.sendFcm([receiverId], {
-      ...localized,
-      data: extraData,
+      title: localized.title,
+      body: localized.body,
+      data: notificationData,
     });
     return { success: true, savedNotification };
   }
@@ -215,9 +229,17 @@ export class NotificationsService {
     }
 
     try {
+      // Convert data object to string format for FCM
+      const stringifiedData = Object.entries(data).reduce((acc, [k, v]) => {
+        if (typeof v === 'object' && v !== null) {
+          return { ...acc, [k]: JSON.stringify(v) };
+        }
+        return { ...acc, [k]: v === null ? '' : String(v) };
+      }, {});
+
       const response = await admin.messaging().sendEachForMulticast({
         notification: { title, body },
-        data: Object.entries(data).reduce((acc, [k, v]) => ({ ...acc, [k]: String(v) }), {}),
+        data: stringifiedData,
         tokens: tokens.map((t) => t.fcm_token),
       });
 

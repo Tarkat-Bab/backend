@@ -359,7 +359,12 @@ export class RequestsService {
 
     req.deleted = true;
     req.offers.forEach((offer) => (offer.deleted = true));
-    await this.notificationsService.autoNotification(req.user.id, 'REQUEST_DELETED', {id}, lang)
+    await this.notificationsService.autoNotification(
+      req.user.id, 
+      'REQUEST_DELETED', 
+      { id: String(id) }, 
+      lang
+    );
     await this.serviceRequestsRepository.save(req);
   }
 

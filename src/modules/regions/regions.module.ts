@@ -6,10 +6,13 @@ import { RegionsController } from './regions.controller';
 import { LocationService } from '../locations/location.service';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { RegionsService } from './regions.service';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { UserEntity } from '../users/entities/users.entity';
 
 @Module({
     imports:[
-        TypeOrmModule.forFeature([RegionEntity, CitiesEntity])
+        TypeOrmModule.forFeature([RegionEntity, CitiesEntity, UserEntity]),
+        NotificationsModule
     ],
     controllers: [RegionsController],
     providers: [LocationService, PaginatorService, RegionsService],
