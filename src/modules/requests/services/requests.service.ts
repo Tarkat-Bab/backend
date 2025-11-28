@@ -234,7 +234,7 @@ export class RequestsService {
     // Calculate remaining warranty days for completed requests
     let remainingWarrantyDays = requestEntity.remainingWarrantyDays;
     if (
-      requestEntity.status === RequestStatus.COMPLETED 
+      requestEntity.status === RequestStatus.COMPLETED && requestEntity.completedAt
     ) {
       // Use a fixed warranty period (20 days as per entity default)
       console.log(requestEntity.completedAt)
