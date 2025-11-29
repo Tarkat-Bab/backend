@@ -16,9 +16,8 @@ import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UpdateServiceRequestDto } from '../dto/update-service-request.dto';
 import { RequestsMedia } from '../entities/request_media.entity';
 import { PaginatorInput } from 'src/common/paginator/types/paginate.input';
-import { RequestOffersService } from './requests-offers.service';
 import { NotificationsService } from 'src/modules/notifications/notifications.service';
-import { off } from 'process';
+import { ChatService } from 'src/modules/chat/chat.service';
 
 @Injectable()
 export class RequestsService {
@@ -33,6 +32,7 @@ export class RequestsService {
     private readonly paginatorService : PaginatorService,
     private readonly cloudflareService: CloudflareService,
     private readonly notificationsService:NotificationsService,
+    private readonly chatService: ChatService,
   ) {}
 
   async save(request: ServiceRequestsEntity){
@@ -245,12 +245,28 @@ export class RequestsService {
       );
     }
       
-    let offers = (requestEntity.offers || []).map((o) => {
+    let offers = await Promise.all((requestEntity.offers || []).map(async (o) => {
       const reviews = o.technician?.reviews || [];
+      
+      // Get conversation ID between request owner and offer technician
+      let conversationId = null;
+      if (o.technician?.user?.id && requestEntity.user.id) {
+        try {
+          const conversation = await this.chatService.createOrGetConversation(
+            requestEntity.user.id,
+            o.technician.user.id
+          );
+          conversationId = conversation.conversation.id;
+        } catch (error) {
+          console.error('Error getting conversation:', error);
+        }
+      }
+
       return {
         id: o.id,
         price: typeof o.price === 'number' ? o.price : Number(o.price),
         createdAt: o.createdAt,
+        conversationId,
         technician: o.technician
           ? {
               id: o.technician?.user?.id,
@@ -273,7 +289,7 @@ export class RequestsService {
         description: (o as any).description,
         accepted: (o as any).accepted,
       };
-    });
+    }));
 
     let canOffering = true;
     let offered = offers.filter((offer)=>offer.technician.id == userId);
