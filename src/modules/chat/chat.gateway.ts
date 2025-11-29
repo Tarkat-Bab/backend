@@ -82,26 +82,35 @@ export class ChatGateway
     const conversation = result.conversation;
     const isNewConversation = result.isNew;
 
+    // Verify user is a participant in this conversation (only if not new)
+    if (!isNewConversation) {
+      const isParticipant = await this.chatService.isUserParticipant(conversation.id, data.userId);
+      if (!isParticipant) {
+        throw new Error('Unauthorized: User is not a participant in this conversation');
+      }
+    }
+
     const room = `conv_${conversation.id}`;
     
     client.data.userId = data.userId;
     client.join(room);
 
-    await this.chatService.updateLastSeen(conversation.id, data.userId);
+    const [messages] = await Promise.all([
+      this.chatService.getConversationMessages(conversation.id),
+      this.chatService.updateLastSeen(conversation.id, data.userId)
+    ]);
 
-    const messages = await this.chatService.getConversationMessages(conversation.id);
-    const unreadMessages = messages.filter(
-      (msg) => !msg.isRead && msg.sender.id !== data.userId,
-    );
+    const unreadMessageIds = messages
+      .filter((msg) => !msg.isRead && msg.sender.id !== data.userId)
+      .map(msg => msg.id);
 
-    // Update conversations list BEFORE marking as read so receiver sees correct unread count
-    await this.emitConversationsUpdate(data.receiverId);
+    if (unreadMessageIds.length > 0) {
+      // Bulk mark as read
+      await this.chatService.markMultipleAsRead(unreadMessageIds);
 
-    await Promise.all(unreadMessages.map((msg) => this.chatService.markAsRead(msg.id)));
-
-    unreadMessages.forEach((msg) => {
-      this.server.to(room).emit('messageRead', { messageId: msg.id });
-    });
+      // Emit once for all read messages
+      this.server.to(room).emit('messagesRead', { messageIds: unreadMessageIds });
+    }
 
     this.server.to(room).emit('conversationMessages', messages);
     this.server.to(room).emit('userJoined', {
@@ -109,8 +118,11 @@ export class ChatGateway
       conversationId: conversation.id,
     });
 
-    // Update conversations list for the user who joined (after marking as read)
-    await this.emitConversationsUpdate(data.userId);
+    // Update conversations list only once for both users
+    await Promise.all([
+      this.emitConversationsUpdate(data.userId),
+      this.emitConversationsUpdate(data.receiverId)
+    ]);
 
     return { conversationId: conversation.id , messages, isNewConversation};
   }
@@ -121,6 +133,12 @@ export class ChatGateway
     data: { conversationId: number; senderId: number; content?: string; file?: Express.Multer.File; lang?: LanguagesEnum },
   ) {
     try {
+      // Verify sender is a participant in this conversation
+      const isParticipant = await this.chatService.isUserParticipant(data.conversationId, data.senderId);
+      if (!isParticipant) {
+        throw new Error('Unauthorized: User is not a participant in this conversation');
+      }
+
       const msg = await this.chatService.sendMessage(
         data.conversationId,
         data.senderId,
@@ -131,20 +149,25 @@ export class ChatGateway
       const room = `conv_${data.conversationId}`;
       this.server.to(room).emit('newMessage', msg);
 
-      // Get all participants and update their conversation lists
+      // Get all participants
       const participantIds = await this.chatService.getConversationParticipants(data.conversationId);
+      
+      // Fetch sockets once
       const allSockets = await this.server.fetchSockets();
-
-      for (const participantId of participantIds) {
+      
+      // Update conversations and send notifications in parallel
+      const updates = participantIds.map(async (participantId) => {
+        // Update conversation list
         await this.emitConversationsUpdate(participantId);
         
         // Send notification only to receivers (not sender) who are NOT in the conversation room
         if (participantId !== data.senderId) {
-          try {
-            const isInConversationRoom = allSockets.some(
-              s => s.data?.userId === participantId && s.rooms.has(room)
-            );
-            if (!isInConversationRoom) {
+          const isInConversationRoom = allSockets.some(
+            s => s.data?.userId === participantId && s.rooms.has(room)
+          );
+          
+          if (!isInConversationRoom) {
+            try {
               const messageContent = msg.content || (msg.imageUrl ? 'صورة 📷 Image' : 'رسالة جديدة New message');
               await this.notificationsService.autoNotification(
                 participantId,
@@ -160,12 +183,14 @@ export class ChatGateway
                 },
                 data.lang || LanguagesEnum.ENGLISH,
               );
+            } catch (notifError) {
+              console.error(`❌ Failed to send notification to user ${participantId}:`, notifError);
             }
-          } catch (notifError) {
-            console.error(`❌ Failed to send notification to user ${participantId}:`, notifError);
           }
         }
-      }
+      });
+
+      await Promise.all(updates);
 
       return msg;
     } catch (error) {
@@ -182,19 +207,30 @@ export class ChatGateway
 
   @SubscribeMessage('readMessage')
   async onReadMessage(@MessageBody() data: { messageId: number; conversationId: number; userId?: number; type?: ConversationType }) {
-    await this.chatService.markAsRead(data.messageId);
+    // Verify user is a participant in this conversation
+    if (data.userId) {
+      const isParticipant = await this.chatService.isUserParticipant(data.conversationId, data.userId);
+      if (!isParticipant) {
+        throw new Error('Unauthorized: User is not a participant in this conversation');
+      }
+    }
+
     const room = `conv_${data.conversationId}`;
+    
+    // Mark as read and get participants in parallel
+    const [, participantIds] = await Promise.all([
+      this.chatService.markAsRead(data.messageId),
+      this.chatService.getConversationParticipants(data.conversationId)
+    ]);
     
     this.server.to(room).emit('messageRead', { 
       messageId: data.messageId,
       isRead: true 
     });
 
-    // Update conversation list for all participants to reflect read status
-    const participantIds = await this.chatService.getConversationParticipants(data.conversationId);
-    
-    for (const participantId of participantIds) {
-      await this.emitConversationsUpdate(participantId);
-    }
+    // Update conversation list for all participants in parallel
+    await Promise.all(
+      participantIds.map(participantId => this.emitConversationsUpdate(participantId))
+    );
   }
 }

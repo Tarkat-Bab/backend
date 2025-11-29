@@ -117,6 +117,17 @@ export class ChatService {
     return this.messageRepo.save(message);
   }
 
+  async markMultipleAsRead(messageIds: number[]) {
+    if (messageIds.length === 0) return;
+    
+    await this.messageRepo
+      .createQueryBuilder()
+      .update(MessageEntity)
+      .set({ isRead: true })
+      .where("id IN (:...ids)", { ids: messageIds })
+      .execute();
+  }
+
   async getConversationMessages(conversationId: number) {
     const msgs =  await this.messageRepo.find({
       where: { conversation: { id: conversationId, deleted:false }, deleted: false, sender:{deleted:false}  },
@@ -148,12 +159,17 @@ export class ChatService {
       .innerJoin("conversation.participants", "userParticipant", "userParticipant.user_id = :userId", { userId })
       .leftJoinAndSelect("conversation.participants", "participant")
       .leftJoinAndSelect("participant.user", "user")
+      .leftJoin("conversation.messages", "msg")
+      .addSelect("MAX(msg.createdAt)", "lastMessageDate")
       .where("conversation.deleted = false")
       .andWhere("user.deleted = false")
+      .groupBy("conversation.id")
+      .addGroupBy("participant.id")
+      .addGroupBy("user.id")
+      .having("COUNT(msg.id) > 0");
 
     // Only filter by type if provided
     if (type) {
-      console.log("Type: ", type)
       query = query.andWhere("conversation.type = :conversationType", { conversationType: type });
     }
 
@@ -161,36 +177,53 @@ export class ChatService {
       .orderBy("conversation.updatedAt", "DESC")
       .getMany();
 
+    if (conversations.length === 0) return [];
+
+    const conversationIds = conversations.map(c => c.id);
+
+    // Fetch all last messages in one query using proper subquery
+    const lastMessageIds = await this.messageRepo
+      .createQueryBuilder("m")
+      .select("MAX(m.id)", "maxId")
+      .addSelect("m.conversation_id", "conversationId")
+      .where("m.conversation_id IN (:...ids)", { ids: conversationIds })
+      .groupBy("m.conversation_id")
+      .getRawMany();
+
+    const messageIds = lastMessageIds.map(item => item.maxId);
+    
+    const lastMessages = messageIds.length > 0 
+      ? await this.messageRepo
+          .createQueryBuilder("message")
+          .leftJoinAndSelect("message.sender", "sender")
+          .leftJoinAndSelect("message.conversation", "conversation")
+          .where("message.id IN (:...messageIds)", { messageIds })
+          .getMany()
+      : [];
+
+    const lastMessageMap = new Map(lastMessages.map(m => [m.conversation.id, m]));
+
+    // Fetch all unread counts in one query
+    const unreadCounts = await this.messageRepo
+      .createQueryBuilder("message")
+      .select("message.conversation_id", "conversationId")
+      .addSelect("COUNT(*)", "count")
+      .where("message.conversation_id IN (:...ids)", { ids: conversationIds })
+      .andWhere("message.isRead = false")
+      .andWhere("message.sender_id != :uid", { uid: userId })
+      .groupBy("message.conversation_id")
+      .getRawMany();
+
+    const unreadCountMap = new Map(unreadCounts.map(u => [u.conversationId, parseInt(u.count)]));
+
     const result = [];
 
     for (const conv of conversations) {
       const recipient = conv.participants.find(p => p.user.id !== userId);
-
-      // ⛔ Skip conversation with no other participant
       if (!recipient) continue;
 
-      // Check if conversation has any messages
-      const messageCount = await this.messageRepo
-        .createQueryBuilder("message")
-        .where("message.conversation_id = :cid", { cid: conv.id })
-        .getCount();
-
-      // ⛔ Skip conversations with no messages
-      if (messageCount === 0) continue;
-
-      const lastMessage = await this.messageRepo
-        .createQueryBuilder("message")
-        .where("message.conversation_id = :cid", { cid: conv.id })
-        .orderBy("message.createdAt", "DESC")
-        .leftJoinAndSelect("message.sender", "sender")
-        .getOne();
-
-      const unreadCount = await this.messageRepo
-        .createQueryBuilder("message")
-        .where("message.conversation_id = :cid", { cid: conv.id })
-        .andWhere("message.isRead = false")
-        .andWhere("message.sender_id != :uid", { uid: userId })
-        .getCount();
+      const lastMessage = lastMessageMap.get(conv.id);
+      const unreadCount = unreadCountMap.get(conv.id) || 0;
 
       const conversationData: any = {
         conversationId: conv.id,
@@ -277,6 +310,16 @@ export class ChatService {
       relations: ['user'],
     });
     return participants.map(p => p.user.id);
+  }
+
+  async isUserParticipant(conversationId: number, userId: number): Promise<boolean> {
+    const participant = await this.participantRepo.findOne({
+      where: {
+        conversation: { id: conversationId },
+        user: { id: userId },
+      },
+    });
+    return !!participant;
   }
 
 }
