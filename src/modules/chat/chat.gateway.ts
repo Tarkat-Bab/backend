@@ -94,6 +94,9 @@ export class ChatGateway
       (msg) => !msg.isRead && msg.sender.id !== data.userId,
     );
 
+    // Update conversations list BEFORE marking as read so receiver sees correct unread count
+    await this.emitConversationsUpdate(data.receiverId);
+
     await Promise.all(unreadMessages.map((msg) => this.chatService.markAsRead(msg.id)));
 
     unreadMessages.forEach((msg) => {
@@ -106,10 +109,8 @@ export class ChatGateway
       conversationId: conversation.id,
     });
 
-    // Update conversations list for both users in real-time
-    // Uses socket.data.userId to target specific users only
-    await this.emitConversationsUpdate(data.userId, data.type);
-    await this.emitConversationsUpdate(data.receiverId, data.type);
+    // Update conversations list for the user who joined (after marking as read)
+    await this.emitConversationsUpdate(data.userId);
 
     return { conversationId: conversation.id , messages, isNewConversation};
   }
@@ -135,7 +136,7 @@ export class ChatGateway
       const allSockets = await this.server.fetchSockets();
 
       for (const participantId of participantIds) {
-        await this.emitConversationsUpdate(participantId, msg.conversation.type);
+        await this.emitConversationsUpdate(participantId);
         
         // Send notification only to receivers (not sender) who are NOT in the conversation room
         if (participantId !== data.senderId) {
@@ -193,7 +194,7 @@ export class ChatGateway
     const participantIds = await this.chatService.getConversationParticipants(data.conversationId);
     
     for (const participantId of participantIds) {
-      await this.emitConversationsUpdate(participantId, data.type);
+      await this.emitConversationsUpdate(participantId);
     }
   }
 }
