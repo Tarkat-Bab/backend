@@ -14,6 +14,7 @@ import { PaginatorModule } from 'src/common/paginator/paginator.module';
 import { ServicesModule } from '../services/services.module';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
     imports: [
@@ -23,6 +24,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
         LocationsModule,
         PaginatorModule,
         NotificationsModule,
+        ChatModule,
         TypeOrmModule.forFeature([ServiceRequestsEntity, RequestOffersEntity, RequestsMedia])
     ],
     controllers: [RequestsController, RequestOffersController],
