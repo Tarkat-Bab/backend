@@ -5,6 +5,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { imageFilter } from 'src/common/files/files.filter';
 import { ApiBearerAuth, ApiConsumes, ApiHeader } from '@nestjs/swagger';
 import { UpdateProfileDto } from './dtos/UpdateProfileDto';
+import { UpdateFcmTokenDto } from './dtos/update-fcm-token.dto';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
@@ -77,10 +78,9 @@ export class UsersController {
     @Patch('token-lang')
     async updateFcmToken(
         @CurrentUser() user: any,
-        @Body('fcmToken') fcmToken: string,
-        @Body('usedLanguage') usedLanguage: LanguagesEnum,
+        @Body() dto: UpdateFcmTokenDto,
         @Language() lang: LanguagesEnum,
     ) {
-        return this.usersService.updateFcmToken(user.id, fcmToken, usedLanguage, lang);
+        return this.usersService.updateFcmToken(user.id, dto.fcmToken, dto.usedLanguage, lang);
     }
 }

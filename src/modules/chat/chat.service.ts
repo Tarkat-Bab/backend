@@ -118,7 +118,7 @@ export class ChatService {
   }
 
   async getConversationMessages(conversationId: number) {
-    return await this.messageRepo.find({
+    const msgs =  await this.messageRepo.find({
       where: { conversation: { id: conversationId, deleted:false }, deleted: false, sender:{deleted:false}  },
       order: { createdAt: 'ASC' },
       select:{
@@ -132,6 +132,9 @@ export class ChatService {
           conversation:{id:true}
       }
     });
+
+    console.log(msgs)
+    return msgs;
   }
   
   async getUserConversations(
@@ -151,6 +154,7 @@ export class ChatService {
 
     // Only filter by type if provided
     if (type) {
+      console.log("Type: ", type)
       query = query.andWhere("conversation.type = :conversationType", { conversationType: type });
     }
 
