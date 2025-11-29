@@ -1,10 +1,12 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../../common/baseEntity/baseEntity';
 import { UserEntity } from '../../users/entities/users.entity';
 import { ConversationEntity } from './conversation.entity';
 import { MessageType } from '../enums/messageType.enum';
 
 @Entity('messages')
+@Index(['conversation', 'createdAt'])
+@Index(['conversation', 'isRead', 'sender'])
 export class MessageEntity extends BaseEntity {
   @ManyToOne(() => ConversationEntity, (conversation) => conversation.messages, {
     onDelete: 'CASCADE',
