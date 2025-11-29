@@ -114,7 +114,7 @@ Retrieve all conversations for a user.
 ```typescript
 {
   userId: number;
-  type?: ConversationType; // Optional: filter by conversation type
+  type?: ConversationType; // Optional: filter by conversation type for dashboard
   includeMessages?: boolean; // Optional: include messages in response (default: false)
 }
 ```
