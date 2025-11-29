@@ -10,6 +10,7 @@ import { SettingsModule } from './settings/settings.module';
 import { DashboardPaymentsModule } from './payments/payments.module';
 import { DashboardRegionsModule } from './regions/regions.module';
 import { DashboardNotificationModule } from './notifications/notifications.module';
+import { DashboardConversationsModule } from './conversations/conversations.module';
 import { UsersModule } from 'src/modules/users/users.module';
 import { RequestsModule } from 'src/modules/requests/requests.module';
 import { ReportsModule } from 'src/modules/reports/reports.module';
@@ -19,7 +20,7 @@ import { ReportsModule } from 'src/modules/reports/reports.module';
   imports: [
     DashboardAuthModule, AuthModule, DashboardUsersModule, DashboardRequestsModule, 
     DashboardReportsModule, SettingsModule, DashboardPaymentsModule, DashboardNotificationModule,
-    DashboardRegionsModule, UsersModule, RequestsModule, ReportsModule
+    DashboardRegionsModule, DashboardConversationsModule, UsersModule, RequestsModule, ReportsModule
   ],
   controllers: [DashboardController],
   providers: [DashboardService],
