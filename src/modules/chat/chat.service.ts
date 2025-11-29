@@ -93,6 +93,7 @@ export class ChatService {
         'message.id',
         'message.content',
         'message.createdAt',
+        'message.updatedAt',
         'message.isRead',
         'message.imageUrl',
         'message.type',
@@ -136,6 +137,7 @@ export class ChatService {
           id: true,
           content: true,
           createdAt: true,
+          updatedAt: true,
           isRead: true,
           imageUrl: true,
           type: true,
@@ -153,20 +155,26 @@ export class ChatService {
     type?: ConversationType,
     includeMessages: boolean = false
   ) {
+    // Get conversations with last message date in a single optimized query
     let query = this.conversationRepo
       .createQueryBuilder("conversation")
-      .distinct(true)
       .innerJoin("conversation.participants", "userParticipant", "userParticipant.user_id = :userId", { userId })
       .leftJoinAndSelect("conversation.participants", "participant")
       .leftJoinAndSelect("participant.user", "user")
-      .leftJoin("conversation.messages", "msg")
-      .addSelect("MAX(msg.createdAt)", "lastMessageDate")
+      .leftJoin(
+        subQuery => {
+          return subQuery
+            .select("m.conversation_id", "conv_id")
+            .addSelect("MAX(m.created_at)", "last_msg_date")
+            .from("messages", "m")
+            .groupBy("m.conversation_id");
+        },
+        "lastmsg",
+        '"lastmsg"."conv_id" = "conversation"."id"'
+      )
       .where("conversation.deleted = false")
       .andWhere("user.deleted = false")
-      .groupBy("conversation.id")
-      .addGroupBy("participant.id")
-      .addGroupBy("user.id")
-      .having("COUNT(msg.id) > 0");
+      .andWhere('"lastmsg"."last_msg_date" IS NOT NULL');
 
     // Only filter by type if provided
     if (type) {
@@ -174,23 +182,24 @@ export class ChatService {
     }
 
     const conversations = await query
-      .orderBy("conversation.updatedAt", "DESC")
+      .orderBy('"lastmsg"."last_msg_date"', "DESC")
       .getMany();
 
     if (conversations.length === 0) return [];
 
     const conversationIds = conversations.map(c => c.id);
 
-    // Fetch all last messages in one query using proper subquery
-    const lastMessageIds = await this.messageRepo
+    // Fetch last messages with their dates in one query
+    const lastMessageData = await this.messageRepo
       .createQueryBuilder("m")
-      .select("MAX(m.id)", "maxId")
-      .addSelect("m.conversation_id", "conversationId")
+      .select("m.conversation_id", "conversationId")
+      .addSelect("MAX(m.id)", "maxId")
+      .addSelect("MAX(m.created_at)", "lastDate")
       .where("m.conversation_id IN (:...ids)", { ids: conversationIds })
       .groupBy("m.conversation_id")
       .getRawMany();
 
-    const messageIds = lastMessageIds.map(item => item.maxId);
+    const messageIds = lastMessageData.map(item => item.maxId);
     
     const lastMessages = messageIds.length > 0 
       ? await this.messageRepo
@@ -202,6 +211,7 @@ export class ChatService {
       : [];
 
     const lastMessageMap = new Map(lastMessages.map(m => [m.conversation.id, m]));
+    const lastDateMap = new Map(lastMessageData.map(d => [d.conversationId, d.lastDate]));
 
     // Fetch all unread counts in one query
     const unreadCounts = await this.messageRepo
@@ -223,6 +233,7 @@ export class ChatService {
       if (!recipient) continue;
 
       const lastMessage = lastMessageMap.get(conv.id);
+      const messageDate = lastDateMap.get(conv.id);
       const unreadCount = unreadCountMap.get(conv.id) || 0;
 
       const conversationData: any = {
@@ -235,7 +246,7 @@ export class ChatService {
           image: recipient.user.image,
         },
         lastMessage: lastMessage ? lastMessage.content : null,
-        messageDate: lastMessage ? lastMessage.createdAt : null,
+        messageDate: messageDate || null,
         unreadCount,
       };
 
@@ -247,6 +258,7 @@ export class ChatService {
       result.push(conversationData);
     }
 
+    // Results are already sorted by database query (ORDER BY lastMsg.last_msg_date DESC)
     return result;
   }
 
