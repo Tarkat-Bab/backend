@@ -98,7 +98,7 @@ export class NotificationsService {
       data: notificationData,
     });
 
-    console.log("notificationData: ", notificationData);
+    // console.log("notificationData: ", notificationData);
     return { success: true, savedNotification };
   }
 
