@@ -733,17 +733,21 @@ export class UsersService {
   ){
     const {location, description, username} = updateDto;
     
-    const user = await this.findById(userId, lang);
+    const user = await this.usersRepo.findOne({
+      where: { id: userId, deleted: false }
+    });
+    
+    if (!user) {
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC ? 'المستخدم غير موجود.' : 'User not found.'
+      );
+    }
+    
     if(description){
-      const technicalProfile = await this.technicalProfileRepo.findOne({
-        where: { user: { id: userId } }
-      });
-      if(technicalProfile){
-        await this.technicalProfileRepo.update(
-          { id: technicalProfile.id },
-          { description: description }
-        );
-      }
+      await this.technicalProfileRepo.update(
+        { user: { id: userId } },
+        { description: description }
+      );
     }
 
     if (location) {
