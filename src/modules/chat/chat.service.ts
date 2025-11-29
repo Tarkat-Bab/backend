@@ -148,9 +148,8 @@ export class ChatService {
       .innerJoin("conversation.participants", "userParticipant", "userParticipant.user_id = :userId", { userId })
       .leftJoinAndSelect("conversation.participants", "participant")
       .leftJoinAndSelect("participant.user", "user")
-      .where("user.deleted = false")
-      .andWhere("conversation.deleted = false")
-      .orderBy('conversation.updatedAt', 'DESC')
+      .where("conversation.deleted = false")
+      .andWhere("user.deleted = false")
 
     // Only filter by type if provided
     if (type) {
@@ -239,7 +238,7 @@ export class ChatService {
       .innerJoin('conversation.participants', 'p1', 'p1.user_id = :u1', { u1: senderId })
       .innerJoin('conversation.participants', 'p2', 'p2.user_id = :u2', { u2: receiverId })
       .leftJoin('conversation.participants', 'allParticipants')
-      .where('conversation.type = :type', { type })
+      // .where('conversation.type = :type', { type })
       .andWhere('conversation.deleted = false')
       .groupBy('conversation.id')
       .having('COUNT(DISTINCT allParticipants.id) = 2')

@@ -908,7 +908,15 @@ export class UsersService {
       );
     }
 
-    const user = await this.findById(userId, lang);
+    const user = await this.usersRepo.findOne({
+      where: { id: userId, deleted: false }
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        lang === LanguagesEnum.ARABIC ? 'المستخدم غير موجود.' : 'User not found.'
+      );
+    }
 
     // Remove all old FCM tokens for this user
     await this.userFcmTokenRepo.delete({ user: { id: userId } });
@@ -916,15 +924,14 @@ export class UsersService {
     // Add the new FCM token
     const newToken = this.userFcmTokenRepo.create({
       fcm_token: fcmToken,
-      user,
+      user: { id: userId } as UserEntity,
     });
 
     await this.userFcmTokenRepo.save(newToken);
 
     // Update user's preferred language if provided
     if (usedLanguage && Object.values(LanguagesEnum).includes(usedLanguage)) {
-      user.usedLanguage = usedLanguage;
-      await this.usersRepo.save(user);
+      await this.usersRepo.update({ id: userId }, { usedLanguage });
     }
 
     return {
