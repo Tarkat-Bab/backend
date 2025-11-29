@@ -100,7 +100,7 @@ export class ChatGateway
       this.server.to(room).emit('messageRead', { messageId: msg.id });
     });
 
-    client.to(room).emit('conversationMessages', messages);
+    this.server.to(room).emit('conversationMessages', messages);
     this.server.to(room).emit('userJoined', {
       userId: data.userId,
       conversationId: conversation.id,
