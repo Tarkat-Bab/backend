@@ -130,23 +130,30 @@ export class ChatService {
   }
 
   async getConversationMessages(conversationId: number) {
-    const msgs =  await this.messageRepo.find({
-      where: { conversation: { id: conversationId, deleted:false }, deleted: false, sender:{deleted:false}  },
-      order: { createdAt: 'ASC' },
-      select:{
-          id: true,
-          content: true,
-          createdAt: true,
-          updatedAt: true,
-          isRead: true,
-          imageUrl: true,
-          type: true,
-          sender:{id: true, username:true},
-          conversation:{id:true}
-      }
-    });
+    const msgs = await this.messageRepo
+      .createQueryBuilder('message')
+      .leftJoinAndSelect('message.sender', 'sender')
+      .leftJoinAndSelect('message.conversation', 'conversation')
+      .select([
+        'message.id',
+        'message.content',
+        'message.createdAt',
+        'message.updatedAt',
+        'message.isRead',
+        'message.imageUrl',
+        'message.type',
+        'sender.id',
+        'sender.username',
+        'sender.image',
+        // 'conversation.id',
+      ])
+      .where('message.conversation_id = :conversationId', { conversationId })
+      .andWhere('message.deleted = false')
+      .andWhere('conversation.deleted = false')
+      .andWhere('sender.deleted = false')
+      .orderBy('message.createdAt', 'ASC')
+      .getMany();
 
-    console.log(msgs)
     return msgs;
   }
   

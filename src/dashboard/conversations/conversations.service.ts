@@ -170,6 +170,6 @@ export class DashboardConversationsService {
       throw new NotFoundException('Conversation not found');
     }
 
-    return this.chatService.getConversationMessages(conversationId);
+    return await this.chatService.getConversationMessages(conversationId);
   }
 }
