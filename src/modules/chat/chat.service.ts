@@ -233,33 +233,38 @@ export class ChatService {
   }
 
   async createOrGetConversation(senderId: number, receiverId: number, type: ConversationType = ConversationType.CLIENT_TECHNICIAN) {
-    //console.log(`createOrGetConversation`)
+    // Find existing conversation with exactly these 2 participants and matching type
     let conversation = await this.conversationRepo
       .createQueryBuilder('conversation')
       .innerJoin('conversation.participants', 'p1', 'p1.user_id = :u1', { u1: senderId })
       .innerJoin('conversation.participants', 'p2', 'p2.user_id = :u2', { u2: receiverId })
+      .leftJoin('conversation.participants', 'allParticipants')
+      .where('conversation.type = :type', { type })
+      .andWhere('conversation.deleted = false')
       .groupBy('conversation.id')
+      .having('COUNT(DISTINCT allParticipants.id) = 2')
       .getOne();
 
-  
     if (conversation) return { conversation, isNew: false };
   
-    //use transaction to avoid race condition
+    // Use transaction to avoid race condition
     const result = await this.conversationRepo.manager.transaction(async (manager) => {
-      // double-check inside transaction
+      // Double-check inside transaction
       conversation = await manager
         .getRepository(ConversationEntity)
         .createQueryBuilder('conversation')
-        .leftJoin('conversation.participants', 'participant')
-        .addSelect('ARRAY_AGG(participant.user_id) as participant_ids')
-        .where('participant.user_id IN (:...ids)', { ids: [senderId, receiverId] })
+        .innerJoin('conversation.participants', 'p1', 'p1.user_id = :u1', { u1: senderId })
+        .innerJoin('conversation.participants', 'p2', 'p2.user_id = :u2', { u2: receiverId })
+        .leftJoin('conversation.participants', 'allParticipants')
+        .where('conversation.type = :type', { type })
+        .andWhere('conversation.deleted = false')
         .groupBy('conversation.id')
-        .having('COUNT(DISTINCT participant.user_id) = 2')
+        .having('COUNT(DISTINCT allParticipants.id) = 2')
         .getOne();
     
       if (conversation) return { conversation, isNew: false };
     
-      // create if still not exists
+      // Create if still not exists
       const newConv = await this.createConversation(type, [senderId, receiverId]);
       return { conversation: newConv, isNew: true };
     });
