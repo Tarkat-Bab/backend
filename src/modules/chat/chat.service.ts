@@ -118,7 +118,7 @@ export class ChatService {
   }
 
   async getConversationMessages(conversationId: number) {
-    return this.messageRepo.find({
+    return await this.messageRepo.find({
       where: { conversation: { id: conversationId, deleted:false }, deleted: false, sender:{deleted:false}  },
       order: { createdAt: 'ASC' },
       select:{
