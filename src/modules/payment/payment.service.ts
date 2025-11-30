@@ -5,13 +5,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UsersService } from '../users/services/users.service';
 import { SavePaymentDto } from './dtos/save-payment.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
+import axios from 'axios';
 import { FilterPaymentsDto } from './dtos/filter-payments.dto';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { RequestOffersService } from '../requests/services/requests-offers.service';
 import { DashboardSettingsService } from 'src/dashboard/settings/services/settings.service';
-import { PaymentContextService } from './strategies/payment-context.service';
-import { TabbyPaymentStrategy } from './strategies/tabby-payment.strategy';
-import { PaylinkPaymentStrategy } from './strategies/paylink-payment.strategy';
 
 @Injectable()
 export class PaymentService {
@@ -22,14 +20,11 @@ export class PaymentService {
         private readonly userService: UsersService,
         private readonly requestOfferService: RequestOffersService,
         private readonly settingsService: DashboardSettingsService,
-        private readonly paginationService: PaginatorService,
-        private readonly paymentContext: PaymentContextService,
-        private readonly tabbyStrategy: TabbyPaymentStrategy,
-        private readonly paylinkStrategy: PaylinkPaymentStrategy
+        private readonly paginationService: PaginatorService
 
     ) {}
 
-    async checkoutPayment(userId: number, offertId: number, lang: LanguagesEnum, provider: 'tabby' | 'paylink' = 'tabby') {
+    async checkoutPayment(userId: number, offertId: number, lang: LanguagesEnum) {
         const user = await this.userService.findById(userId, lang);
         const offer = await this.requestOfferService.findOne(offertId, lang)
         if(offer.price <= 0){
@@ -39,52 +34,57 @@ export class PaymentService {
         } 
 
         const { platformAmountFromTech, platformAmountFromClient, totalTechnicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
-        
-        // Set payment strategy based on provider
-        if (provider === 'paylink') {
-          this.paymentContext.setStrategy(this.paylinkStrategy);
-        } else {
-          this.paymentContext.setStrategy(this.tabbyStrategy);
-        }
-        
-        try {
-          const result = await this.paymentContext.executeCheckout(
-            totalClientAmount,
-            "SAR",
-            {
+        const payload = {
+          payment: {
+            amount: totalClientAmount.toString(),
+            currency: "SAR",
+            buyer: {
               name: user.username,
               phone: user.phone,
               email: user.email,
             },
-            lang
-          );
+          },
+          lang,
+          merchant_code: process.env.TABBY_MERCHANT_CODE
+      }
+    // console.log("➡️ Checkout payload:", payload);
+    try {
+      const response = await axios.post(process.env.TABBY_CHECKOUT_URL, payload, {
+        headers: {
+          Authorization: `Bearer ${process.env.TABBY_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-          await this.createPayment(
-            userId,
-            offer.id,
-            {
-              tabbyPaymentId: result.paymentId,
-              currency: "SAR",
-              status: "created",
-              createdAt: new Date().toISOString(),
-              amount: totalClientAmount,
-              platformAmountFromTech,
-              platformAmountFromClient,
-              totalTechnicianAmount,
-              taxAmount: 0       
-            }, 
-            lang
-          );
+      if(response.status !== 200){
+        throw new InternalServerErrorException(
+            lang === LanguagesEnum.ARABIC ? "فشل في عمليه الدفع" : "Failed to payment process"
+        );
+      }
 
-          return {
-            paymentId: result.paymentId,
-            url: result.url,
-            provider
-          };
-        } catch (error: any) {
-          console.error("❌ Checkout error:", error.response?.data || error.message);
-          throw error;
-        }
+      await this.createPayment(
+        userId,
+        offer.id,
+        {
+        tabbyPaymentId: response.data.payment.id,
+        currency: response.data.payment.currency,
+        status:  response.data.payment.status,
+        createdAt:  response.data.payment.created_at,
+        amount: totalClientAmount,
+        platformAmountFromTech,
+        platformAmountFromClient,
+        totalTechnicianAmount,
+        taxAmount :0       
+      }, lang);
+
+      return {
+          tabbyPaymentId: response.data.payment.id,
+          url: response.data.configuration.available_products.installments[0].web_url
+        };
+    } catch (error: any) {
+      console.error("❌ Checkout error:", error.response?.data || error.message);
+      throw error;
+    }
     }
 
     async updatePaymentStatus(webhookData: any) {
@@ -110,13 +110,36 @@ export class PaymentService {
     }
 
     /**
-     * This method registers a webhook URL with the payment provider to receive payment notifications.
+     * This method registers a webhook URL with Tabby to receive payment notifications.
      * It runs once during the application startup.
-     * @returns The response from the payment provider API after registering the webhook.
+     * @returns The response from the Tabby API after registering the webhook.
      */
     async registerTabbyWebhook() {
-      this.paymentContext.setStrategy(this.tabbyStrategy);
-      return this.paymentContext.registerWebhook();
+      try {
+        const response = await axios.post(
+          `${process.env.TABBY_API_URL}/webhooks`,
+          {
+            url: `${process.env.BASE_URL}/payments/webhook`,
+            header: {
+              title: "X-Tabby-Signature",          
+              value: process.env.TABBY_WEBHOOK_SECRET 
+            }
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.TABBY_SECRET_KEY}`,
+              "Content-Type": "application/json",
+              "X-Merchant-Code": process.env.TABBY_MERCHANT_CODE
+            }
+          }
+        );
+      
+        console.log("✅ Tabby webhook registered:", response.data);
+        return response.data;
+      } catch (error: any) {
+        console.error("❌ Failed to register Tabby webhook:", error.response?.data || error.message);
+        throw new InternalServerErrorException("Failed to register Tabby webhook");
+      }
     }
 
     async createPayment(userId: number, offerId: number, paymentDto: SavePaymentDto, lang: LanguagesEnum) {

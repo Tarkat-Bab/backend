@@ -6,9 +6,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { SettingsModule } from 'src/dashboard/settings/settings.module';
-import { PaymentContextService } from './strategies/payment-context.service';
-import { TabbyPaymentStrategy } from './strategies/tabby-payment.strategy';
-import { PaylinkPaymentStrategy } from './strategies/paylink-payment.strategy';
 
 @Module({
     imports:[
@@ -16,12 +13,7 @@ import { PaylinkPaymentStrategy } from './strategies/paylink-payment.strategy';
         TypeOrmModule.forFeature([PaymentEntity])
     ],
     controllers: [ PaymentController ],
-    providers: [ 
-        PaymentService,
-        PaymentContextService,
-        TabbyPaymentStrategy,
-        PaylinkPaymentStrategy
-    ],
+    providers: [ PaymentService ],
     exports: [ PaymentService ]
 })
 export class PaymentModule {}
