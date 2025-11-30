@@ -14,13 +14,15 @@ import { DashboardConversationsModule } from './conversations/conversations.modu
 import { UsersModule } from 'src/modules/users/users.module';
 import { RequestsModule } from 'src/modules/requests/requests.module';
 import { ReportsModule } from 'src/modules/reports/reports.module';
+import { DashboardCouponsModule } from './coupons/coupons.module';
 
 
 @Module({
   imports: [
     DashboardAuthModule, AuthModule, DashboardUsersModule, DashboardRequestsModule, 
     DashboardReportsModule, SettingsModule, DashboardPaymentsModule, DashboardNotificationModule,
-    DashboardRegionsModule, DashboardConversationsModule, UsersModule, RequestsModule, ReportsModule
+    DashboardRegionsModule, DashboardConversationsModule, UsersModule, RequestsModule, ReportsModule,
+    DashboardCouponsModule
   ],
   controllers: [DashboardController],
   providers: [DashboardService],
