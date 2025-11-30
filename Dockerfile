@@ -1,23 +1,29 @@
-# Use official Node.js image
-FROM node:20-alpine
-
-# Set working directory
+# ----- Stage 1: Builder -----
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files
+# Copy only package files first (better caching)
 COPY package*.json ./
 
-# Clean install dependencies
-RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+# Install only production deps first if possible (much smaller)
+RUN npm install --legacy-peer-deps
 
-# Copy source code
+# Copy the source code
 COPY . .
 
-# Build the app
+# Build the project
 RUN npm run build
 
-# Expose the port
+
+# ----- Stage 2: Runtime -----
+FROM node:20-alpine
+WORKDIR /app
+
+# Copy only dist + node_modules needed for runtime
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY package*.json ./
+
 EXPOSE 3000
 
-# Run the compiled code
 CMD ["node", "dist/main.js"]
