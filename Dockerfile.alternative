@@ -1,14 +1,17 @@
 # Use official Node.js image
 FROM node:20-alpine
 
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
 # Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Clean install dependencies
-RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+# Install dependencies without using package-lock
+RUN npm install --legacy-peer-deps --no-package-lock
 
 # Copy source code
 COPY . .
