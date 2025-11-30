@@ -10,6 +10,7 @@ import { FilterPaymentsDto } from './dtos/filter-payments.dto';
 import { PaginatorService } from 'src/common/paginator/paginator.service';
 import { RequestOffersService } from '../requests/services/requests-offers.service';
 import { DashboardSettingsService } from 'src/dashboard/settings/services/settings.service';
+import { PaylinkService } from './paylink.service';
 
 @Injectable()
 export class PaymentService {
@@ -20,11 +21,12 @@ export class PaymentService {
         private readonly userService: UsersService,
         private readonly requestOfferService: RequestOffersService,
         private readonly settingsService: DashboardSettingsService,
-        private readonly paginationService: PaginatorService
+        private readonly paginationService: PaginatorService,
+        private readonly paylinkService: PaylinkService
 
     ) {}
 
-    async checkoutPayment(userId: number, offertId: number, lang: LanguagesEnum) {
+    async checkoutTabbyPayment(userId: number, offertId: number, lang: LanguagesEnum) {
         const user = await this.userService.findById(userId, lang);
         const offer = await this.requestOfferService.findOne(offertId, lang)
         if(offer.price <= 0){
@@ -32,6 +34,33 @@ export class PaymentService {
                 lang === LanguagesEnum.ARABIC ? "السعر غير صالح للدفع" : "Invalid price for payment"
             )
         } 
+
+        // Check if payment already exists for this offer
+        const existingPayment = await this.paymentRepository.findOne({ 
+            where: { offer: { id: offer.id } },
+            relations: ['offer']
+        });
+
+        if (existingPayment) {
+            // If payment exists and is already authorized/paid, throw error
+            if (existingPayment.status === 'authorized' || existingPayment.status === 'closed') {
+                throw new BadRequestException(
+                    lang === LanguagesEnum.ARABIC 
+                        ? "تم الدفع لهذا العرض مسبقاً" 
+                        : "This offer has already been paid"
+                );
+            }
+
+            // If payment exists but not completed, return existing payment info
+            // Note: We can't retrieve the Tabby URL again, so return the payment ID
+            return {
+                tabbyPaymentId: existingPayment.tabbyPaymentId,
+                url: null,
+                message: lang === LanguagesEnum.ARABIC 
+                    ? "يوجد دفع معلق لهذا العرض" 
+                    : "A pending payment exists for this offer"
+            };
+        }
 
         const { platformAmountFromTech, platformAmountFromClient, totalTechnicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
         const payload = {
@@ -146,12 +175,12 @@ export class PaymentService {
         const user = await this.userService.findById(userId, lang);
         const offer = await this.requestOfferService.findOne(offerId, lang);
 
-        const paymentExists = await this.paymentRepository.findOne({ where: { offer: { id: offer.id } } });
-        if(paymentExists){
-            throw new BadRequestException(
-                lang === LanguagesEnum.ARABIC ? "تم تسجيل الدفع لهذا العرض مسبقاً" : "Payment for this offer already exists"
-            );
-        }
+        // const paymentExists = await this.paymentRepository.findOne({ where: { offer: { id: offer.id } } });
+        // if(paymentExists){
+        //     throw new BadRequestException(
+        //         lang === LanguagesEnum.ARABIC ? "تم تسجيل الدفع لهذا العرض مسبقاً" : "Payment for this offer already exists"
+        //     );
+        // }
 
         const payment = this.paymentRepository.create({
             tabbyPaymentId: paymentDto.tabbyPaymentId,
@@ -261,6 +290,198 @@ export class PaymentService {
         totalTechnicianAmount,
         totalClientAmount
       };
+    }
+
+    /**
+     * Checkout payment using Paylink gateway
+     */
+    async checkoutPaylinkPayment(userId: number, offerId: number, lang: LanguagesEnum) {
+        const user = await this.userService.findById(userId, lang);
+        const offer = await this.requestOfferService.findOne(offerId, lang);
+        
+        if (offer.price < 5) {
+            throw new BadRequestException(
+                lang === LanguagesEnum.ARABIC 
+                    ? "الحد الأدنى للمبلغ هو 5 ريال سعودي" 
+                    : "Minimum amount is SAR 5.00"
+            );
+        }
+
+        // Check if payment already exists for this offer
+        const existingPayment = await this.paymentRepository.findOne({ 
+            where: { offer: { id: offer.id } },
+            relations: ['offer']
+        });
+
+        if (existingPayment) {
+            // If payment exists and is already paid, throw error
+            if (existingPayment.status === 'Paid') {
+                throw new BadRequestException(
+                    lang === LanguagesEnum.ARABIC 
+                        ? "تم الدفع لهذا العرض مسبقاً" 
+                        : "This offer has already been paid"
+                );
+            }
+
+            // If payment exists but not paid, get the invoice details and return
+            const invoiceDetails = await this.paylinkService.getInvoice(existingPayment.tabbyPaymentId);
+            
+            return {
+                transactionNo: invoiceDetails.transactionNo,
+                orderStatus: invoiceDetails.orderStatus,
+                url: invoiceDetails.url,
+                qrUrl: invoiceDetails.qrUrl
+            };
+        }
+
+        const { platformAmountFromTech, platformAmountFromClient, totalTechnicianAmount, totalClientAmount } = 
+            await this.calculateAmounts(offer.price);
+
+        const orderNumber = `ORDER-${Date.now()}-${offerId}`;
+        
+        const invoiceData = {
+            orderNumber,
+            amount: totalClientAmount,
+            callBackUrl: `${process.env.BASE_URL}/payments/paylink/callback`,
+            cancelUrl: `${process.env.BASE_URL}/payments/paylink/cancel`,
+            clientName: user.username,
+            clientEmail: user.email,
+            clientMobile: user.phone,
+            currency: 'SAR',
+            products: [
+                {
+                    title: offer.request?.title || 'Service Payment',
+                    price: offer.price,
+                    qty: 1,
+                    description: `Payment for offer #${offerId}`
+                }
+            ],
+            displayPending: true,
+            note: `Payment for offer #${offerId}`
+        };
+
+        const response = await this.paylinkService.addInvoice(invoiceData);
+
+        await this.createPayment(
+            userId,
+            offer.id,
+            {
+                tabbyPaymentId: response.transactionNo,
+                currency: 'SAR',
+                status: response.orderStatus,
+                createdAt: new Date().toISOString(),
+                amount: totalClientAmount,
+                platformAmountFromTech,
+                platformAmountFromClient,
+                totalTechnicianAmount,
+                taxAmount: 0
+            },
+            lang
+        );
+
+        return {
+            transactionNo: response.transactionNo,
+            orderStatus: response.orderStatus,
+            url: response.url,
+            qrUrl: response.qrUrl,
+            mobileUrl: response.mobileUrl
+        };
+    }
+
+    /**
+     * Get Paylink invoice details by transaction number
+     */
+    async getPaylinkInvoice(transactionNo: string, lang: LanguagesEnum) {
+        const invoiceDetails = await this.paylinkService.getInvoice(transactionNo);
+        
+        return {
+            transactionNo: invoiceDetails.transactionNo,
+            orderStatus: invoiceDetails.orderStatus,
+            amount: invoiceDetails.amount,
+            url: invoiceDetails.url,
+            qrUrl: invoiceDetails.qrUrl,
+            paymentReceipt: invoiceDetails.paymentReceipt,
+            paymentErrors: invoiceDetails.paymentErrors,
+            digitalOrder: invoiceDetails.digitalOrder,
+            gatewayOrderRequest: invoiceDetails.gatewayOrderRequest
+        };
+    }
+
+    /**
+     * Update payment status from Paylink webhook or manual check
+     */
+    async updatePaylinkPaymentStatus(transactionNo: string) {
+        const invoiceDetails = await this.paylinkService.getInvoice(transactionNo);
+        
+        const payment = await this.paymentRepository.findOne({
+            where: { tabbyPaymentId: transactionNo },
+            relations: ['user', 'offer']
+        });
+
+        if (!payment) {
+            console.log(`⚠️ Payment not found for transaction: ${transactionNo}`);
+            return;
+        }
+
+        const oldStatus = payment.status;
+        payment.status = invoiceDetails.orderStatus;
+        await this.paymentRepository.save(payment);
+
+        console.log(`✅ Payment status updated: ${oldStatus} -> ${invoiceDetails.orderStatus}`);
+
+        // If payment is completed, accept the offer
+        if (invoiceDetails.orderStatus === 'Paid' && oldStatus !== 'Paid') {
+            await this.requestOfferService.acceptOffer(payment.user.id, payment.offer.id);
+            console.log(`✅ Offer #${payment.offer.id} accepted after payment`);
+        }
+
+        return payment;
+    }
+
+    /**
+     * Handle Paylink webhook notification (supports both v1 and v2)
+     * This method is called when Paylink sends a webhook notification about a paid order
+     */
+    async handlePaylinkWebhook(webhookData: any) {
+        const transactionNo = webhookData.transactionNo;
+        const orderStatus = webhookData.orderStatus;
+        const apiVersion = webhookData.apiVersion || 'v1';
+
+        console.log(`✅ Paylink webhook received (${apiVersion}):`, {
+            transactionNo,
+            orderStatus,
+            amount: webhookData.amount,
+            paymentType: webhookData.paymentType || 'N/A'
+        });
+
+        if (!transactionNo) {
+            console.error('❌ Webhook missing transactionNo');
+            return;
+        }
+
+        const payment = await this.paymentRepository.findOne({
+            where: { tabbyPaymentId: transactionNo },
+            relations: ['user', 'offer']
+        });
+
+        if (!payment) {
+            console.log(`⚠️ Payment not found for transaction: ${transactionNo}`);
+            return;
+        }
+
+        const oldStatus = payment.status;
+        payment.status = orderStatus;
+        await this.paymentRepository.save(payment);
+
+        console.log(`✅ Payment status updated via webhook: ${oldStatus} -> ${orderStatus}`);
+
+        // If payment is completed, accept the offer
+        if (orderStatus === 'Paid' && oldStatus !== 'Paid') {
+            await this.requestOfferService.acceptOffer(payment.user.id, payment.offer.id);
+            console.log(`✅ Offer #${payment.offer.id} accepted after payment`);
+        }
+
+        return payment;
     }
 
  }

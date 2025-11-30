@@ -23,7 +23,49 @@ export class PaymentController {
         @Param('offerId') offerId: number,
         @Language() lang: LanguagesEnum
     ) {
-        return this.paymentService.checkoutPayment(user.id, offerId, lang);
+        return this.paymentService.checkoutTabbyPayment(user.id, offerId, lang);
+    }
+
+    @Post('paylink/checkout/:offerId')
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Language header',
+        required: false,
+        example: 'en',
+    })
+    async checkoutPaylinkPayment(
+        @CurrentUser() user:any,
+        @Param('offerId') offerId: number,
+        @Language() lang: LanguagesEnum
+    ) {
+        return this.paymentService.checkoutPaylinkPayment(user.id, offerId, lang);
+    }
+
+    @Post('paylink/invoice/:transactionNo')
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Language header',
+        required: false,
+        example: 'en',
+    })
+    async getPaylinkInvoice(
+        @Param('transactionNo') transactionNo: string,
+        @Language() lang: LanguagesEnum
+    ) {
+        return this.paymentService.getPaylinkInvoice(transactionNo, lang);
+    }
+
+    @Post('paylink/verify/:transactionNo')
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Language header',
+        required: false,
+        example: 'en',
+    })
+    async verifyPaylinkPayment(
+        @Param('transactionNo') transactionNo: string
+    ) {
+        return this.paymentService.updatePaylinkPaymentStatus(transactionNo);
     }
 
 
@@ -41,10 +83,16 @@ export class PaymentController {
         return { status: 'ok' };
     }
 
+    @isPublic()
+    @Post('paylink/webhook')
+    async handlePaylinkWebhook(
+        @Headers() headers: any,
+        @Body() body: any
+    ){
+        console.log('✅ Paylink webhook received:', body);
+        console.log('📋 Headers:', headers);
 
-    // @isPublic()
-    // @Post('register-webhook')
-    // async registerTabbyWebhook(){
-    //     return await this.paymentService.registerTabbyWebhook()
-    // }
+        await this.paymentService.handlePaylinkWebhook(body);
+        return { status: 'ok' };
+    }
 } 

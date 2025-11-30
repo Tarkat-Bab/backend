@@ -5,6 +5,7 @@ import { PaymentEntity } from './entities/payment.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
+import { PaylinkService } from './paylink.service';
 import { SettingsModule } from 'src/dashboard/settings/settings.module';
 
 @Module({
@@ -13,7 +14,7 @@ import { SettingsModule } from 'src/dashboard/settings/settings.module';
         TypeOrmModule.forFeature([PaymentEntity])
     ],
     controllers: [ PaymentController ],
-    providers: [ PaymentService ],
-    exports: [ PaymentService ]
+    providers: [ PaymentService, PaylinkService ],
+    exports: [ PaymentService, PaylinkService ]
 })
 export class PaymentModule {}
