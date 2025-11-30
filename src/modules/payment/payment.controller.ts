@@ -21,9 +21,10 @@ export class PaymentController {
     async checkoutPayment(
         @CurrentUser() user:any,
         @Param('offerId') offerId: number,
+        @Body('provider') provider: 'tabby' | 'paylink',
         @Language() lang: LanguagesEnum
     ) {
-        return this.paymentService.checkoutPayment(user.id, offerId, lang);
+        return this.paymentService.checkoutPayment(user.id, offerId, lang, provider);
     }
 
 

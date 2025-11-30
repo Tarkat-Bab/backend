@@ -33,6 +33,8 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { DeviceVersionsModule } from './modules/versions/device-versions..module';
 import { ChatModule } from './modules/chat/chat.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -78,7 +80,8 @@ import { ChatModule } from './modules/chat/chat.module';
     PaymentModule,
     RegionsModule,
     DeviceVersionsModule,
-    ChatModule
+    ChatModule,
+    CouponsModule
   ],
   controllers: [AppController],
   providers: [
