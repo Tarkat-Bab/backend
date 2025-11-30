@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Param, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Query, UnauthorizedException } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -68,7 +68,6 @@ export class PaymentController {
         return this.paymentService.updatePaylinkPaymentStatus(transactionNo);
     }
 
-
     @Post('webhook')
     async handleTabbyWebhook(
         @Headers('X-Tabby-Signature') signature: string,
@@ -95,4 +94,36 @@ export class PaymentController {
         await this.paymentService.handlePaylinkWebhook(body);
         return { status: 'ok' };
     }
-} 
+
+    @isPublic()
+    @Get('paylink/callback')
+    async handlePaylinkCallback(
+        @Query('transactionNo') transactionNo: string
+    ){
+        console.log('✅ Paylink callback received for transaction:', transactionNo);
+        
+        if (transactionNo) {
+            await this.paymentService.updatePaylinkPaymentStatus(transactionNo);
+        }
+
+        return {
+            success: true,
+            message: 'Payment processed successfully',
+            transactionNo
+        };
+    }
+
+    @isPublic()
+    @Get('paylink/cancel')
+    async handlePaylinkCancel(
+        @Query('transactionNo') transactionNo: string
+    ){
+        console.log('⚠️ Paylink payment cancelled for transaction:', transactionNo);
+        
+        return {
+            success: false,
+            message: 'Payment was cancelled',
+            transactionNo
+        };
+    }
+}

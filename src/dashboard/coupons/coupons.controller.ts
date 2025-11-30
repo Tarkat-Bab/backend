@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@n
 import { DashboardCouponsService } from './coupons.service';
 import { CreateCouponDto } from 'src/modules/coupons/dtos/create-coupon.dto';
 import { UpdateCouponDto } from 'src/modules/coupons/dtos/update-coupon.dto';
+import { UpdateFirstOrderDiscountDto } from 'src/modules/coupons/dtos/update-first-order-discount.dto';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
@@ -97,5 +98,21 @@ export class DashboardCouponsController {
                 ? 'تم حذف القسيمة بنجاح' 
                 : 'Coupon deleted successfully' 
         };
+    }
+
+    @Get('first-order-discount/settings')
+    @ApiOperation({ summary: 'الحصول على إعدادات خصم الطلب الأول' })
+    @ApiResponse({ status: 200, description: 'إعدادات خصم الطلب الأول' })
+    async getFirstOrderDiscount() {
+        return this.dashboardCouponsService.getFirstOrderDiscount();
+    }
+
+    @Patch('first-order-discount/settings')
+    @ApiOperation({ summary: 'تحديث إعدادات خصم الطلب الأول' })
+    @ApiResponse({ status: 200, description: 'تم تحديث الإعدادات بنجاح' })
+    async updateFirstOrderDiscount(
+        @Body() updateDto: UpdateFirstOrderDiscountDto
+    ) {
+        return this.dashboardCouponsService.updateFirstOrderDiscount(updateDto);
     }
 }
