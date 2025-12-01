@@ -12,6 +12,7 @@ import { JwtService }    from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from '../../../common/decorators/public.decorator';
 import { UserStatus, UsersTypes }    from '../../../common/enums/users.enum';
 import { UsersService }  from '../../users/services/users.service';
+import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -68,6 +69,40 @@ export class AuthGuard implements CanActivate {
 
     if (user && user.status === UserStatus.UNVERIFIED) {
       throw new UnauthorizedException(t('لم يتم تفعيل الحساب', 'Account is not verified'));
+    }
+
+    // Check if user location is in an available city
+    if (user && user.latitude && user.longitude) {
+      const isInAvailableCity = await this.usersService.checkUserLocationInAvailableCity(
+        user.latitude,
+        user.longitude,
+      );
+
+      if (!isInAvailableCity) {
+        const arResponse = {
+          data: {
+            type: 'FORBIDDEN_ACTION',
+            title: 'Your city is not supported.',
+            body: 'You are not allowed to perform this action.',
+            screen: 'forbidden_screen',
+            click_action: 'GO_TO_UPDATE_DATA',
+          },
+        }
+        const enResponse = {
+          data: {
+            type: 'FORBIDDEN_ACTION',
+            title: "منطقتك غير مدعومة",
+            body: 'You are not allowed to perform this action.',
+            screen: 'forbidden_screen',
+            click_action: 'GO_TO_UPDATE_DATA',
+          },
+        }
+
+        throw new ForbiddenException(
+          lang == LanguagesEnum.ARABIC ? arResponse : enResponse
+        );
+      }
+    
     }
 
     request.user = {

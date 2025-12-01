@@ -18,6 +18,7 @@ import { FilterTechnicianReqDto, FilterUsersDto } from '../dtos/filter-user-dto'
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UserFcmTokenEntity } from '../entities/user-fcm-token.entity';
 import { RequestStatus } from 'src/modules/requests/enums/requestStatus.enum';
+import { CitiesEntity } from 'src/modules/regions/entities/cities.entity';
 
 @Injectable()
 export class UsersService {
@@ -30,6 +31,9 @@ export class UsersService {
 
     @InjectRepository(UserFcmTokenEntity)
     private readonly userFcmTokenRepo: Repository<UserFcmTokenEntity>,
+
+    @InjectRepository(CitiesEntity)
+    private readonly cityRepo: Repository<CitiesEntity>,
 
     private readonly paginatorService: PaginatorService,
     private readonly cloudflareService: CloudflareService,
@@ -511,8 +515,46 @@ export class UsersService {
   async findUserForGuard(id:number){
     return await this.usersRepo.findOne({
       where: { id, deleted: false },
-      select: { id: true, email: true, phone: true, type: true, status: true }
+      select: { id: true, email: true, phone: true, type: true, status: true, latitude: true, longitude: true }
     })
+  }
+
+  /**
+   * Check if user's location is within an available city
+   */
+  async checkUserLocationInAvailableCity(
+    userLat: number,
+    userLong: number,
+  ): Promise<boolean> {
+    // Get all available cities
+    const availableCities = await this.cityRepo.find({
+      where: { available: true },
+      select: ['id', 'latitude', 'longitude'],
+    });
+
+    if (availableCities.length === 0) {
+      return false;
+    }
+
+    // Check if user is within any available city (within 50km radius)
+    const maxDistanceKm = 50;
+
+    for (const city of availableCities) {
+      if (city.latitude && city.longitude) {
+        const distance = this.locationService.calculateDistance(
+          userLong,
+          userLat,
+          city.longitude,
+          city.latitude,
+        );
+
+        if (distance <= maxDistanceKm) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   async findTechnicianById(id: number, lang: LanguagesEnum, dashboard?: boolean): Promise<TechnicalProfileEntity> {
