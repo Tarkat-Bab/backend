@@ -82,8 +82,8 @@ export class AuthGuard implements CanActivate {
         const arResponse = {
           data: {
             type: 'FORBIDDEN_ACTION',
-            title: 'Your city is not supported.',
-            body: 'You are not allowed to perform this action.',
+            title: "منطقتك غير مدعومة",
+            body: 'منطقتك غير مدعومة.',
             screen: 'forbidden_screen',
             click_action: 'GO_TO_UPDATE_DATA',
           },
@@ -91,8 +91,8 @@ export class AuthGuard implements CanActivate {
         const enResponse = {
           data: {
             type: 'FORBIDDEN_ACTION',
-            title: "منطقتك غير مدعومة",
-            body: 'You are not allowed to perform this action.',
+            title: 'Your city is not supported.',
+            body: 'Your city is not supported.',
             screen: 'forbidden_screen',
             click_action: 'GO_TO_UPDATE_DATA',
           },

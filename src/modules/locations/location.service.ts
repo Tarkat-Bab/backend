@@ -106,23 +106,31 @@ export class LocationService {
    * Returns distance in kilometers
    */
   calculateDistance(
-    longitude1: number,
-    latitude1: number,
-    longitude2: number,
-    latitude2: number,
-  ): number {
-    const R = 6371; // Earth's radius in km
-    const dLat = this.toRad(latitude2 - latitude1);
-    const dLon = this.toRad(longitude2 - longitude1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(latitude1)) * Math.cos(this.toRad(latitude2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    
-    return Math.ceil(distance * (Math.PI / 180));
-  }
+  longitude1: number,
+  latitude1: number,
+  longitude2: number,
+  latitude2: number,
+): number {
+  const R = 6371; // Earth's radius in km
+
+  const dLat = this.toRad(latitude2 - latitude1);
+  const dLon = this.toRad(longitude2 - longitude1);
+
+  const lat1 = this.toRad(latitude1);
+  const lat2 = this.toRad(latitude2);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) *
+    Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  const distance = R * c;
+
+  return Math.ceil(distance); // Already in KM
+}
+
   
   // Helper function to convert degrees to radians
   private toRad(value: number): number {
