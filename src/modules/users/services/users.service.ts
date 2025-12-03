@@ -129,7 +129,7 @@ export class UsersService {
     const existUser = await this.usersRepo.findOne({
       where: {
         phone,
-        type,
+        // type,
         deleted: false,
       },
       relations:{ },
@@ -146,6 +146,12 @@ export class UsersService {
         user: await this.createUser({ phone, type, fcm_token }, lang),
         newUser: true
       }
+    }
+
+    if(existUser.type !== type){
+      throw new BadRequestException(
+        lang == LanguagesEnum.ARABIC ? `رقم الهاتف لا يمكن استخدامه` : `You can't use this phone number.`
+      )
     }
 
     if(existUser.status === UserStatus.BLOCKED){
@@ -695,7 +701,7 @@ export class UsersService {
     try{
       let user = await this.usersRepo.findOne({
         where: { id: userID, deleted: false, status: UserStatus.ACTIVE },
-        relations: ['technicalProfile', 'technicalProfile.reviews', 'technicalProfile.services'],
+        relations: ['technicalProfile', 'technicalProfile.reviews', 'technicalProfile.services', 'technicalProfile.nationality'],
         select: {
           id: true,
           username: true,
@@ -733,8 +739,9 @@ export class UsersService {
       delete userdata.enAddress;
 
      if(user.type === UsersTypes.TECHNICAL){
+      // console.log("User is technician", userdata.technicalProfile)
         const isApproved = user.technicalProfile.approved;
-        const nationalityName = lang == LanguagesEnum.ARABIC ? userdata.technicalProfile.nationality.arName: userdata.technicalProfile.nationality.enName;
+        const nationalityName = lang == LanguagesEnum.ARABIC ? userdata.technicalProfile.nationality?.arName: userdata.technicalProfile.nationality?.enName;
         const isActive = user.status == UserStatus.ACTIVE;
 
         // console.log(userdata)
@@ -914,6 +921,9 @@ export class UsersService {
       user.technicalProfile.services.push(service);
     }
 
+    console.log("USER: ", user.technicalProfile)
+    user.technicalProfile.isUpdated = true;
+    console.log("isUpdated: ", user.technicalProfile.isUpdated)
     user.status = UserStatus.ACTIVE;
     const updatedUser = await this.usersRepo.save(user);
     if (updatedUser.technicalProfile) updatedUser.technicalProfile.user = undefined;
@@ -1012,7 +1022,7 @@ export class UsersService {
 }
 
   async listTechniciansReq(filter: FilterTechnicianReqDto) {
-   const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
+   const { page, limit, approved, updated, username, createdAt, updatedAt, sortOrder } = filter;
 
    const take = limit ?? 20;
    const skip = ((page ?? 1) - 1) * take;
@@ -1043,6 +1053,10 @@ export class UsersService {
      query.andWhere('tech.approved = :approved', { approved });
    }
 
+   if(updated){
+     query.andWhere('tech.isUpdated = :updated', { updated });
+   }
+   
    if (username) {
      query.andWhere('u.username ILIKE :username', { username: `%${username}%` });
    }
@@ -1068,7 +1082,7 @@ export class UsersService {
   }
 
 
-    async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
+  async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
       const user = await this.usersRepo.findOne({
         where: {id, deleted: false},
         relations: {technicalProfile: true}
@@ -1088,7 +1102,7 @@ export class UsersService {
 
       user.technicalProfile.approved =  approved;
       return await this.usersRepo.save(user);
-    }
+  }
 
   async usersAnalysis() {
     // ---- Count Clients ----
