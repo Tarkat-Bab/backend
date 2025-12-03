@@ -756,10 +756,14 @@ export class UsersService {
           latitude: userdata.latitude,
           longitude: userdata.longitude,
           approved: userdata.technicalProfile.approved,
-          workLicenseImage: isApproved? userdata.technicalProfile.workLicenseImage : undefined,
-          identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
-          nationalityName: isApproved? nationalityName : undefined,
-          services: isApproved? userdata.technicalProfile.services : undefined,
+          // workLicenseImage: isApproved? userdata.technicalProfile.workLicenseImage : undefined,
+          // identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
+          // nationalityName: isApproved? nationalityName : undefined,
+          // services: isApproved? userdata.technicalProfile.services : undefined,
+           workLicenseImage:  userdata.technicalProfile.workLicenseImage ,
+          identityImage:  userdata.technicalProfile.identityImage ,
+          nationalityName:  nationalityName ,
+          services:  userdata.technicalProfile.services ,
           avgRating: user.technicalProfile.avgRating,
           totalReviews: user.technicalProfile.reviews.length
         }
@@ -921,9 +925,7 @@ export class UsersService {
       user.technicalProfile.services.push(service);
     }
 
-    console.log("USER: ", user.technicalProfile)
     user.technicalProfile.isUpdated = true;
-    console.log("isUpdated: ", user.technicalProfile.isUpdated)
     user.status = UserStatus.ACTIVE;
     const updatedUser = await this.usersRepo.save(user);
     if (updatedUser.technicalProfile) updatedUser.technicalProfile.user = undefined;
@@ -1041,6 +1043,7 @@ export class UsersService {
        'u.createdAt AS createdAt',
        'u.updatedAt AS updatedAt',
        'tech.approved AS approved',
+       'tech.isUpdated AS isUpdated',
        'services.id AS serviceId',
        'services.arName AS serviceArName',
        'services.enName AS serviceEnName',
@@ -1054,7 +1057,7 @@ export class UsersService {
    }
 
    if(updated){
-     query.andWhere('tech.isUpdated = :updated', { updated });
+     query.andWhere('tech.isUpdated = :updated', {updated});
    }
    
    if (username) {
@@ -1078,9 +1081,9 @@ export class UsersService {
      query.getCount(),
    ]);
 
+   console.log(query.getSql())
    return this.paginatorService.makePaginate(rows, total, take, page);
   }
-
 
   async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
       const user = await this.usersRepo.findOne({
