@@ -10,8 +10,4 @@ export class CreatePaylinkInvoiceDto {
     clientMobile: string;
     currency?: string;
     products: PaylinkProductDto[];
-    // smsMessage?: string;
-    // supportedCardBrands?: string[];
-    // displayPending?: boolean;
-    // note?: string;
 }

@@ -5,11 +5,18 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { isPublic } from 'src/common/decorators/public.decorator';
+import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
+import { PaymentMethodsEnum } from './enums/payment.enum';
+import { PaylinkService } from './paylink.service';
 
 @ApiBearerAuth()
 @Controller('payments')
 export class PaymentController {
-    constructor(private readonly paymentService: PaymentService){}
+    constructor(
+        private readonly paymentService: PaymentService,
+        private readonly paymentStrategyFactory: PaymentStrategyFactory,
+        private readonly paylinkService: PaylinkService,
+    ){}
 
     @Post('checkout/:offerId')
     @ApiHeader({
@@ -18,12 +25,13 @@ export class PaymentController {
         required: false,
         example: 'en',
     })
-    async checkoutPayment(
+    async checkoutTabbyPayment(
         @CurrentUser() user:any,
         @Param('offerId') offerId: number,
         @Language() lang: LanguagesEnum
     ) {
-        return this.paymentService.checkoutTabbyPayment(user.id, offerId, lang);
+        const strategy = this.paymentStrategyFactory.getStrategy(PaymentMethodsEnum.TABBY);
+        return strategy.checkout(user.id, offerId, lang);
     }
 
     @Post('paylink/checkout/:offerId')
@@ -38,10 +46,11 @@ export class PaymentController {
         @Param('offerId') offerId: number,
         @Language() lang: LanguagesEnum
     ) {
-        return this.paymentService.checkoutPaylinkPayment(user.id, offerId, lang);
+        const strategy = this.paymentStrategyFactory.getStrategy(PaymentMethodsEnum.PAYLINK);
+        return strategy.checkout(user.id, offerId, lang);
     }
 
-    @Post('paylink/invoice/:transactionNo')
+    @Get('paylink/invoice/:transactionNo')
     @ApiHeader({
         name: 'Accept-Language',
         description: 'Language header',
@@ -52,7 +61,7 @@ export class PaymentController {
         @Param('transactionNo') transactionNo: string,
         @Language() lang: LanguagesEnum
     ) {
-        return this.paymentService.getPaylinkInvoice(transactionNo, lang);
+        return this.paylinkService.getInvoice(transactionNo);
     }
 
     @Post('paylink/verify/:transactionNo')
@@ -65,7 +74,7 @@ export class PaymentController {
     async verifyPaylinkPayment(
         @Param('transactionNo') transactionNo: string
     ) {
-        return this.paymentService.updatePaylinkPaymentStatus(transactionNo);
+        return this.paymentService.updatePaymentStatus(transactionNo);
     }
 
     @Post('webhook')
@@ -103,7 +112,7 @@ export class PaymentController {
         console.log('✅ Paylink callback received for transaction:', transactionNo);
         
         if (transactionNo) {
-            await this.paymentService.updatePaylinkPaymentStatus(transactionNo);
+            await this.paymentService.updatePaymentStatus(transactionNo);
         }
 
         return {
