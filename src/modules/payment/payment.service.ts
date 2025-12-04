@@ -32,18 +32,21 @@ export class PaymentService {
       return strategy.checkout(userId, offerId, lang);
     }
 
+    async getPaylingInvoice(transactionNo: string){
+      return await this.paylinkService.getInvoice(transactionNo);
+    }
     /**
      * Update payment status from webhook data (Tabby format)
      */
     async updatePaymentStatus(webhookDataOrTransactionNo: any) {
       // Handle Tabby webhook format
       if (typeof webhookDataOrTransactionNo === 'object') {
-        const tabbyPaymentId = webhookDataOrTransactionNo?.payment?.id;
+        const transactionNumber = webhookDataOrTransactionNo?.payment?.id;
         const newStatus = webhookDataOrTransactionNo?.payment?.status;
-        if (!tabbyPaymentId) return;
+        if (!transactionNumber) return;
 
         const payment = await this.paymentRepository.findOne({
-          where: { tabbyPaymentId: tabbyPaymentId },
+          where: { transactionNumber: transactionNumber },
           relations: ['user', 'offer'],
         });
 
@@ -65,7 +68,7 @@ export class PaymentService {
       const invoiceDetails = await this.paylinkService.getInvoice(transactionNo);
       
       const payment = await this.paymentRepository.findOne({
-          where: { tabbyPaymentId: transactionNo },
+          where: { transactionNumber: transactionNo },
           relations: ['user', 'offer']
       });
 
@@ -109,8 +112,8 @@ export class PaymentService {
       return await this.paymentRepository.save(payment);
     }
 
-    async updatePaymentInfo(paymentId: number, tabbyPaymentId: string, ){
-      return await this.paymentRepository.update(paymentId, {tabbyPaymentId})
+    async updatePaymentInfo(paymentId: number, transactionNumber: string, status: string){
+      return await this.paymentRepository.update(paymentId, {transactionNumber, status })
     }
 
     async listPayments(filterPaymentsDto: FilterPaymentsDto, lang: LanguagesEnum) {
@@ -173,21 +176,22 @@ export class PaymentService {
       return this.paginationService.makePaginate(mappedPayments, total, limit, page);
     }
 
-    private async checkPayment(offer: RequestOffersEntity, lang: LanguagesEnum): Promise<void>{
+    private async checkPayment(offer: RequestOffersEntity, lang: LanguagesEnum){
       const existingPayment = await this.paymentRepository.findOne({ 
             where: { offer: { id: offer.id } },
             relations: ['offer']
         });
 
       if (existingPayment) {
-        if (existingPayment.status === 'Paid') {
+        // if (existingPayment.status === 'Paid') {
           throw new BadRequestException(
             lang === LanguagesEnum.ARABIC 
               ? "تم الدفع لهذا العرض مسبقاً" 
               : "This offer has already been paid"
             );
           }
-      }
+      // }
+      // return existingPayment;
     }
 
     private async calculateAmounts(offerPrice: number) {

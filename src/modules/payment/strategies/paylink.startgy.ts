@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import { forwardRef, Inject, Injectable, InternalServerErrorException } from "@nestjs/common";
 import { PaymentStrategy } from "../interfaces/payment.interface";
 import { LanguagesEnum } from "src/common/enums/lang.enum";
 import { PaymentService } from "../payment.service";
@@ -7,6 +7,7 @@ import { PaylinkService } from "../paylink.service";
 @Injectable()
 export class PaylinkStrategy implements PaymentStrategy {
     constructor(
+        @Inject(forwardRef(() => PaymentService))
         private readonly paymentService: PaymentService,
         private readonly paylinkService: PaylinkService,
     ) {}
@@ -51,12 +52,11 @@ export class PaylinkStrategy implements PaymentStrategy {
                 );
             }
 
-            await this.paymentService.updatePaymentInfo(payment.id, response.transactionNo);
+            await this.paymentService.updatePaymentInfo(payment.id, response.transactionNo, response.orderStatus);
             
             return {
                 transactionNo: response.transactionNo,
                 url: response.url,
-                qrUrl: response.qrUrl,
                 mobileUrl: response.mobileUrl
             };
         } catch (error: any) {
@@ -67,6 +67,7 @@ export class PaylinkStrategy implements PaymentStrategy {
             );
         }
     }
+
 
     /**
      * This method registers a webhook URL with Paylink to receive payment notifications.

@@ -1,5 +1,5 @@
 import axios from "axios";
-import {Injectable, InternalServerErrorException } from "@nestjs/common";
+import { forwardRef, Inject, Injectable, InternalServerErrorException } from "@nestjs/common";
 
 import { PaymentService } from "../payment.service";
 import { LanguagesEnum } from "src/common/enums/lang.enum";
@@ -8,6 +8,7 @@ import { PaymentStrategy } from "../interfaces/payment.interface";
 @Injectable()
 export class TabbyStrategy implements PaymentStrategy{
     constructor(
+      @Inject(forwardRef(() => PaymentService))
       private readonly paymentService: PaymentService,
     ) {}
 
@@ -48,9 +49,9 @@ export class TabbyStrategy implements PaymentStrategy{
           );
         }
 
-      await this.paymentService.updatePaymentInfo(payment.id, response.data.payment.id)
+      await this.paymentService.updatePaymentInfo(payment.id, response.data.payment.id, response.data.payment.status)
       return {
-          tabbyPaymentId: response.data.payment.id,
+          transactionNumber: response.data.payment.id,
           url: response.data.configuration.available_products.installments[0].web_url
         };
       } catch (error: any) {

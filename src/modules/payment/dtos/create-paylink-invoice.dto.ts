@@ -1,4 +1,6 @@
-import { PaylinkProductDto } from './paylink-product.dto';
+class PaylinkProductDto {
+    price: number;
+}
 
 export class CreatePaylinkInvoiceDto {
     orderNumber: string;
