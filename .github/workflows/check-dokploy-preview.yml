@@ -108,9 +108,11 @@ jobs:
           http_code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
           echo "Response code: $http_code"
 
+          # ✅ Fail ONLY on 5XX
           if [ "$http_code" -ge 500 ] && [ "$http_code" -lt 600 ]; then
             echo "❌ Preview returned server error ($http_code). Failing check."
             exit 1
           fi
 
-          echo "✅ Preview responded OK ($http_code)."
+          echo "✅ Preview check passed (HTTP $http_code is allowed)."
+          exit 0
