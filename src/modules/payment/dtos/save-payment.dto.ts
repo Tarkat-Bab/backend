@@ -7,7 +7,7 @@ export class SavePaymentDto {
         example: "pay_1234567890",
     })
     @IsNotEmpty()
-    tabbyPaymentId: string;
+    transactionNumber: string;
 
     @ApiProperty({
         description:"Amount to be paid",

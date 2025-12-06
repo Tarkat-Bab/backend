@@ -7,8 +7,8 @@ export class PaymentEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', unique: true })
-  tabbyPaymentId: string;
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  transactionNumber: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   totalClientAmount: number;
@@ -25,10 +25,10 @@ export class PaymentEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   taxAmount: number;
 
-  @Column({ type: 'varchar', length: 3 })
+  @Column({ type: 'varchar', length: 3, default: 'SAR' })
   currency: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true })
   status: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
