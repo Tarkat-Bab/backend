@@ -21,13 +21,17 @@ export class PaylinkStrategy implements PaymentStrategy {
         
         const orderNumber = `ORDER-${Date.now()}-${offerId}`;
         
+        const baseUrl = process.env.BASE_URL.endsWith('/') 
+            ? process.env.BASE_URL.slice(0, -1) 
+            : process.env.BASE_URL;
+
         const invoiceData = {
             orderNumber,
             amount: payment.totalClientAmount,
-            callBackUrl: `${process.env.BASE_URL}/payments/paylink/callback`,
-            cancelUrl: `${process.env.BASE_URL}/payments/paylink/cancel`,
+            callBackUrl: `${baseUrl}/payments/paylink/callback`,
+            cancelUrl: `${baseUrl}/payments/paylink/cancel`,
             clientName: payment.user.username,
-            clientEmail: payment.user.email,
+            clientEmail: payment.user.email || undefined,
             clientMobile: payment.user.phone,
             currency: 'SAR',
             products: [
@@ -53,6 +57,15 @@ export class PaylinkStrategy implements PaymentStrategy {
             }
 
             await this.paymentService.updatePaymentInfo(payment.id, response.transactionNo, response.orderStatus);
+            
+            // Save Paylink transaction details
+            await this.paymentService.savePaylinkTransaction(
+                payment.id,
+                response.transactionNo,
+                orderNumber,
+                response.amount,
+                response.orderStatus
+            );
             
             return {
                 transactionNo: response.transactionNo,
