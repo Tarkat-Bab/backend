@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { RequestOffersEntity } from 'src/modules/requests/entities/request_offers.entity';
 import { UserEntity } from 'src/modules/users/entities/users.entity';
-import { PaylinkTransactionEntity } from './paylink-transaction.entity';
+import { PaymentTransactionEntity } from './payment-transaction.entity';
 
 @Entity('payments')
 export class PaymentEntity {
@@ -52,8 +52,8 @@ export class PaymentEntity {
   @JoinColumn({ name: 'offer_id' })
   offer: RequestOffersEntity;
 
-  @OneToOne(() => PaylinkTransactionEntity, (paylinkTransaction) => paylinkTransaction.payment, {
+  @OneToOne(() => PaymentTransactionEntity, (paymentTransaction) => paymentTransaction.payment, {
     cascade: true,
   })
-  paylinkTransaction: PaylinkTransactionEntity;
+  paymentTransaction: PaymentTransactionEntity;
 }

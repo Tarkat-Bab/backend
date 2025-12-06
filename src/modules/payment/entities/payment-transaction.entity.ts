@@ -1,8 +1,8 @@
 import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { PaymentEntity } from './payment.entity';
 
-@Entity('paylink_transactions')
-export class PaylinkTransactionEntity {
+@Entity('payment_transactions')
+export class PaymentTransactionEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -31,7 +31,7 @@ export class PaylinkTransactionEntity {
   })
   updatedAt: Date;
 
-  @OneToOne(() => PaymentEntity, (payment) => payment.paylinkTransaction, {
+  @OneToOne(() => PaymentEntity, (payment) => payment.paymentTransaction, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'payment_id' })

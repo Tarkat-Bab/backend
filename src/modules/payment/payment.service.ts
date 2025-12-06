@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PaymentEntity } from './entities/payment.entity';
-import { PaylinkTransactionEntity } from './entities/paylink-transaction.entity';
+import { PaymentTransactionEntity } from './entities/payment-transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersService } from '../users/services/users.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
@@ -19,8 +19,8 @@ export class PaymentService {
     constructor(
         @InjectRepository(PaymentEntity)
         private readonly paymentRepository: Repository<PaymentEntity>,
-        @InjectRepository(PaylinkTransactionEntity)
-        private readonly paylinkTransactionRepository: Repository<PaylinkTransactionEntity>,
+        @InjectRepository(PaymentTransactionEntity)
+        private readonly paylinkTransactionRepository: Repository<PaymentTransactionEntity>,
         private readonly userService: UsersService,
         private readonly requestOfferService: RequestOffersService,
         private readonly settingsService: DashboardSettingsService,
@@ -42,6 +42,7 @@ export class PaymentService {
      * Update payment status from webhook data (Tabby format)
      */
     async updatePaymentStatus(webhookDataOrTransactionNo: any) {
+      console.log("Webhook Data: ", webhookDataOrTransactionNo)
       // Handle Tabby webhook format
       if (typeof webhookDataOrTransactionNo === 'object') {
         const transactionNumber = webhookDataOrTransactionNo?.payment?.id;
