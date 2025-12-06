@@ -1,15 +1,22 @@
-import { Body, Controller, Headers, Param, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Query, UnauthorizedException } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
-import { ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiHeader, ApiQuery } from '@nestjs/swagger';
 import { isPublic } from 'src/common/decorators/public.decorator';
+import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
+import { PaymentMethodsEnum } from './enums/payment.enum';
+import { PaylinkService } from './paylink.service';
 
 @ApiBearerAuth()
 @Controller('payments')
 export class PaymentController {
-    constructor(private readonly paymentService: PaymentService){}
+    constructor(
+        private readonly paymentService: PaymentService,
+        private readonly paymentStrategyFactory: PaymentStrategyFactory,
+        private readonly paylinkService: PaylinkService,
+    ){}
 
     @Post('checkout/:offerId')
     @ApiHeader({
@@ -18,54 +25,20 @@ export class PaymentController {
         required: false,
         example: 'en',
     })
+    @ApiQuery({name: 'paymentMethod', required: true, enum: PaymentMethodsEnum, example: PaymentMethodsEnum.PAYLINK})
     async checkoutPayment(
         @CurrentUser() user:any,
         @Param('offerId') offerId: number,
+        @Query('paymentMethod') paymentMethod: PaymentMethodsEnum,
         @Language() lang: LanguagesEnum
     ) {
-        return this.paymentService.checkoutTabbyPayment(user.id, offerId, lang);
+        const strategy = this.paymentStrategyFactory.getStrategy(paymentMethod);
+        return strategy.checkout(user.id, offerId, lang);
     }
 
-    @Post('paylink/checkout/:offerId')
-    @ApiHeader({
-        name: 'Accept-Language',
-        description: 'Language header',
-        required: false,
-        example: 'en',
-    })
-    async checkoutPaylinkPayment(
-        @CurrentUser() user:any,
-        @Param('offerId') offerId: number,
-        @Language() lang: LanguagesEnum
-    ) {
-        return this.paymentService.checkoutPaylinkPayment(user.id, offerId, lang);
-    }
-
-    @Post('paylink/invoice/:transactionNo')
-    @ApiHeader({
-        name: 'Accept-Language',
-        description: 'Language header',
-        required: false,
-        example: 'en',
-    })
-    async getPaylinkInvoice(
-        @Param('transactionNo') transactionNo: string,
-        @Language() lang: LanguagesEnum
-    ) {
-        return this.paymentService.getPaylinkInvoice(transactionNo, lang);
-    }
-
-    @Post('paylink/verify/:transactionNo')
-    @ApiHeader({
-        name: 'Accept-Language',
-        description: 'Language header',
-        required: false,
-        example: 'en',
-    })
-    async verifyPaylinkPayment(
-        @Param('transactionNo') transactionNo: string
-    ) {
-        return this.paymentService.updatePaylinkPaymentStatus(transactionNo);
+    @Get('paylink/invoce/:transactionNo')
+    async invoice(@Param('transactionNo') transactionNo: string){
+        return await this.paymentService.getPaylingInvoice(transactionNo)
     }
 
 
@@ -83,16 +56,4 @@ export class PaymentController {
         return { status: 'ok' };
     }
 
-    @isPublic()
-    @Post('paylink/webhook')
-    async handlePaylinkWebhook(
-        @Headers() headers: any,
-        @Body() body: any
-    ){
-        console.log('✅ Paylink webhook received:', body);
-        console.log('📋 Headers:', headers);
-
-        await this.paymentService.handlePaylinkWebhook(body);
-        return { status: 'ok' };
-    }
-} 
+}

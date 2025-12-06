@@ -1,4 +1,6 @@
-import { PaylinkProductDto } from './paylink-product.dto';
+class PaylinkProductDto {
+    price: number;
+}
 
 export class CreatePaylinkInvoiceDto {
     orderNumber: string;
@@ -10,8 +12,4 @@ export class CreatePaylinkInvoiceDto {
     clientMobile: string;
     currency?: string;
     products: PaylinkProductDto[];
-    // smsMessage?: string;
-    // supportedCardBrands?: string[];
-    // displayPending?: boolean;
-    // note?: string;
 }

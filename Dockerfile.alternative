@@ -1,0 +1,30 @@
+# Use official Node.js image
+FROM node:20-alpine
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies without using package-lock
+RUN npm install --legacy-peer-deps --no-package-lock
+
+# Copy source code
+COPY . .
+
+# Build the app
+RUN npm run build
+
+# Expose the port
+EXPOSE 3000
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Run the compiled code
+CMD ["node", "dist/main.js"]

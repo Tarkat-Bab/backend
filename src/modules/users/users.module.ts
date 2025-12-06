@@ -12,6 +12,7 @@ import { NationaltiesModule } from '../nationalties/nationalties.module';
 import { ServicesModule } from '../services/services.module';
 import { PaginatorModule } from 'src/common/paginator/paginator.module';
 import { CloudflareService } from 'src/common/files/cloudflare.service';
+import { CitiesEntity } from '../regions/entities/cities.entity';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { CloudflareService } from 'src/common/files/cloudflare.service';
     NationaltiesModule,
     ServicesModule,
     PaginatorModule,
-    TypeOrmModule.forFeature([ UserEntity, TechnicalProfileEntity, UserFcmTokenEntity ])
+    TypeOrmModule.forFeature([ UserEntity, TechnicalProfileEntity, UserFcmTokenEntity, CitiesEntity ])
   ],
   controllers: [ UsersController],
   providers  : [ UsersService, LocationService, CloudflareService ],

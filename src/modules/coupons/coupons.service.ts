@@ -2,8 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CouponEntity } from './entities/coupons.entity';
+import { FirstOrderDiscountEntity } from './entities/first-order-discount.entity';
 import { CreateCouponDto } from './dtos/create-coupon.dto';
 import { UpdateCouponDto } from './dtos/update-coupon.dto';
+import { UpdateFirstOrderDiscountDto } from './dtos/update-first-order-discount.dto';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 
 @Injectable()
@@ -11,6 +13,9 @@ export class CouponsService {
   constructor(
     @InjectRepository(CouponEntity)
     private couponRepo: Repository<CouponEntity>,
+    
+    @InjectRepository(FirstOrderDiscountEntity)
+    private firstOrderDiscountRepo: Repository<FirstOrderDiscountEntity>,
   ) {}
 
   
@@ -74,5 +79,46 @@ export class CouponsService {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
+  }
+
+  /**
+   * Get first order discount settings (always returns single row with id=1)
+   */
+  async getFirstOrderDiscount(): Promise<FirstOrderDiscountEntity> {
+    let discount = await this.firstOrderDiscountRepo.findOne({ where: { id: 1 } });
+    
+    // If no record exists, create default one
+    if (!discount) {
+      discount = this.firstOrderDiscountRepo.create({
+        id: 1,
+        discountPercentage: 0,
+        maxDiscountAmount: 0
+      });
+      await this.firstOrderDiscountRepo.save(discount);
+    }
+
+    return discount;
+  }
+
+  /**
+   * Update first order discount settings (always updates single row with id=1)
+   */
+  async updateFirstOrderDiscount(updateDto: UpdateFirstOrderDiscountDto): Promise<FirstOrderDiscountEntity> {
+    let discount = await this.firstOrderDiscountRepo.findOne({ where: { id: 1 } });
+    
+    if (!discount) {
+      // Create if doesn't exist
+      discount = this.firstOrderDiscountRepo.create({
+        id: 1,
+        discountPercentage: updateDto.discountPercentage,
+        maxDiscountAmount: updateDto.maxDiscountAmount
+      });
+    } else {
+      // Update existing
+      discount.discountPercentage = updateDto.discountPercentage;
+      discount.maxDiscountAmount = updateDto.maxDiscountAmount;
+    }
+
+    return this.firstOrderDiscountRepo.save(discount);
   }
 }

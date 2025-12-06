@@ -39,8 +39,12 @@ import { CouponsModule } from './modules/coupons/coupons.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.development.env`,
-      // envFilePath: `.${process.env.NODE_ENV}.env`,
+      // Use environment-specific .env file if it exists, otherwise rely on environment variables
+      envFilePath: process.env.NODE_ENV 
+        ? `.${process.env.NODE_ENV}.env` 
+        : `.development.env`,
+      // Don't fail if env file doesn't exist (production typically uses env vars directly)
+      ignoreEnvFile: false,
     }),
     CacheModule.register({
       isGlobal: true,

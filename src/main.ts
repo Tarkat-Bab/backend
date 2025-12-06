@@ -69,15 +69,22 @@ async function bootstrap() {
   return app;
 }
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
+// For Docker/traditional deployment (always start server unless explicitly serverless)
+if (!process.env.SERVERLESS) {
   bootstrap().then(app => {
-    app.listen(process.env.PORT || 3000);
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  }).catch(err => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
   });
 }
 
-// Export handler for serverless
+// Export handler for serverless (Vercel)
 export default async function handler(req, res) {
   await bootstrap();
-  return expressApp(req, res); // Fixed variable name reference
+  return expressApp(req, res);
 }
