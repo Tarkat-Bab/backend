@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PaymentEntity } from './entities/payment.entity';
+import { PaymentTransactionEntity } from './entities/payment-transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersService } from '../users/services/users.service';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
@@ -18,6 +19,8 @@ export class PaymentService {
     constructor(
         @InjectRepository(PaymentEntity)
         private readonly paymentRepository: Repository<PaymentEntity>,
+        @InjectRepository(PaymentTransactionEntity)
+        private readonly paylinkTransactionRepository: Repository<PaymentTransactionEntity>,
         private readonly userService: UsersService,
         private readonly requestOfferService: RequestOffersService,
         private readonly settingsService: DashboardSettingsService,
@@ -32,13 +35,14 @@ export class PaymentService {
       return strategy.checkout(userId, offerId, lang);
     }
 
-    async getPaylingInvoice(transactionNo: string){
+    async getPaylingInvoice(orderNumber: string, transactionNo: string){
       return await this.paylinkService.getInvoice(transactionNo);
     }
     /**
      * Update payment status from webhook data (Tabby format)
      */
     async updatePaymentStatus(webhookDataOrTransactionNo: any) {
+      console.log("Webhook Data: ", webhookDataOrTransactionNo)
       // Handle Tabby webhook format
       if (typeof webhookDataOrTransactionNo === 'object') {
         const transactionNumber = webhookDataOrTransactionNo?.payment?.id;
@@ -64,26 +68,32 @@ export class PaymentService {
       }
       
       // Handle Paylink transaction number format
-      const transactionNo = webhookDataOrTransactionNo;
-      const invoiceDetails = await this.paylinkService.getInvoice(transactionNo);
+      // const transactionNo = webhookDataOrTransactionNo;
+      // const invoiceDetails = await this.paylinkService.getInvoice(transactionNo);
       
       const payment = await this.paymentRepository.findOne({
-          where: { transactionNumber: transactionNo },
+          where: { transactionNumber: webhookDataOrTransactionNo.transactionNo },
           relations: ['user', 'offer']
       });
 
       if (!payment) {
-          console.log(`⚠️ Payment not found for transaction: ${transactionNo}`);
+          console.log(`⚠️ Payment not found for transaction: ${webhookDataOrTransactionNo.transactionNo}`);
           return;
       }
 
       const oldStatus = payment.status;
-      payment.status = invoiceDetails.orderStatus;
+      payment.status = webhookDataOrTransactionNo.orderStatus;
       await this.paymentRepository.save(payment);
 
-      console.log(`✅ Payment status updated: ${oldStatus} -> ${invoiceDetails.orderStatus}`);
+      // Update Paylink transaction status
+      await this.updatePaylinkTransaction(
+        webhookDataOrTransactionNo.transactionNo, 
+        webhookDataOrTransactionNo.orderStatus
+      );
 
-      if (invoiceDetails.orderStatus === 'Paid' && oldStatus !== 'Paid') {
+      console.log(`✅ Payment status updated: ${oldStatus} -> ${webhookDataOrTransactionNo.orderStatus}`);
+
+      if (webhookDataOrTransactionNo.orderStatus === 'Paid' && oldStatus !== 'Paid') {
           await this.requestOfferService.acceptOffer(payment.user.id, payment.offer.id);
           console.log(`✅ Offer #${payment.offer.id} accepted after payment`);
       }
@@ -114,6 +124,39 @@ export class PaymentService {
 
     async updatePaymentInfo(paymentId: number, transactionNumber: string, status: string){
       return await this.paymentRepository.update(paymentId, {transactionNumber, status })
+    }
+
+    async savePaylinkTransaction(
+      paymentId: number, 
+      transactionNo: string, 
+      merchantOrderNumber: string, 
+      amount: number, 
+      orderStatus: string,
+      merchantEmail?: string
+    ) {
+      const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
+      
+      if (!payment) {
+        throw new BadRequestException('Payment not found');
+      }
+
+      const paylinkTransaction = this.paylinkTransactionRepository.create({
+        amount,
+        merchantEmail,
+        transactionNo,
+        merchantOrderNumber,
+        orderStatus,
+        payment
+      });
+
+      return await this.paylinkTransactionRepository.save(paylinkTransaction);
+    }
+
+    async updatePaylinkTransaction(transactionNo: string, orderStatus: string) {
+      return await this.paylinkTransactionRepository.update(
+        { transactionNo }, 
+        { orderStatus }
+      );
     }
 
     async listPayments(filterPaymentsDto: FilterPaymentsDto, lang: LanguagesEnum) {

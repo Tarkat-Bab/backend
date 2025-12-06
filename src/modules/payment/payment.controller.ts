@@ -36,9 +36,18 @@ export class PaymentController {
         return strategy.checkout(user.id, offerId, lang);
     }
 
-    @Get('paylink/invoce/:transactionNo')
-    async invoice(@Param('transactionNo') transactionNo: string){
-        return await this.paymentService.getPaylingInvoice(transactionNo)
+    // @Get('paylink/invoce/:transactionNo')
+    // async invoice(@Param('transactionNo') transactionNo: string){
+    //     return await this.paymentService.getPaylingInvoice(transactionNo)
+    // }
+
+    @isPublic()
+    @Get('paylink')
+    async invoice(
+        @Query('orderNumber') orderNumber: string,
+        @Query('transactionNo') transactionNo: string
+    ){
+        return await this.paymentService.getPaylingInvoice(orderNumber, transactionNo)
     }
 
 
@@ -56,4 +65,11 @@ export class PaymentController {
         return { status: 'ok' };
     }
 
+    @isPublic()
+    @Post('/paylink/webhook')
+    async paylinkWebhook(
+        @Body() body: any
+    ){
+        return await this.paymentService.updatePaymentStatus(body);
+    }
 }
