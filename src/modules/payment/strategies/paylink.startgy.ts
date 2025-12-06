@@ -28,8 +28,8 @@ export class PaylinkStrategy implements PaymentStrategy {
         const invoiceData = {
             orderNumber,
             amount: payment.totalClientAmount,
-            callBackUrl: `${baseUrl}/payments/paylink/callback`,
-            cancelUrl: `${baseUrl}/payments/paylink/cancel`,
+            callBackUrl: `${baseUrl}/payments/paylink`,
+            cancelUrl: `${baseUrl}/payments/paylink`,
             clientName: payment.user.username,
             clientEmail: payment.user.email || undefined,
             clientMobile: payment.user.phone,
