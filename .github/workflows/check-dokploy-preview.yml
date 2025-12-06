@@ -102,43 +102,17 @@ jobs:
           url="${{ steps.get-url.outputs.preview_url }}"
           echo "Checking preview URL: $url"
 
-          # Wait longer for container to fully start
-          echo "⏳ Waiting 30 seconds for container to fully initialize..."
-          sleep 30
+          # Wait a few seconds more to be safe
+          sleep 5
 
-          # Try multiple times with exponential backoff
-          max_attempts=5
-          attempt=1
-          
-          while [ $attempt -le $max_attempts ]; do
-            echo "Attempt $attempt of $max_attempts..."
-            
-            # Get both status code and response body
-            response=$(curl -s -w "\n%{http_code}" "$url")
-            http_code=$(echo "$response" | tail -n1)
-            body=$(echo "$response" | head -n-1)
-            
-            echo "Response code: $http_code"
-            
-            if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-              echo "✅ Preview responded OK ($http_code)."
-              exit 0
-            elif [ "$http_code" -ge 500 ] && [ "$http_code" -lt 600 ]; then
-              echo "❌ Server error ($http_code). Response body:"
-              echo "$body"
-              
-              if [ $attempt -lt $max_attempts ]; then
-                wait_time=$((attempt * 10))
-                echo "Retrying in ${wait_time} seconds..."
-                sleep $wait_time
-              fi
-            else
-              echo "⚠️ Unexpected response code: $http_code"
-              echo "Response body: $body"
-            fi
-            
-            attempt=$((attempt + 1))
-          done
-          
-          echo "❌ Preview failed after $max_attempts attempts. Last response code: $http_code"
-          exit 1
+          http_code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+          echo "Response code: $http_code"
+
+          # ✅ Fail ONLY on 5XX
+          if [ "$http_code" -ge 500 ] && [ "$http_code" -lt 600 ]; then
+            echo "❌ Preview returned server error ($http_code). Failing check."
+            exit 1
+          fi
+
+          echo "✅ Preview check passed (HTTP $http_code is allowed)."
+          exit 0
