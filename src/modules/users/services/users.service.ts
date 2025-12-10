@@ -137,7 +137,12 @@ export class UsersService {
         id: true, 
         status: true,
         type: true,
-        phone: true
+        phone: true,
+        latitude: true,
+        longitude: true,
+        locationStatus: true,
+        blockedReason: true,
+        username: true
       }
     })
 
@@ -162,10 +167,34 @@ export class UsersService {
       }
 
     }
-    await this.usersRepo.update(
-      { id: existUser.id },
-      { lastLoginAt: new Date() },
-    );
+    // Update location status if user has location
+    if (existUser.latitude && existUser.longitude) {
+      const isInCoverage = await this.checkUserLocationInAvailableCity(
+        existUser.latitude,
+        existUser.longitude
+      );
+      
+      const updates: any = { lastLoginAt: new Date() };
+      
+      if (isInCoverage) {
+        updates.locationStatus = 'IN_COVERAGE';
+        updates.blockedReason = null;
+      } else {
+        updates.locationStatus = 'OUT_OF_COVERAGE';
+        updates.blockedReason = 'OUT_OF_COVERAGE_AREA';
+      }
+      
+      await this.usersRepo.update({ id: existUser.id }, updates);
+      
+      // Update local object
+      existUser.locationStatus = updates.locationStatus;
+      existUser.blockedReason = updates.blockedReason;
+    } else {
+      await this.usersRepo.update(
+        { id: existUser.id },
+        { lastLoginAt: new Date() },
+      );
+    }
 
     const existingToken = await this.userFcmTokenRepo.findOne({where: {fcm_token}})
     if(!existingToken){
@@ -228,6 +257,20 @@ export class UsersService {
       dataToUpdate.longitude = saveLocation.longitude;
       dataToUpdate.arAddress = saveLocation.ar_address;
       dataToUpdate.enAddress = saveLocation.en_address;
+      
+      // Check location coverage
+      const isInCoverage = await this.checkUserLocationInAvailableCity(
+        saveLocation.latitude,
+        saveLocation.longitude
+      );
+      
+      if (isInCoverage) {
+        dataToUpdate.locationStatus = 'IN_COVERAGE';
+        dataToUpdate.blockedReason = null;
+      } else {
+        dataToUpdate.locationStatus = 'OUT_OF_COVERAGE';
+        dataToUpdate.blockedReason = 'OUT_OF_COVERAGE_AREA';
+      }
     }
 
     if (image) {
@@ -521,7 +564,17 @@ export class UsersService {
   async findUserForGuard(id:number){
     return await this.usersRepo.findOne({
       where: { id, deleted: false },
-      select: { id: true, email: true, phone: true, type: true, status: true, latitude: true, longitude: true }
+      select: { 
+        id: true, 
+        email: true, 
+        phone: true, 
+        type: true, 
+        status: true, 
+        latitude: true, 
+        longitude: true,
+        locationStatus: true,
+        blockedReason: true
+      }
     })
   }
 

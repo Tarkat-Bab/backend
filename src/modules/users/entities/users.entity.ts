@@ -17,6 +17,7 @@ import { ReportsEntity } from 'src/modules/reports/entities/reports.entity';
 import { UsersNotifications } from 'src/modules/notifications/entities/usersNotifications.entity';
 import { PaymentEntity } from 'src/modules/payment/entities/payment.entity';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
+import { LocationStatus, BlockedReason } from 'src/common/enums/location-status.enum';
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
@@ -68,6 +69,12 @@ export class UserEntity extends BaseEntity {
   
   @Column({type: 'varchar', enum: LanguagesEnum, default: LanguagesEnum.ENGLISH })
   usedLanguage: LanguagesEnum;
+
+  @Column({ type: 'varchar', enum: LocationStatus, default: LocationStatus.IN_COVERAGE })
+  locationStatus: LocationStatus;
+
+  @Column({ type: 'varchar', enum: BlockedReason, nullable: true })
+  blockedReason: BlockedReason;
 
   @OneToOne(() => TechnicalProfileEntity, technicalProfile => technicalProfile.user, { cascade: true })
   technicalProfile: TechnicalProfileEntity;

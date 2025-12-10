@@ -61,7 +61,15 @@ export class AuthService {
       token = await this.createToken(user as UserEntity);
     }
     const message = lang === LanguagesEnum.ARABIC ? 'رمز التحقق صالح' : 'Valid OTP';
-    return { msg: message, token };
+    return { 
+      msg: message, 
+      token,
+      id: user.id,
+      name: user.username,
+      status: user.status,
+      locationStatus: user.locationStatus,
+      blockedReason: user.blockedReason,
+    };
   }
 
   async adminLogin(loginDto: AdminLoginDto, lang?: LanguagesEnum) {
@@ -90,8 +98,15 @@ export class AuthService {
     await this.otpService.verifyEmailOtp(verifyEmailOtpDto, lang);
     await this.usersService.changeUserStatus(user.id, UserStatus.ACTIVE);
 
-    if(verifyEmailOtpDto.purpose === OtpPurpose.Register) { // Changed from OtpPurpose.Login to OtpPurpose.Login
-      return { token: await this.createToken(user as UserEntity) };
+    if(verifyEmailOtpDto.purpose === OtpPurpose.Register) {
+      return { 
+        token: await this.createToken(user as UserEntity),
+        id: user.id,
+        name: user.username,
+        status: user.status,
+        locationStatus: user.locationStatus,
+        blockedReason: user.blockedReason,
+      };
     }
     const message = lang === LanguagesEnum.ARABIC ? 'رمز التحقق صالح' : 'Valid OTP';
     return { msg: message };
