@@ -1,0 +1,10 @@
+export enum LocationStatus {
+  IN_COVERAGE = 'IN_COVERAGE',
+  OUT_OF_COVERAGE = 'OUT_OF_COVERAGE',
+}
+
+export enum BlockedReason {
+  OUT_OF_COVERAGE_AREA = 'OUT_OF_COVERAGE_AREA',
+  ADMIN_BLOCKED = 'ADMIN_BLOCKED',
+  VIOLATION = 'VIOLATION',
+}
