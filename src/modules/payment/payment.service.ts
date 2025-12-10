@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { PaymentEntity } from './entities/payment.entity';
 import { PaymentTransactionEntity } from './entities/payment-transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,6 +13,7 @@ import { PaymentMethodsEnum } from './enums/payment.enum';
 import { RequestOffersEntity } from '../requests/entities/request_offers.entity';
 import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
 import { PaylinkService } from './paylink.service';
+import { PaymentAnalyticsDto, PeriodEnum } from './dtos/payment-analytics.dto';
 
 @Injectable()
 export class PaymentService {
@@ -201,19 +202,19 @@ export class PaymentService {
       const mappedPayments = payments.map((pay)=>{
         return{
           id: pay.id,
-          username: pay.user.username,
-          technicianName: pay.offer.request.technician.username,
-          requestTitle: pay.offer.request.title,
-          requestNumber: pay.offer.request.requestNumber,
+          username: pay.user?.username || 'N/A',
+          technicianName: pay.offer?.request?.technician?.username || 'N/A',
+          requestTitle: pay.offer?.request?.title || 'N/A',
+          requestNumber: pay.offer?.request?.requestNumber || 'N/A',
           totalClientAmount: pay.totalClientAmount,
           totalTechnicianAmount: pay.totalTechnicianAmount,
           taxAmount: pay.taxAmount,
           platformAmountFromTech: pay.platformAmountFromTech,
           platformAmountFromClient: pay.platformAmountFromClient,
           paymentStatus: pay.status,
-          requestStatus: pay.offer.request.status,
-          offerId: pay.offer.id,
-          requestId: pay.offer.request.id,
+          requestStatus: pay.offer?.request?.status || 'N/A',
+          offerId: pay.offer?.id || null,
+          requestId: pay.offer?.request?.id || null,
           }
       })
       return this.paginationService.makePaginate(mappedPayments, total, limit, page);
@@ -301,6 +302,138 @@ export class PaymentService {
         }
 
         return this.updatePaymentStatus(transactionNo);
+    }
+
+    /**
+     * Get payment analytics including total revenue and net profit
+     */
+    async getPaymentAnalytics(analyticsDto: PaymentAnalyticsDto = {}, lang: LanguagesEnum) {
+      const { startDate, endDate } = this.getDateRange(analyticsDto);
+
+      const query = this.paymentRepository.createQueryBuilder('payment')
+        .where('LOWER(payment.status) = LOWER(:status)', { status: 'Paid' });
+
+      if (startDate && endDate) {
+        query.andWhere('payment.createdAt BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate
+        });
+      }
+
+      const payments = await query.getMany();
+
+      const totalRevenue = payments.reduce((sum, payment) => 
+        sum + Number(payment.totalClientAmount), 0
+      );
+
+      const totalPlatformProfit = payments.reduce((sum, payment) => 
+        sum + Number(payment.platformAmountFromClient) + Number(payment.platformAmountFromTech), 0
+      );
+
+      const totalTechnicianPayouts = payments.reduce((sum, payment) => 
+        sum + Number(payment.totalTechnicianAmount), 0
+      );
+
+      const totalTransactions = payments.length;
+
+      const averageTransactionValue = totalTransactions > 0 
+        ? totalRevenue / totalTransactions 
+        : 0;
+
+      return {
+        period: analyticsDto.period || 'custom',
+        startDate: startDate?.toISOString().split('T')[0],
+        endDate: endDate?.toISOString().split('T')[0],
+        totalRevenue: Number(totalRevenue.toFixed(2)),
+        totalPlatformProfit: Number(totalPlatformProfit.toFixed(2)),
+        totalTechnicianPayouts: Number(totalTechnicianPayouts.toFixed(2)),
+        totalTransactions,
+        averageTransactionValue: Number(averageTransactionValue.toFixed(2)),
+        currency: 'SAR'
+      };
+    }
+
+    /**
+     * Get monthly analytics for the current year (for graph)
+     */
+    async getMonthlyAnalytics(lang: LanguagesEnum) {
+      const currentYear = new Date().getFullYear();
+      const startDate = new Date(currentYear, 0, 1, 0, 0, 0);
+      const endDate = new Date(currentYear, 11, 31, 23, 59, 59);
+
+      const payments = await this.paymentRepository.createQueryBuilder('payment')
+        .where('LOWER(payment.status) = LOWER(:status)', { status: 'Paid' })
+        .andWhere('payment.createdAt BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate
+        })
+        .getMany();
+
+      const monthNames = lang === LanguagesEnum.ARABIC 
+        ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+        : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+      const monthlyData = Array.from({ length: 12 }, (_, index) => {
+        const monthPayments = payments.filter(payment => {
+          const paymentMonth = new Date(payment.createdAt).getMonth();
+          return paymentMonth === index;
+        });
+
+        const totalRevenue = monthPayments.reduce((sum, payment) => 
+          sum + Number(payment.totalClientAmount), 0
+        );
+
+        const totalProfit = monthPayments.reduce((sum, payment) => 
+          sum + Number(payment.platformAmountFromClient) + Number(payment.platformAmountFromTech), 0
+        );
+
+        return {
+          month: monthNames[index],
+          monthNumber: index + 1,
+          totalRevenue: Number(totalRevenue.toFixed(2)),
+          totalProfit: Number(totalProfit.toFixed(2)),
+          totalTransactions: monthPayments.length
+        };
+      });
+
+      return {
+        year: currentYear,
+        currency: 'SAR',
+        data: monthlyData
+      };
+    }
+
+    private getDateRange(analyticsDto: PaymentAnalyticsDto = {}): { startDate: Date; endDate: Date } {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+      if (analyticsDto.period === PeriodEnum.CUSTOM && analyticsDto.startDate && analyticsDto.endDate) {
+        startDate = new Date(analyticsDto.startDate);
+        endDate = new Date(analyticsDto.endDate);
+        endDate.setHours(23, 59, 59);
+      } else {
+        switch (analyticsDto.period) {
+          case PeriodEnum.TODAY:
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+            break;
+          case PeriodEnum.WEEK:
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 7);
+            startDate.setHours(0, 0, 0);
+            break;
+          case PeriodEnum.MONTH:
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+            break;
+          case PeriodEnum.YEAR:
+            startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
+            break;
+          default:
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        }
+      }
+
+      return { startDate, endDate };
     }
 
  }
