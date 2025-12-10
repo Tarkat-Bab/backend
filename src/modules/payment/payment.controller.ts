@@ -36,10 +36,6 @@ export class PaymentController {
         return strategy.checkout(user.id, offerId, lang);
     }
 
-    // @Get('paylink/invoce/:transactionNo')
-    // async invoice(@Param('transactionNo') transactionNo: string){
-    //     return await this.paymentService.getPaylingInvoice(transactionNo)
-    // }
 
     @isPublic()
     @Get('paylink')
