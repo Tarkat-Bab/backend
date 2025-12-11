@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import * as crypto from 'crypto';
+import axios from 'axios';
 
 import { OtpPurpose     } from '../enums/otp.purpose.enum';
 import { EmailService   } from '../../../modules/mailer/mailer.service';
@@ -24,13 +25,8 @@ export class OtpService {
    * Generate and send OTP to user by email
    */
   async sendOtp(userDetails: userDetailsDto, purpose: OtpPurpose, lang?: LanguagesEnum): Promise<string> {
-    const code =
-      process.env.NODE_ENV === 'development'
-        ? this.DEV_OTP_CODE
-        : this.generateCode();
-    console.log('Generated OTP Code:', code); // Debugging line to check generated OTP
-    const key = this.buildCacheKey(
-      userDetails.email, purpose);
+    const code = this.generateCode();
+    const key = this.buildCacheKey(userDetails.email, purpose);
     await this.cacheManager.set<CachedOtpType>(
       key,
       { userDetails, otp: code },
@@ -43,21 +39,43 @@ export class OtpService {
     return code;
   }
 
-  async sendPhoneOtp(userDetails: { phone: string }, lang?: LanguagesEnum): Promise<string> {
-    // const code =
-    //   process.env.NODE_ENV === 'development'
-    //     ? this.DEV_OTP_CODE
-    //     : this.generateCode();
-      const code = this.DEV_OTP_CODE;
-      const key = this.buildCacheKey(
-      userDetails.phone, OtpPurpose.Register);
-      await this.cacheManager.set<CachedOtpType>(
+  async sendPhoneOtp(recipientPhone: string, purpose: OtpPurpose, lang?: LanguagesEnum){
+    const code = this.generateCode();
+    const key = this.buildCacheKey(recipientPhone, purpose);
+    
+    await this.cacheManager.set<CachedOtpType>(
       key,
-      { userDetails, otp: code },
+      { userDetails: { phone: recipientPhone }, otp: code },
       this.OTP_EXPIRATION_MS,
     );
-    // Here you would typically integrate with an SMS service to send the OTP to the user's phone.
-    console.log(`Sending OTP ${code} to phone number ${userDetails.phone}`);
+
+    console.log(`OTP cache key: ${key}, Send Phone OTP Function, Code: ${code}`);
+
+    const headers = {
+      "Authorization": `Bearer ${process.env.OTP_TOKEN}`,
+      "Content-Type": "application/json"
+    };
+    const senderName = recipientPhone.startsWith("+20") ? "TarqatBab" : "Tarqat-B";
+    const body = lang === LanguagesEnum.ARABIC ?
+     `رمز التحقق الخاص بك لتسجيل الدخول لتطبيق طرقة باب: ${code}`:
+     `Your verification code to login at ${senderName} application: ${code}`;
+
+    const payload = {
+      auth: process.env.OTP_TOKEN,
+      recipients: [recipientPhone],
+      sender: senderName,
+      body
+    };
+
+   axios.post(process.env.OTP_URL, payload, { headers })
+    .then(response => {
+    console.log("Status Code:", response.status);
+    console.log("Response Body:", response.data);
+   })
+      .catch(error => {
+    console.error("Error:", error.response ? error.response.data : error.message);
+  });
+
     return code;
   }
 
