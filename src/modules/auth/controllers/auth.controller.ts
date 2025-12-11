@@ -1,5 +1,5 @@
-import { Body, Controller, HttpCode, Patch, Post, Query, Req, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
-import { ApiConsumes, ApiHeader, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, Patch, Post, Query, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { ApiConsumes, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { AuthService }  from '../services/auth.service';
 import { isPublic }     from '../../../common/decorators/public.decorator';
@@ -24,9 +24,17 @@ export class AuthController {
     description: 'Language for the response (e.g., ar, en)',
     required: false,
   })
+  @ApiQuery({
+    name: 'test',
+    description: 'Is test mode',
+    type: Boolean,
+    required: false,
+    example: false
+  })
   @HttpCode(200)
-  async login(@Body() loginDto: LoginDto, @Language() lang: LanguagesEnum) {
-    return await this.authService.login(loginDto, lang);
+  async login(@Body() loginDto: LoginDto, @Language() lang: LanguagesEnum, @Query('test') test?: string) {
+    const isTest = test === 'true';
+    return await this.authService.login(loginDto, lang, isTest);
   }
 
 

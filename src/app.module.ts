@@ -34,6 +34,7 @@ import { RegionsModule } from './modules/regions/regions.module';
 import { DeviceVersionsModule } from './modules/versions/device-versions..module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
+import { FaqsModule } from './modules/faqs/faqs.module';
 
 @Module({
   imports: [
@@ -85,7 +86,8 @@ import { CouponsModule } from './modules/coupons/coupons.module';
     RegionsModule,
     DeviceVersionsModule,
     ChatModule,
-    CouponsModule
+    CouponsModule,
+    FaqsModule
   ],
   controllers: [AppController],
   providers: [
