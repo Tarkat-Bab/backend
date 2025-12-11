@@ -39,7 +39,7 @@ export class OtpService {
     return code;
   }
 
-  async sendPhoneOtp(recipientPhone: string, purpose: OtpPurpose, lang?: LanguagesEnum){
+  async sendPhoneOtp(recipientPhone: string, purpose: OtpPurpose, lang?: LanguagesEnum, test?:boolean){
     const code = this.generateCode();
     const key = this.buildCacheKey(recipientPhone, purpose);
     
@@ -49,7 +49,8 @@ export class OtpService {
       this.OTP_EXPIRATION_MS,
     );
 
-    console.log(`OTP cache key: ${key}, Send Phone OTP Function, Code: ${code}`);
+    console.log(`Sending OTP with test: `, test)
+    if(test) return code; 
 
     const headers = {
       "Authorization": `Bearer ${process.env.OTP_TOKEN}`,
@@ -73,7 +74,7 @@ export class OtpService {
     console.log("Response Body:", response.data);
    })
       .catch(error => {
-    console.error("Error:", error.response ? error.response.data : error.message);
+       console.error("Error:", error.response ? error.response.data : error.message);
   });
 
     return code;

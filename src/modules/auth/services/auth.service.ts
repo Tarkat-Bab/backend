@@ -37,12 +37,12 @@ export class AuthService {
   }
 
 
-  async login(loginDto: LoginDto, lang?: LanguagesEnum) {
+  async login(loginDto: LoginDto, lang?: LanguagesEnum, test?:boolean) {
     const {user, newUser} = await this.usersService.publicLogin(loginDto, lang);
     const otpResponse = await this.sendPhoneOtp({
       phone: user.phone,
       purpose: OtpPurpose.Register,
-    },  lang);
+    },  lang, test);
 
     return {
       newUser,
@@ -146,11 +146,12 @@ export class AuthService {
     return { msg: 'Verification code is sent.'};
   }
 
-  public async sendPhoneOtp(SendPhoneOtpDto: SendPhoneOtpDto, lang?: LanguagesEnum) {
+  public async sendPhoneOtp(SendPhoneOtpDto: SendPhoneOtpDto, lang?: LanguagesEnum, test?:boolean) {
     await this.otpService.sendPhoneOtp(
       SendPhoneOtpDto.phone,
       SendPhoneOtpDto.purpose,
       lang,
+      test
     );
     if (lang === LanguagesEnum.ARABIC) {
       return { msg: 'تم إرسال رمز التحقق.' };
