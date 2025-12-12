@@ -40,14 +40,44 @@ export class OtpService {
   }
 
   async sendPhoneOtp(recipientPhone: string, purpose: OtpPurpose, lang?: LanguagesEnum, test?:boolean){
-    const code = this.generateCode();
-    const key = this.buildCacheKey(recipientPhone, purpose);
+    const code = test? this.DEV_OTP_CODE : this.generateCode();
+    const otpKey = this.buildCacheKey(recipientPhone, purpose);
+    const rateKey = `otp_rate:${recipientPhone}:${purpose}`;
+    const rateData = await this.cacheManager.get<{ count: number; lastSent: number }>(rateKey);
+    const now = Date.now();
     
+    if (rateData) {
+      if (rateData.count >= 5) {
+       throw new BadRequestException(
+        lang == LanguagesEnum.ENGLISH ? 
+         "You have reached the maximum OTP attempts.":
+          "لقد تخطيت الحد الاقصي من ارسال كود التحقق."
+        );
+      }
+
+      const diff = (now - rateData.lastSent) / 1000;
+        if (diff < 30) {
+          throw new BadRequestException(
+            lang === LanguagesEnum.ARABIC ?
+              'يجب الانتظار 30 ثانية قبل طلب رمز تحقق جديد' :
+              'Please wait 30 seconds before requesting another OTP'
+          );
+      }
+    }
+
     await this.cacheManager.set<CachedOtpType>(
-      key,
+      otpKey,
       { userDetails: { phone: recipientPhone }, otp: code },
       this.OTP_EXPIRATION_MS,
     );
+
+     const newRate = {
+      count: rateData ? rateData.count + 1 : 1,
+      lastSent: now,
+    };
+
+  await this.cacheManager.set(rateKey, newRate, 3600 * 1000);
+
 
     console.log(`Sending OTP with test: `, test)
     if(test) return code; 
@@ -79,6 +109,8 @@ export class OtpService {
 
     return code;
   }
+
+  
 
   /**
    * Verify OTP entered by the user
