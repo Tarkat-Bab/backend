@@ -11,10 +11,11 @@ import { SettingsModule } from 'src/dashboard/settings/settings.module';
 import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
 import { PaylinkStrategy } from './strategies/paylink.startgy';
 import { TabbyStrategy } from './strategies/tabby.starategy';
+import { CouponsModule } from '../coupons/coupons.module';
 
 @Module({
     imports:[
-        UsersModule, RequestsModule, SettingsModule,
+        UsersModule, RequestsModule, SettingsModule, CouponsModule,
         TypeOrmModule.forFeature([PaymentEntity, PaymentTransactionEntity])
     ],
     controllers: [ PaymentController ],
