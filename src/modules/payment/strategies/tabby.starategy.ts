@@ -17,13 +17,18 @@ export class TabbyStrategy implements PaymentStrategy{
      * @param userId 
      * @param offertId 
      * @param lang 
+     * @param couponId
      * @returns 
      */
-    async checkout(userId: number, offertId: number, lang: LanguagesEnum){
-      const payment = await this.paymentService.createPayment(userId, offertId, lang);
+    async checkout(userId: number, offertId: number, lang: LanguagesEnum, couponId?: number){
+      const payment = await this.paymentService.createPayment(userId, offertId, lang, undefined, couponId);
+      
+      // Use discounted amount if available, otherwise use original amount
+      const finalAmount = payment.totalClientAmountAfterDiscount || payment.totalClientAmount;
+      
       const payload = {
           payment: {
-            amount: payment.totalClientAmount.toString(),
+            amount: finalAmount.toString(),
             currency: "SAR",
             buyer: {
               name: payment.user.username,

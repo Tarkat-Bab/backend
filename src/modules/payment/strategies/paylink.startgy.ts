@@ -16,8 +16,8 @@ export class PaylinkStrategy implements PaymentStrategy {
      * This method to checkout and create a payment at database
      * @returns 
      */
-    async checkout(userId: number, offerId: number, lang: LanguagesEnum) {
-        const payment = await this.paymentService.createPayment(userId, offerId, lang);
+    async checkout(userId: number, offerId: number, lang: LanguagesEnum, couponId?: number) {
+        const payment = await this.paymentService.createPayment(userId, offerId, lang, undefined, couponId);
         
         const orderNumber = `ORDER-${Date.now()}-${offerId}`;
         
@@ -25,9 +25,12 @@ export class PaylinkStrategy implements PaymentStrategy {
             ? process.env.BASE_URL.slice(0, -1) 
             : process.env.BASE_URL;
 
+        // Use discounted amount if available, otherwise use original amount
+        const finalAmount = payment.totalClientAmountAfterDiscount || payment.totalClientAmount;
+
         const invoiceData = {
             orderNumber,
-            amount: payment.totalClientAmount,
+            amount: finalAmount,
             callBackUrl: `${baseUrl}/payments/paylink`,
             cancelUrl: `${baseUrl}/payments/paylink`,
             clientName: payment.user.username,

@@ -26,14 +26,15 @@ export class PaymentController {
         example: 'en',
     })
     @ApiQuery({name: 'paymentMethod', required: true, enum: PaymentMethodsEnum, example: PaymentMethodsEnum.PAYLINK})
+    @ApiQuery({name: 'couponId', required: false, type: Number, description: 'Optional coupon ID for discount'})
     async checkoutPayment(
         @CurrentUser() user:any,
         @Param('offerId') offerId: number,
         @Query('paymentMethod') paymentMethod: PaymentMethodsEnum,
+        @Query('couponId') couponId: number,
         @Language() lang: LanguagesEnum
     ) {
-        const strategy = this.paymentStrategyFactory.getStrategy(paymentMethod);
-        return strategy.checkout(user.id, offerId, lang);
+        return await this.paymentService.checkout(user.id, offerId, lang, paymentMethod, couponId);
     }
 
 

@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { CreateRequestOfferDto } from '../dto/create-request-offer.dto';
-import { UpdateRequestOfferDto } from '../dto/update-request-offer.dto';
 import { ServiceRequestsEntity } from '../entities/service_requests.entity';
 import { RequestOffersEntity } from '../entities/request_offers.entity';
 import { RequestOffersService } from '../services/requests-offers.service';
@@ -49,23 +48,6 @@ export class RequestOffersController {
   ): Promise<RequestOffersEntity> {
     return this.requestsOffersService.findRequestOfferById(user.id, id, lang);
   }
-
-
-  // @Patch('offers/:id')
-  // @ApiOperation({ summary: 'Update a request offer' })
-  // @ApiParam({ name: 'id', description: 'Request Offer ID' })
-  // @ApiBody({ type: UpdateRequestOfferDto })
-  // @ApiResponse({ status: 200, description: 'Return the updated request offer.', type: RequestOffersEntity })
-  // @ApiResponse({ status: 404, description: 'Request offer not found.' })
-  // @ApiBearerAuth()
-  // async updateRequestOffer(
-  //   @CurrentUser() user: any,
-  //   @Param('id') id: number,
-  //   @Body() updateRequestOfferDto: UpdateRequestOfferDto,
-  //   @Language() lang: LanguagesEnum,
-  // ): Promise<RequestOffersEntity> {
-  //   return this.requestsOffersService.updateRequestOffer(user.id,id,  updateRequestOfferDto, lang);
-  // }
 
   @Patch('offers/accept/:id')
   @ApiOperation({ summary: 'Accept an offer for a  request' })

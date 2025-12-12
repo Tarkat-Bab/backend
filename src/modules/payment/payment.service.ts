@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PaymentEntity } from './entities/payment.entity';
 import { PaymentTransactionEntity } from './entities/payment-transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,6 +14,8 @@ import { RequestOffersEntity } from '../requests/entities/request_offers.entity'
 import { PaymentStrategyFactory } from './strategies/payment-strategy.factory';
 import { PaylinkService } from './paylink.service';
 import { PaymentAnalyticsDto, PeriodEnum } from './dtos/payment-analytics.dto';
+import { CouponsService } from '../coupons/coupons.service';
+import { CouponEntity } from '../coupons/entities/coupons.entity';
 
 @Injectable()
 export class PaymentService {
@@ -28,12 +30,21 @@ export class PaymentService {
         private readonly paginationService: PaginatorService,
         private readonly strategyFactory: PaymentStrategyFactory,
         private readonly paylinkService: PaylinkService,
+        private readonly couponsService: CouponsService,
 
     ) {}
 
-    async checkout(userId: number, offerId: number, lang: LanguagesEnum, paymentMethod: PaymentMethodsEnum) {
+    private async checkFirstPay(userId: number): Promise<boolean>{
+      const pay = await this.paymentRepository.findOne({
+        where: { user: { id: userId }, status: 'Paid' }
+      });
+     
+      return !pay; // Returns true if this is first payment
+    }
+
+    async checkout(userId: number, offerId: number, lang: LanguagesEnum, paymentMethod: PaymentMethodsEnum, couponId?: number) {
       const strategy = this.strategyFactory.getStrategy(paymentMethod);
-      return strategy.checkout(userId, offerId, lang);
+      return strategy.checkout(userId, offerId, lang, couponId);
     }
 
     async getPaylingInvoice(orderNumber: string, transactionNo: string){
@@ -67,11 +78,6 @@ export class PaymentService {
         }
         return payment;
       }
-      
-      // Handle Paylink transaction number format
-      // const transactionNo = webhookDataOrTransactionNo;
-      // const invoiceDetails = await this.paylinkService.getInvoice(transactionNo);
-      
       const payment = await this.paymentRepository.findOne({
           where: { transactionNumber: webhookDataOrTransactionNo.transactionNo },
           relations: ['user', 'offer']
@@ -106,7 +112,7 @@ export class PaymentService {
       return await this.paymentRepository.delete({id: paymentId} );
     }
 
-    async createPayment(userId: number, offerId: number, lang: LanguagesEnum, paymentMethod?: PaymentMethodsEnum) {
+    async createPayment(userId: number, offerId: number, lang: LanguagesEnum, paymentMethod?: PaymentMethodsEnum, couponId?: number) {
       const user = await this.userService.findById(userId, lang);
       const offer = await this.requestOfferService.findOne(offerId, lang);
 
@@ -114,13 +120,99 @@ export class PaymentService {
       await this.checkPayment(offer, lang);
 
       const { platformAmountFromTech, platformAmountFromClient, totalTechnicianAmount, totalClientAmount } = await this.calculateAmounts(offer.price);
+      
+      // Check and validate coupon if provided
+      let coupon: CouponEntity | null = null;
+      let discountAmount = 0;
+      let totalClientAmountAfterDiscount = totalClientAmount;
+
+      if (couponId) {
+        coupon = await this.validateCoupon(couponId, lang);
+        discountAmount = this.calculateCouponDiscount(totalClientAmount, coupon);
+        totalClientAmountAfterDiscount = Number((totalClientAmount - discountAmount).toFixed(2));
+      }
+
+      // Check if this is first payment and apply first order discount
+      const isFirstPayment = await this.checkFirstPay(userId);
+      if (isFirstPayment) {
+        const firstOrderDiscount = await this.couponsService.getFirstOrderDiscount();
+        const firstPaymentDiscount = this.calculateFirstPaymentDiscount(
+          totalClientAmountAfterDiscount, 
+          firstOrderDiscount.discountPercentage,
+          firstOrderDiscount.maxDiscountAmount
+        );
+        
+        // Ensure total discount doesn't exceed maxDiscountAmount from first_order_discount
+        const totalDiscount = discountAmount + firstPaymentDiscount;
+        const maxAllowedDiscount = Number(firstOrderDiscount.maxDiscountAmount);
+        
+        if (maxAllowedDiscount > 0 && totalDiscount > maxAllowedDiscount) {
+          // Cap the first payment discount so total doesn't exceed max
+          const adjustedFirstPaymentDiscount = maxAllowedDiscount - discountAmount;
+          discountAmount = maxAllowedDiscount;
+          totalClientAmountAfterDiscount = Number((totalClientAmount - discountAmount).toFixed(2));
+        } else {
+          discountAmount += firstPaymentDiscount;
+          totalClientAmountAfterDiscount = Number((totalClientAmountAfterDiscount - firstPaymentDiscount).toFixed(2));
+        }
+      }
+
       const payment = this.paymentRepository.create({
-        platformAmountFromTech, platformAmountFromClient, totalTechnicianAmount, totalClientAmount,
+        platformAmountFromTech, 
+        platformAmountFromClient, 
+        totalTechnicianAmount, 
+        totalClientAmount,
+        totalClientAmountAfterDiscount,
+        discountAmount,
         offer,
-        user
+        user,
+        coupon
       });
 
       return await this.paymentRepository.save(payment);
+    }
+
+    private async validateCoupon(couponId: number, lang: LanguagesEnum): Promise<CouponEntity> {
+      const coupon = await this.couponsService.findOne(couponId, lang);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const startDate = new Date(coupon.startDate);
+      const endDate = new Date(coupon.endDate);
+      
+      if (today < startDate || today > endDate) {
+        throw new BadRequestException(
+          lang === LanguagesEnum.ARABIC 
+            ? 'القسيمة منتهية الصلاحية أو غير صالحة' 
+            : 'Coupon is expired or not valid yet'
+        );
+      }
+      
+      return coupon;
+    }
+
+    private calculateCouponDiscount(amount: number, coupon: CouponEntity): number {
+      const discountPercentage = Number(coupon.discountPercentage);
+      const maxDiscountAmount = Number(coupon.maxDiscountAmount);
+      
+      let discount = (amount * discountPercentage) / 100;
+      
+      if (maxDiscountAmount > 0 && discount > maxDiscountAmount) {
+        discount = maxDiscountAmount;
+      }
+      
+      return Number(discount.toFixed(2));
+    }
+
+    private calculateFirstPaymentDiscount(amount: number, discountPercentage: number, maxDiscountAmount: number): number {
+      let discount = (amount * Number(discountPercentage)) / 100;
+      
+      if (maxDiscountAmount > 0 && discount > maxDiscountAmount) {
+        discount = maxDiscountAmount;
+      }
+      
+      return Number(discount.toFixed(2));
     }
 
     async updatePaymentInfo(paymentId: number, transactionNumber: string, status: string){
@@ -170,6 +262,7 @@ export class PaymentService {
       const query = this.paymentRepository.createQueryBuilder('payment')
         .leftJoinAndSelect('payment.user', 'user')
         .leftJoinAndSelect('payment.offer', 'offer')
+        .leftJoinAndSelect('payment.coupon', 'coupon')
         .leftJoinAndSelect('offer.request', 'request')
         .leftJoinAndSelect('request.technician', 'technician')
         .where('(user.username ILIKE :search OR request.title ILIKE :search)', { search })
@@ -178,6 +271,8 @@ export class PaymentService {
           'payment.id',
           'payment.createdAt',
           'payment.totalClientAmount',
+          'payment.totalClientAmountAfterDiscount',
+          'payment.discountAmount',
           'payment.totalTechnicianAmount',
           'payment.platformAmountFromTech',
           'payment.taxAmount',
@@ -186,6 +281,10 @@ export class PaymentService {
           'user.id',
           'user.username',
           'offer.id',
+
+          'coupon.id',
+          'coupon.code',
+          'coupon.discountPercentage',
 
           'request.id',
           'request.requestNumber',
@@ -207,6 +306,8 @@ export class PaymentService {
           requestTitle: pay.offer?.request?.title || 'N/A',
           requestNumber: pay.offer?.request?.requestNumber || 'N/A',
           totalClientAmount: pay.totalClientAmount,
+          totalClientAmountAfterDiscount: pay.totalClientAmountAfterDiscount,
+          discountAmount: pay.discountAmount,
           totalTechnicianAmount: pay.totalTechnicianAmount,
           taxAmount: pay.taxAmount,
           platformAmountFromTech: pay.platformAmountFromTech,
@@ -215,6 +316,11 @@ export class PaymentService {
           requestStatus: pay.offer?.request?.status || 'N/A',
           offerId: pay.offer?.id || null,
           requestId: pay.offer?.request?.id || null,
+          coupon: pay.coupon ? {
+            id: pay.coupon.id,
+            code: pay.coupon.code,
+            discountPercentage: pay.coupon.discountPercentage
+          } : null
           }
       })
       return this.paginationService.makePaginate(mappedPayments, total, limit, page);
