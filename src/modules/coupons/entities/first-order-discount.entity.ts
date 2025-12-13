@@ -11,6 +11,9 @@ export class FirstOrderDiscountEntity {
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   maxDiscountAmount: number;
 
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
