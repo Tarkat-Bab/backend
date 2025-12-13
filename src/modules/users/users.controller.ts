@@ -8,6 +8,7 @@ import { UpdateProfileDto } from './dtos/UpdateProfileDto';
 import { UpdateFcmTokenDto } from './dtos/update-fcm-token.dto';
 import { Language } from 'src/common/decorators/languages-headers.decorator';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
+import { SkipLocationCheck } from 'src/common/decorators/skip-location-check.decorator';
 
 @ApiBearerAuth()
 @Controller('users')
@@ -18,7 +19,8 @@ export class UsersController {
       name: 'Accept-Language',
       description: 'Language for the response (e.g., ar, en)',
       required: false,
-    })    
+    })
+    @SkipLocationCheck()
     @Get('profile')
     async getProfile(
         @CurrentUser() user: any,
@@ -31,7 +33,8 @@ export class UsersController {
       name: 'Accept-Language',
       description: 'Language for the response (e.g., ar, en)',
       required: false,
-    }) 
+    })
+    @SkipLocationCheck()
     @ApiConsumes('multipart/form-data')
     @Patch('profile')
     @UseInterceptors(FileInterceptor('image', { fileFilter: imageFilter }))

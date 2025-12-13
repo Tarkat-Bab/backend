@@ -15,6 +15,7 @@ import { UsersModule } from 'src/modules/users/users.module';
 import { RequestsModule } from 'src/modules/requests/requests.module';
 import { ReportsModule } from 'src/modules/reports/reports.module';
 import { DashboardCouponsModule } from './coupons/coupons.module';
+import { DashboardFaqsModule } from './faqs/faqs.module';
 
 
 @Module({
@@ -22,7 +23,7 @@ import { DashboardCouponsModule } from './coupons/coupons.module';
     DashboardAuthModule, AuthModule, DashboardUsersModule, DashboardRequestsModule, 
     DashboardReportsModule, SettingsModule, DashboardPaymentsModule, DashboardNotificationModule,
     DashboardRegionsModule, DashboardConversationsModule, UsersModule, RequestsModule, ReportsModule,
-    DashboardCouponsModule
+    DashboardCouponsModule, DashboardFaqsModule
   ],
   controllers: [DashboardController],
   providers: [DashboardService],

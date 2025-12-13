@@ -4,6 +4,7 @@ import { LanguagesEnum } from "src/common/enums/lang.enum";
 import { FilterPaymentsDto } from "src/modules/payment/dtos/filter-payments.dto";
 import { DashboarPaymentsService } from "./payments.service";
 import { Language } from "src/common/decorators/languages-headers.decorator";
+import { PaymentAnalyticsDto } from "src/modules/payment/dtos/payment-analytics.dto";
 
 @ApiBearerAuth()
 @ApiTags('Dashboard')
@@ -24,5 +25,19 @@ export class DashboardPaymentsController {
         @Language() lang: LanguagesEnum
     ) {
         return this.paymentsService.list(filterPaymentsDto, lang)
+    }
+
+    @Get('analytics')
+    @ApiHeader({
+        name: 'Accept-Language',
+        description: 'Language header',
+        required: false,
+        example: 'ar',
+    })
+    async getPaymentAnalytics(
+        @Query() analyticsDto: PaymentAnalyticsDto,
+        @Language() lang: LanguagesEnum
+    ) {
+        return await this.paymentsService.getPaymentAnalytics(analyticsDto, lang);
     }
 }

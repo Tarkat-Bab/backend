@@ -10,8 +10,11 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService }    from '@nestjs/jwt';
 
 import { IS_PUBLIC_KEY } from '../../../common/decorators/public.decorator';
+import { SKIP_LOCATION_CHECK } from '../../../common/guards/location-coverage.guard';
 import { UserStatus, UsersTypes }    from '../../../common/enums/users.enum';
 import { UsersService }  from '../../users/services/users.service';
+import { LanguagesEnum } from 'src/common/enums/lang.enum';
+import { LocationStatus } from 'src/common/enums/location-status.enum';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -70,14 +73,54 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException(t('لم يتم تفعيل الحساب', 'Account is not verified'));
     }
 
+
+
     request.user = {
       id: user?.id,
       email: user?.email,
       phone: user?.phone,
       type: user?.type,
+      locationStatus: user?.locationStatus,
+      blockedReason: user?.blockedReason,
     };
 
     if (isPublic) return true;
+
+    // Check location coverage (after user is set in request)
+    const skipLocationCheck = this.reflector.getAllAndOverride<boolean>(
+      SKIP_LOCATION_CHECK,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (!skipLocationCheck && user && user.locationStatus === LocationStatus.OUT_OF_COVERAGE) {
+      const arResponse = {
+        code: 'OUT_OF_COVERAGE_AREA',
+        message: 'الخدمة غير متوفرة في منطقتك',
+        data: {
+          type: 'FORBIDDEN_ACTION',
+          title: 'منطقتك غير مدعومة',
+          body: 'منطقتك غير مدعومة.',
+          screen: 'forbidden_screen',
+          click_action: 'GO_TO_UPDATE_DATA',
+        },
+      };
+
+      const enResponse = {
+        code: 'OUT_OF_COVERAGE_AREA',
+        message: 'Service is not available in your area',
+        data: {
+          type: 'FORBIDDEN_ACTION',
+          title: 'Your city is not supported',
+          body: 'Your city is not supported.',
+          screen: 'forbidden_screen',
+          click_action: 'GO_TO_UPDATE_DATA',
+        },
+      };
+
+      throw new ForbiddenException(
+        lang.startsWith('ar') ? arResponse : enResponse,
+      );
+    }
 
     const requiredPermission = this.reflector.get<{
       arModule: string;

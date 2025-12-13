@@ -91,6 +91,16 @@ export class FilterTechnicianReqDto extends PaginatorInput {
   approved?: boolean;
 
   @ApiProperty({
+    description: 'Search by updated flag',
+    type: Boolean,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  updated?: boolean;
+
+  @ApiProperty({
     required: false,
     enum: OrderStatus,
     description: 'Order of sorting',
@@ -126,4 +136,6 @@ export class FilterTechnicianReqDto extends PaginatorInput {
   @IsOptional()
   @IsNotEmpty()
   updatedAt: string;
+
+  
 }
