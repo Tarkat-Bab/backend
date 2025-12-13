@@ -45,4 +45,7 @@ export class TechnicalProfileEntity extends BaseEntity {
 
     @OneToMany(() => ServiceRequestsEntity, request => request.technician)
     requests: ServiceRequestsEntity[];
+
+    @Column({type: 'boolean', default: false})
+    isUpdated: boolean;
 }

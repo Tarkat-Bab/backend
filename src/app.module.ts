@@ -1,6 +1,6 @@
 import { Module }      from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   ServeStaticModule,
@@ -34,13 +34,18 @@ import { RegionsModule } from './modules/regions/regions.module';
 import { DeviceVersionsModule } from './modules/versions/device-versions..module';
 import { ChatModule } from './modules/chat/chat.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
+import { FaqsModule } from './modules/faqs/faqs.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.development.env`,
-      // envFilePath: `.${process.env.NODE_ENV}.env`,
+      // Use environment-specific .env file if it exists, otherwise rely on environment variables
+      envFilePath: process.env.NODE_ENV 
+        ? `.${process.env.NODE_ENV}.env` 
+        : `.development.env`,
+      // Don't fail if env file doesn't exist (production typically uses env vars directly)
+      ignoreEnvFile: false,
     }),
     CacheModule.register({
       isGlobal: true,
@@ -81,7 +86,8 @@ import { CouponsModule } from './modules/coupons/coupons.module';
     RegionsModule,
     DeviceVersionsModule,
     ChatModule,
-    CouponsModule
+    CouponsModule,
+    FaqsModule
   ],
   controllers: [AppController],
   providers: [

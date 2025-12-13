@@ -1,17 +1,17 @@
-import { BadRequestException, Injectable, Req } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
-import { UserEntity   } from '../../../modules/users/entities/users.entity';
+import { UserEntity } from '../../../modules/users/entities/users.entity';
 import { UsersService } from '../../users/services/users.service';
-import { OtpService   } from './otp.service';
+import { OtpService } from './otp.service';
 
-import { OtpPurpose        } from '../enums/otp.purpose.enum';
-import { verifyEmailOtpDto, verifyPhoneOtpDto      } from '../dtos/verify-otp.dto';
-import { RegisterDto, TechnicalRegisterDto, UserRegisterDto       } from '../dtos/register.dto';
-import { AdminLoginDto, LoginDto          } from '../dtos/login.dto';
-import { SendEmailOtpDto        } from '../dtos/send-otp-dto';
-import { ForgetAdminPasswordDto, ForgetPasswordDto } from '../dtos/forgot-password-dto';
-import { ResetPasswordDto  } from '../dtos/reset-password.dto';
+import { OtpPurpose } from '../enums/otp.purpose.enum';
+import { verifyEmailOtpDto, verifyPhoneOtpDto } from '../dtos/verify-otp.dto';
+import { TechnicalRegisterDto, UserRegisterDto } from '../dtos/register.dto';
+import { AdminLoginDto, LoginDto } from '../dtos/login.dto';
+import { SendEmailOtpDto } from '../dtos/send-otp-dto';
+import { ForgetAdminPasswordDto } from '../dtos/forgot-password-dto';
+import { ResetPasswordDto } from '../dtos/reset-password.dto';
 import { UserStatus, UsersTypes } from 'src/common/enums/users.enum';
 import { LanguagesEnum } from 'src/common/enums/lang.enum';
 import { SendPhoneOtpDto } from '../dtos/send-phone-otp-dto';
@@ -37,11 +37,12 @@ export class AuthService {
   }
 
 
-  async login(loginDto: LoginDto, lang?: LanguagesEnum) {
+  async login(loginDto: LoginDto, lang?: LanguagesEnum, test?:boolean) {
     const {user, newUser} = await this.usersService.publicLogin(loginDto, lang);
     const otpResponse = await this.sendPhoneOtp({
       phone: user.phone,
-    },  lang);
+      purpose: OtpPurpose.Register,
+    },  lang, test);
 
     return {
       newUser,
@@ -61,7 +62,15 @@ export class AuthService {
       token = await this.createToken(user as UserEntity);
     }
     const message = lang === LanguagesEnum.ARABIC ? 'رمز التحقق صالح' : 'Valid OTP';
-    return { msg: message, token };
+    return { 
+      msg: message, 
+      token,
+      id: user.id,
+      name: user.username,
+      status: user.status,
+      locationStatus: user.locationStatus,
+      blockedReason: user.blockedReason,
+    };
   }
 
   async adminLogin(loginDto: AdminLoginDto, lang?: LanguagesEnum) {
@@ -90,8 +99,15 @@ export class AuthService {
     await this.otpService.verifyEmailOtp(verifyEmailOtpDto, lang);
     await this.usersService.changeUserStatus(user.id, UserStatus.ACTIVE);
 
-    if(verifyEmailOtpDto.purpose === OtpPurpose.Register) { // Changed from OtpPurpose.Login to OtpPurpose.Login
-      return { token: await this.createToken(user as UserEntity) };
+    if(verifyEmailOtpDto.purpose === OtpPurpose.Register) {
+      return { 
+        token: await this.createToken(user as UserEntity),
+        id: user.id,
+        name: user.username,
+        status: user.status,
+        locationStatus: user.locationStatus,
+        blockedReason: user.blockedReason,
+      };
     }
     const message = lang === LanguagesEnum.ARABIC ? 'رمز التحقق صالح' : 'Valid OTP';
     return { msg: message };
@@ -130,10 +146,12 @@ export class AuthService {
     return { msg: 'Verification code is sent.'};
   }
 
-  public async sendPhoneOtp(SendPhoneOtpDto: SendPhoneOtpDto, lang?: LanguagesEnum) {
+  public async sendPhoneOtp(SendPhoneOtpDto: SendPhoneOtpDto, lang?: LanguagesEnum, test?:boolean) {
     await this.otpService.sendPhoneOtp(
-      { phone: SendPhoneOtpDto.phone },
+      SendPhoneOtpDto.phone,
+      SendPhoneOtpDto.purpose,
       lang,
+      test
     );
     if (lang === LanguagesEnum.ARABIC) {
       return { msg: 'تم إرسال رمز التحقق.' };

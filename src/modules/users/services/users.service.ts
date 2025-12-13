@@ -18,6 +18,7 @@ import { FilterTechnicianReqDto, FilterUsersDto } from '../dtos/filter-user-dto'
 import { CloudflareService } from 'src/common/files/cloudflare.service';
 import { UserFcmTokenEntity } from '../entities/user-fcm-token.entity';
 import { RequestStatus } from 'src/modules/requests/enums/requestStatus.enum';
+import { CitiesEntity } from 'src/modules/regions/entities/cities.entity';
 
 @Injectable()
 export class UsersService {
@@ -30,6 +31,9 @@ export class UsersService {
 
     @InjectRepository(UserFcmTokenEntity)
     private readonly userFcmTokenRepo: Repository<UserFcmTokenEntity>,
+
+    @InjectRepository(CitiesEntity)
+    private readonly cityRepo: Repository<CitiesEntity>,
 
     private readonly paginatorService: PaginatorService,
     private readonly cloudflareService: CloudflareService,
@@ -125,7 +129,7 @@ export class UsersService {
     const existUser = await this.usersRepo.findOne({
       where: {
         phone,
-        type,
+        // type,
         deleted: false,
       },
       relations:{ },
@@ -133,7 +137,12 @@ export class UsersService {
         id: true, 
         status: true,
         type: true,
-        phone: true
+        phone: true,
+        latitude: true,
+        longitude: true,
+        locationStatus: true,
+        blockedReason: true,
+        username: true
       }
     })
 
@@ -144,6 +153,12 @@ export class UsersService {
       }
     }
 
+    if(existUser.type !== type){
+      throw new BadRequestException(
+        lang == LanguagesEnum.ARABIC ? `رقم الهاتف لا يمكن استخدامه` : `You can't use this phone number.`
+      )
+    }
+
     if(existUser.status === UserStatus.BLOCKED){
       if(lang === LanguagesEnum.ENGLISH){
         throw new UnauthorizedException('Your account has been blocked, please contact support.');
@@ -152,10 +167,34 @@ export class UsersService {
       }
 
     }
-    await this.usersRepo.update(
-      { id: existUser.id },
-      { lastLoginAt: new Date() },
-    );
+    // Update location status if user has location
+    if (existUser.latitude && existUser.longitude) {
+      const isInCoverage = await this.checkUserLocationInAvailableCity(
+        existUser.latitude,
+        existUser.longitude
+      );
+      
+      const updates: any = { lastLoginAt: new Date() };
+      
+      if (isInCoverage) {
+        updates.locationStatus = 'IN_COVERAGE';
+        updates.blockedReason = null;
+      } else {
+        updates.locationStatus = 'OUT_OF_COVERAGE';
+        updates.blockedReason = 'OUT_OF_COVERAGE_AREA';
+      }
+      
+      await this.usersRepo.update({ id: existUser.id }, updates);
+      
+      // Update local object
+      existUser.locationStatus = updates.locationStatus;
+      existUser.blockedReason = updates.blockedReason;
+    } else {
+      await this.usersRepo.update(
+        { id: existUser.id },
+        { lastLoginAt: new Date() },
+      );
+    }
 
     const existingToken = await this.userFcmTokenRepo.findOne({where: {fcm_token}})
     if(!existingToken){
@@ -218,6 +257,20 @@ export class UsersService {
       dataToUpdate.longitude = saveLocation.longitude;
       dataToUpdate.arAddress = saveLocation.ar_address;
       dataToUpdate.enAddress = saveLocation.en_address;
+      
+      // Check location coverage
+      const isInCoverage = await this.checkUserLocationInAvailableCity(
+        saveLocation.latitude,
+        saveLocation.longitude
+      );
+      
+      if (isInCoverage) {
+        dataToUpdate.locationStatus = 'IN_COVERAGE';
+        dataToUpdate.blockedReason = null;
+      } else {
+        dataToUpdate.locationStatus = 'OUT_OF_COVERAGE';
+        dataToUpdate.blockedReason = 'OUT_OF_COVERAGE_AREA';
+      }
     }
 
     if (image) {
@@ -511,8 +564,56 @@ export class UsersService {
   async findUserForGuard(id:number){
     return await this.usersRepo.findOne({
       where: { id, deleted: false },
-      select: { id: true, email: true, phone: true, type: true, status: true }
+      select: { 
+        id: true, 
+        email: true, 
+        phone: true, 
+        type: true, 
+        status: true, 
+        latitude: true, 
+        longitude: true,
+        locationStatus: true,
+        blockedReason: true
+      }
     })
+  }
+
+  /**
+   * Check if user's location is within an available city
+   */
+  async checkUserLocationInAvailableCity(
+    userLat: number,
+    userLong: number,
+  ): Promise<boolean> {
+    // Get all available cities
+    const availableCities = await this.cityRepo.find({
+      where: { available: true },
+      select: ['id', 'latitude', 'longitude'],
+    });
+
+    if (availableCities.length === 0) {
+      return false;
+    }
+
+    // Check if user is within any available city (within 50km radius)
+    const maxDistanceKm = 50;
+
+    for (const city of availableCities) {
+      if (city.latitude && city.longitude) {
+        const distance = this.locationService.calculateDistance(
+          userLong,
+          userLat,
+          city.longitude,
+          city.latitude,
+        );
+
+        if (distance <= maxDistanceKm) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   async findTechnicianById(id: number, lang: LanguagesEnum, dashboard?: boolean): Promise<TechnicalProfileEntity> {
@@ -653,7 +754,7 @@ export class UsersService {
     try{
       let user = await this.usersRepo.findOne({
         where: { id: userID, deleted: false, status: UserStatus.ACTIVE },
-        relations: ['technicalProfile', 'technicalProfile.reviews', 'technicalProfile.services'],
+        relations: ['technicalProfile', 'technicalProfile.reviews', 'technicalProfile.services', 'technicalProfile.nationality'],
         select: {
           id: true,
           username: true,
@@ -691,8 +792,9 @@ export class UsersService {
       delete userdata.enAddress;
 
      if(user.type === UsersTypes.TECHNICAL){
+      // console.log("User is technician", userdata.technicalProfile)
         const isApproved = user.technicalProfile.approved;
-        const nationalityName = lang == LanguagesEnum.ARABIC ? userdata.technicalProfile.nationality.arName: userdata.technicalProfile.nationality.enName;
+        const nationalityName = lang == LanguagesEnum.ARABIC ? userdata.technicalProfile.nationality?.arName: userdata.technicalProfile.nationality?.enName;
         const isActive = user.status == UserStatus.ACTIVE;
 
         // console.log(userdata)
@@ -707,10 +809,14 @@ export class UsersService {
           latitude: userdata.latitude,
           longitude: userdata.longitude,
           approved: userdata.technicalProfile.approved,
-          workLicenseImage: isApproved? userdata.technicalProfile.workLicenseImage : undefined,
-          identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
-          nationalityName: isApproved? nationalityName : undefined,
-          services: isApproved? userdata.technicalProfile.services : undefined,
+          // workLicenseImage: isApproved? userdata.technicalProfile.workLicenseImage : undefined,
+          // identityImage: isApproved? userdata.technicalProfile.identityImage : undefined,
+          // nationalityName: isApproved? nationalityName : undefined,
+          // services: isApproved? userdata.technicalProfile.services : undefined,
+           workLicenseImage:  userdata.technicalProfile.workLicenseImage ,
+          identityImage:  userdata.technicalProfile.identityImage ,
+          nationalityName:  nationalityName ,
+          services:  userdata.technicalProfile.services ,
           avgRating: user.technicalProfile.avgRating,
           totalReviews: user.technicalProfile.reviews.length
         }
@@ -872,6 +978,7 @@ export class UsersService {
       user.technicalProfile.services.push(service);
     }
 
+    user.technicalProfile.isUpdated = true;
     user.status = UserStatus.ACTIVE;
     const updatedUser = await this.usersRepo.save(user);
     if (updatedUser.technicalProfile) updatedUser.technicalProfile.user = undefined;
@@ -970,7 +1077,7 @@ export class UsersService {
 }
 
   async listTechniciansReq(filter: FilterTechnicianReqDto) {
-   const { page, limit, approved, username, createdAt, updatedAt, sortOrder } = filter;
+   const { page, limit, approved, updated, username, createdAt, updatedAt, sortOrder } = filter;
 
    const take = limit ?? 20;
    const skip = ((page ?? 1) - 1) * take;
@@ -989,6 +1096,7 @@ export class UsersService {
        'u.createdAt AS createdAt',
        'u.updatedAt AS updatedAt',
        'tech.approved AS approved',
+       'tech.isUpdated AS isUpdated',
        'services.id AS serviceId',
        'services.arName AS serviceArName',
        'services.enName AS serviceEnName',
@@ -1001,6 +1109,10 @@ export class UsersService {
      query.andWhere('tech.approved = :approved', { approved });
    }
 
+   if(updated){
+     query.andWhere('tech.isUpdated = :updated', {updated});
+   }
+   
    if (username) {
      query.andWhere('u.username ILIKE :username', { username: `%${username}%` });
    }
@@ -1022,11 +1134,11 @@ export class UsersService {
      query.getCount(),
    ]);
 
+   console.log(query.getSql())
    return this.paginatorService.makePaginate(rows, total, take, page);
   }
 
-
-    async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
+  async approveTech(id: number, approved: boolean, lang: LanguagesEnum){
       const user = await this.usersRepo.findOne({
         where: {id, deleted: false},
         relations: {technicalProfile: true}
@@ -1046,7 +1158,7 @@ export class UsersService {
 
       user.technicalProfile.approved =  approved;
       return await this.usersRepo.save(user);
-    }
+  }
 
   async usersAnalysis() {
     // ---- Count Clients ----

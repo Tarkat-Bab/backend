@@ -1,14 +1,15 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { RequestOffersEntity } from 'src/modules/requests/entities/request_offers.entity';
 import { UserEntity } from 'src/modules/users/entities/users.entity';
+import { PaymentTransactionEntity } from './payment-transaction.entity';
 
 @Entity('payments')
 export class PaymentEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', unique: true })
-  tabbyPaymentId: string;
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  transactionNumber: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   totalClientAmount: number;
@@ -25,10 +26,10 @@ export class PaymentEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   taxAmount: number;
 
-  @Column({ type: 'varchar', length: 3 })
+  @Column({ type: 'varchar', length: 3, default: 'SAR' })
   currency: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true })
   status: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
@@ -50,4 +51,9 @@ export class PaymentEntity {
   })
   @JoinColumn({ name: 'offer_id' })
   offer: RequestOffersEntity;
+
+  @OneToOne(() => PaymentTransactionEntity, (paymentTransaction) => paymentTransaction.payment, {
+    cascade: true,
+  })
+  paymentTransaction: PaymentTransactionEntity;
 }
