@@ -92,7 +92,8 @@ export class CouponsService {
       discount = this.firstOrderDiscountRepo.create({
         id: 1,
         discountPercentage: 0,
-        maxDiscountAmount: 0
+        maxDiscountAmount: 0,
+        isActive: true
       });
       await this.firstOrderDiscountRepo.save(discount);
     }
@@ -111,12 +112,16 @@ export class CouponsService {
       discount = this.firstOrderDiscountRepo.create({
         id: 1,
         discountPercentage: updateDto.discountPercentage,
-        maxDiscountAmount: updateDto.maxDiscountAmount
+        maxDiscountAmount: updateDto.maxDiscountAmount,
+        isActive: updateDto.isActive !== undefined ? updateDto.isActive : true
       });
     } else {
       // Update existing
       discount.discountPercentage = updateDto.discountPercentage;
       discount.maxDiscountAmount = updateDto.maxDiscountAmount;
+      if (updateDto.isActive !== undefined) {
+        discount.isActive = updateDto.isActive;
+      }
     }
 
     return this.firstOrderDiscountRepo.save(discount);

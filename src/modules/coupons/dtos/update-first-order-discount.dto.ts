@@ -1,5 +1,5 @@
-import { IsNumber, Min, Max } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsNumber, Min, Max, IsBoolean, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateFirstOrderDiscountDto {
     @ApiProperty({ example: 10, description: 'Discount percentage (0-100)' })
@@ -12,4 +12,9 @@ export class UpdateFirstOrderDiscountDto {
     @IsNumber()
     @Min(0)
     maxDiscountAmount: number;
+
+    @ApiPropertyOptional({ example: true, description: 'Whether the first order discount is active' })
+    @IsBoolean()
+    @IsOptional()
+    isActive?: boolean;
 }
